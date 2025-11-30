@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { toApiFilesUrl } from '../shared/url'
 
 interface ApiKeyword {
   id: number
@@ -771,7 +772,7 @@ export function MyArticleDetailsPage() {
             {myFiles.find((f) => f.kind === 'manuscript') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'manuscript') as ApiMyFile
-                const url = f.download_url?.replace('http://localhost:8080', 'http://localhost:8000')
+                const url = toApiFilesUrl(f.download_url)
                 return (
                   <div className="form-hint">
                     <a className="link" href={url} target="_blank" rel="noreferrer">
@@ -783,7 +784,7 @@ export function MyArticleDetailsPage() {
             ) : article.manuscript_file_url ? (
               <a
                 className="link"
-                href={article.manuscript_file_url.replace('http://localhost:8080', 'http://localhost:8000')}
+                href={toApiFilesUrl(article.manuscript_file_url)}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -804,7 +805,7 @@ export function MyArticleDetailsPage() {
             {myFiles.find((f) => f.kind === 'antiplagiarism') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'antiplagiarism') as ApiMyFile
-                const url = f.download_url?.replace('http://localhost:8080', 'http://localhost:8000')
+                const url = toApiFilesUrl(f.download_url)
                 return (
                   <div className="form-hint">
                     <a className="link" href={url} target="_blank" rel="noreferrer">
@@ -816,7 +817,7 @@ export function MyArticleDetailsPage() {
             ) : article.antiplagiarism_file_url ? (
               <a
                 className="link"
-                href={article.antiplagiarism_file_url.replace('http://localhost:8080', 'http://localhost:8000')}
+                href={toApiFilesUrl(article.antiplagiarism_file_url)}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -837,7 +838,7 @@ export function MyArticleDetailsPage() {
             {myFiles.find((f) => f.kind === 'author_info') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'author_info') as ApiMyFile
-                const url = f.download_url?.replace('http://localhost:8080', 'http://localhost:8000')
+                const url = toApiFilesUrl(f.download_url)
                 return (
                   <div className="form-hint">
                     <a className="link" href={url} target="_blank" rel="noreferrer">
@@ -849,7 +850,7 @@ export function MyArticleDetailsPage() {
             ) : article.author_info_file_url ? (
               <a
                 className="link"
-                href={article.author_info_file_url.replace('http://localhost:8080', 'http://localhost:8000')}
+                href={toApiFilesUrl(article.author_info_file_url)}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -870,7 +871,7 @@ export function MyArticleDetailsPage() {
             {myFiles.find((f) => f.kind === 'cover_letter') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'cover_letter') as ApiMyFile
-                const url = f.download_url?.replace('http://localhost:8080', 'http://localhost:8000')
+                const url = toApiFilesUrl(f.download_url)
                 return (
                   <div className="form-hint">
                     <a className="link" href={url} target="_blank" rel="noreferrer">
@@ -882,7 +883,7 @@ export function MyArticleDetailsPage() {
             ) : article.cover_letter_file_url ? (
               <a
                 className="link"
-                href={article.cover_letter_file_url.replace('http://localhost:8080', 'http://localhost:8000')}
+                href={toApiFilesUrl(article.cover_letter_file_url)}
                 target="_blank"
                 rel="noreferrer"
               >

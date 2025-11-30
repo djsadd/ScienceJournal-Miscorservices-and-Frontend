@@ -465,7 +465,7 @@ async def get_article_manuscript(
             return {
                 "article_id": article_id,
                 "file_id": file_id,
-                "download_url": f"{config.API_GATEWAY_URL}/files/{file_id}/download",
+                "download_url": f"{config.API_GATEWAY_URL}{getattr(config, 'API_PREFIX', '/api')}/files/{file_id}/download",
                 "filename": file_data.get("filename"),
                 "file_size": file_data.get("file_size"),
                 "content_type": file_data.get("content_type"),

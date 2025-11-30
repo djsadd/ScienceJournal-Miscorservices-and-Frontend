@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client'
+import { toApiFilesUrl } from '../shared/url'
 import type { Article, PagedResponse } from '../shared/types'
 import './EditorialUnassignedPage.css'
 import { formatArticleStatus } from '../shared/labels'
@@ -140,15 +141,15 @@ export default function EditorialUnassignedPage() {
                 <div className="subtitle">DOI: {a.doi || '—'} | Тип: {a.article_type} | Статус: {formatArticleStatus(a.status, 'ru')}</div>
               </div>
               <div className="actions">
-                <a href={a.manuscript_file_url || '#'} target="_blank" rel="noreferrer">Рукопись</a>
+                <a href={toApiFilesUrl(a.manuscript_file_url) || '#'} target="_blank" rel="noreferrer">Рукопись</a>
                 {a.antiplagiarism_file_url && (
-                  <a href={a.antiplagiarism_file_url} target="_blank" rel="noreferrer">Антиплагиат</a>
+                  <a href={toApiFilesUrl(a.antiplagiarism_file_url)} target="_blank" rel="noreferrer">Антиплагиат</a>
                 )}
                 {a.author_info_file_url && (
-                  <a href={a.author_info_file_url} target="_blank" rel="noreferrer">Автор инфо</a>
+                  <a href={toApiFilesUrl(a.author_info_file_url)} target="_blank" rel="noreferrer">Автор инфо</a>
                 )}
                 {a.cover_letter_file_url && (
-                  <a href={a.cover_letter_file_url} target="_blank" rel="noreferrer">Письмо</a>
+                  <a href={toApiFilesUrl(a.cover_letter_file_url)} target="_blank" rel="noreferrer">Письмо</a>
                 )}
               </div>
             </div>

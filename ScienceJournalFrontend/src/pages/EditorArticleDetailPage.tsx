@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { toApiFilesUrl } from '../shared/url'
 import { formatArticleStatus, formatArticleType } from '../shared/labels'
 import ConfirmModal from '../shared/components/ConfirmModal'
 import Toast from '../shared/components/Toast'
@@ -487,15 +488,15 @@ export default function EditorArticleDetailPage() {
           <div className="panel">
             <h3 className="panel-title">Файлы</h3>
             <div className="actions">
-              <a className="button button--ghost button--compact" href={data.manuscript_file_url || '#'} target="_blank" rel="noreferrer">Рукопись</a>
+              <a className="button button--ghost button--compact" href={toApiFilesUrl(data.manuscript_file_url) || '#'} target="_blank" rel="noreferrer">Рукопись</a>
               {data.antiplagiarism_file_url && (
-                <a className="button button--ghost button--compact" href={data.antiplagiarism_file_url} target="_blank" rel="noreferrer">Антиплагиат</a>
+                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.antiplagiarism_file_url)} target="_blank" rel="noreferrer">Антиплагиат</a>
               )}
               {data.author_info_file_url && (
-                <a className="button button--ghost button--compact" href={data.author_info_file_url} target="_blank" rel="noreferrer">Автор инфо</a>
+                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.author_info_file_url)} target="_blank" rel="noreferrer">Автор инфо</a>
               )}
               {data.cover_letter_file_url && (
-                <a className="button button--ghost button--compact" href={data.cover_letter_file_url} target="_blank" rel="noreferrer">Письмо</a>
+                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.cover_letter_file_url)} target="_blank" rel="noreferrer">Письмо</a>
               )}
             </div>
           </div>

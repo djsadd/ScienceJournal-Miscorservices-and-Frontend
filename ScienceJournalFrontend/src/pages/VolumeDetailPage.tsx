@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../api/client'
+import { toApiFilesUrl } from '../shared/url'
 import type { Volume, Article } from '../shared/types'
 
 export default function VolumeDetailPage() {
@@ -84,7 +85,7 @@ export default function VolumeDetailPage() {
                   <div className="latest-table__cell">{Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}</div>
                   <div className="latest-table__cell">
                     {a.manuscript_file_url ? (
-                      <a className="button button--ghost button--compact" href={a.manuscript_file_url} target="_blank" rel="noreferrer">Скачать PDF</a>
+                      <a className="button button--ghost button--compact" href={toApiFilesUrl(a.manuscript_file_url)} target="_blank" rel="noreferrer">Скачать PDF</a>
                     ) : (
                       <span className="meta-label">Нет файла</span>
                     )}
