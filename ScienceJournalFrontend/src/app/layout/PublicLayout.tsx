@@ -234,19 +234,19 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         </div>
       )}
 
-      <footer className="app-footer">
+            <footer className="app-footer">
         <div className="footer__brand">
           <div className="brand-mark">
             <img src={logo} alt="Science Journal" className="brand-logo" />
           </div>
           <div>
-            <div className="brand-title">Известия университета «Туран-Астана»</div>
-            <div className="brand-subtitle">Science Journal · Департамент цифровой трансформации</div>
+            <div className="brand-title">Izvestiya universiteta "Turan-Astana"</div>
+            <div className="brand-subtitle">Science Journal - Department of Digital Transformation</div>
           </div>
         </div>
         <div className="footer__meta">
           <span className="meta-label">c 2025 Science Journal</span>
-          <span className="meta-label">Все права защищены</span>
+          <span className="meta-label">All rights reserved</span>
         </div>
       </footer>
     </div>
