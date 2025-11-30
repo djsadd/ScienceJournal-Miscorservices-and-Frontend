@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import logo from '../../assets/logo.svg'
@@ -237,11 +237,11 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       <footer className="app-footer">
         <div className="footer__brand">
           <div className="brand-mark">
-            <img src={logo} alt="Логотип журнала" className="brand-logo" />
+            <img src={logo} alt="Science Journal" className="brand-logo" />
           </div>
           <div>
             <div className="brand-title">Известия университета «Туран-Астана»</div>
-            <div className="brand-subtitle">Science Journal</div>
+            <div className="brand-subtitle">Science Journal · Департамент цифровой трансформации</div>
           </div>
         </div>
         <div className="footer__meta">
@@ -252,3 +252,5 @@ export function PublicLayout({ children }: PublicLayoutProps) {
     </div>
   )
 }
+
+
