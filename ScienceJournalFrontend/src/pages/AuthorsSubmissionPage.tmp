@@ -1,0 +1,564 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { api } from '../api/client'
+
+const articleTypes = ['Оригинальная статья', 'Обзор', 'Короткое сообщение', 'Методическая статья']
+type ApiKeyword = { id?: number; title_ru: string; title_kz: string; title_en: string }
+type Keyword = { id?: number; ru: string; kz: string; en: string }
+type Lang = 'ru' | 'kz' | 'en'
+type AuthorForm = {
+  email: string
+  prefix: string
+  firstName: string
+  middleName: string
+  lastName: string
+  phone: string
+  address: string
+  country: string
+  affiliation1: string
+  affiliation2: string
+  affiliation3: string
+  isCorresponding: boolean
+  orcid: string
+  scopusId: string
+  researcherId: string
+}
+
+export function AuthorsSubmissionPage() {
+  const [keywords, setKeywords] = useState<Keyword[]>([])
+  const [keywordInput, setKeywordInput] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [newKeyword, setNewKeyword] = useState<Keyword>({ ru: '', kz: '', en: '' })
+  const [activeLang, setActiveLang] = useState<Lang>('ru')
+  const [titles, setTitles] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
+  const [abstracts, setAbstracts] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
+  const [authors, setAuthors] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
+  const [authorModalOpen, setAuthorModalOpen] = useState(false)
+  const [authorForm, setAuthorForm] = useState<AuthorForm>({
+    email: '',
+    prefix: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    phone: '',
+    address: '',
+    country: '',
+    affiliation1: '',
+    affiliation2: '',
+    affiliation3: '',
+    isCorresponding: true,
+    orcid: '',
+    scopusId: '',
+    researcherId: '',
+  })
+  const [authorList, setAuthorList] = useState<AuthorForm[]>([])
+
+  useEffect(() => {
+    let isMounted = true
+    const loadKeywords = async () => {
+      try {
+        const data = await api.get<ApiKeyword[]>('/articles/keywords')
+        if (!isMounted) return
+        const mapped =
+          data?.map((item) => ({
+            id: item.id,
+            ru: item.title_ru,
+            kz: item.title_kz,
+            en: item.title_en,
+          })) ?? []
+        setKeywords(mapped)
+      } catch (error) {
+        console.error('Failed to load keywords', error)
+      }
+    }
+    loadKeywords()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const matches = useMemo(
+    () =>
+      keywordInput.trim().length === 0
+        ? []
+        : keywords.filter((kw) => kw.ru.toLowerCase().includes(keywordInput.trim().toLowerCase())),
+    [keywords, keywordInput],
+  )
+
+  const keywordExists = (kw: string) =>
+    keywords.some((item) => item.ru.toLowerCase() === kw.trim().toLowerCase())
+
+  const handleSaveKeyword = async () => {
+    if (!newKeyword.ru.trim()) return
+    try {
+      const created = await api.post<ApiKeyword>('/articles/keywords', {
+        title_ru: newKeyword.ru.trim(),
+        title_kz: newKeyword.kz.trim(),
+        title_en: newKeyword.en.trim(),
+      })
+      const keyword: Keyword = {
+        id: created.id,
+        ru: created.title_ru,
+        kz: created.title_kz,
+        en: created.title_en,
+      }
+      setKeywords((prev) => [...prev, keyword])
+      setKeywordInput(keyword.ru)
+      setNewKeyword({ ru: '', kz: '', en: '' })
+      setModalOpen(false)
+    } catch (error) {
+      console.error('Failed to create keyword', error)
+    }
+  }
+
+  const resetAuthorForm = () =>
+    setAuthorForm({
+      email: '',
+      prefix: '',
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      phone: '',
+      address: '',
+      country: '',
+      affiliation1: '',
+      affiliation2: '',
+      affiliation3: '',
+      isCorresponding: true,
+      orcid: '',
+      scopusId: '',
+      researcherId: '',
+    })
+
+  const saveAuthor = () => {
+    if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()) return
+    setAuthorList((prev) => [...prev, authorForm])
+    resetAuthorForm()
+    setAuthorModalOpen(false)
+  }
+
+  const langLabels: Record<Lang, string> = { ru: 'Русский', kz: 'Казахский', en: 'Английский' }
+  const titlePlaceholders: Record<Lang, string> = {
+    ru: 'Заголовок на русском',
+    kz: 'Заголовок на казахском',
+    en: 'Title in English',
+  }
+  const abstractPlaceholders: Record<Lang, string> = {
+    ru: 'Аннотация на русском',
+    kz: 'Аннотация на казахском',
+    en: 'Abstract in English',
+  }
+  const authorsPlaceholders: Record<Lang, string> = {
+    ru: 'Авторы на русском',
+    kz: 'Авторы на казахском',
+    en: 'Authors in English',
+  }
+
+  return (
+    <div className="public-container">
+      <div className="section public-section">
+        <p className="eyebrow">Подача статьи</p>
+        <h1 className="hero__title">Загрузите рукопись</h1>
+        <p className="subtitle">Заполните данные о статье, выберите ключевые слова и прикрепите файлы.</p>
+        <Link to="/cabinet/submissions" className="button button--ghost">
+          Вернуться в кабинет
+        </Link>
+      </div>
+
+      <div className="section public-section">
+        <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
+          <div className="form-field">
+            <label className="form-label">Выберите тип статьи</label>
+            <select className="chip-select">
+              <option value="">---------</option>
+              {articleTypes.map((type) => (
+                <option key={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Выберите ключевые слова</label>
+            <div className="form-field">
+              <input
+                className="text-input"
+                placeholder="Введите ключевое слово"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+              />
+            </div>
+            {keywordInput.trim() ? (
+              <div className="pill-list">
+                {matches.length > 0 ? (
+                  matches.map((kw) => (
+                    <span key={kw.id ?? kw.ru} className="status-chip status-chip--submitted">
+                      {kw.ru}
+                    </span>
+                  ))
+                ) : (
+                  <span className="table__empty">Совпадений не найдено.</span>
+                )}
+              </div>
+            ) : null}
+            {!keywordExists(keywordInput) && keywordInput.trim() ? (
+              <button type="button" className="button button--ghost" onClick={() => setModalOpen(true)}>
+                Добавить новое ключевое слово
+              </button>
+            ) : null}
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Создайте новые ключевые слова</label>
+            <input className="text-input" placeholder="Новые ключевые слова через запятую" />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Язык формы</label>
+            <div className="lang-switch">
+              {(['ru', 'kz', 'en'] as Lang[]).map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`lang-chip ${activeLang === code ? 'lang-chip--active' : ''}`}
+                  onClick={() => setActiveLang(code)}
+                >
+                  {langLabels[code]}
+                </button>
+              ))}
+            </div>
+            <p className="form-hint">Заполните сначала на русском, затем на казахском и английском.</p>
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Название статьи ({langLabels[activeLang]})</label>
+            <input
+              className="text-input"
+              placeholder={titlePlaceholders[activeLang]}
+              value={titles[activeLang]}
+              onChange={(e) => setTitles((prev) => ({ ...prev, [activeLang]: e.target.value }))}
+            />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Аннотация ({langLabels[activeLang]})</label>
+            <textarea
+              className="text-input"
+              rows={4}
+              placeholder={abstractPlaceholders[activeLang]}
+              value={abstracts[activeLang]}
+              onChange={(e) => setAbstracts((prev) => ({ ...prev, [activeLang]: e.target.value }))}
+            />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Авторы статьи ({langLabels[activeLang]})</label>
+            <input
+              className="text-input"
+              placeholder={authorsPlaceholders[activeLang]}
+              value={authors[activeLang]}
+              onChange={(e) => setAuthors((prev) => ({ ...prev, [activeLang]: e.target.value }))}
+            />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Загрузить статью</label>
+            <input type="file" />
+          </div>
+          <div className="form-field">
+            <label className="form-label">Загрузить сведения об антиплагиате</label>
+            <input type="file" />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Рукопись (*.doc, *.docx)</label>
+            <input type="file" />
+          </div>
+          <div className="form-field">
+            <label className="form-label">Файл со сведениями об авторах (*.doc, *.docx)</label>
+            <input type="file" />
+          </div>
+          <div className="form-field">
+            <label className="form-label">Сопроводительное письмо (*.pdf)</label>
+            <input type="file" />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Сведения о применении генеративного ИИ</label>
+            <textarea className="text-input" rows={3} />
+          </div>
+
+          <label className="checkbox">
+            <input type="checkbox" /> Статья ранее не публиковалась и не рассматривается другим журналом
+          </label>
+          <label className="checkbox">
+            <input type="checkbox" /> В статье отсутствует плагиат
+          </label>
+          <label className="checkbox">
+            <input type="checkbox" /> Все авторы подтверждают согласие с поданной версией
+          </label>
+
+          <button className="button button--primary" type="submit">
+            Отправить статью
+          </button>
+        </form>
+      </div>
+
+      <div className="section public-section">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Авторы статьи</p>
+            <h2 className="panel-title">Состав авторов</h2>
+          </div>
+          <button className="button button--primary button--compact" type="button" onClick={() => setAuthorModalOpen(true)}>
+            Добавить автора
+          </button>
+        </div>
+        {authorList.length === 0 ? (
+          <div className="table__empty">Авторы пока не добавлены.</div>
+        ) : (
+          <div className="table">
+            <div className="table__head">
+              <span>Имя</span>
+              <span>Email</span>
+              <span>Аффилиации</span>
+              <span>Корр. автор</span>
+            </div>
+            <div className="table__body">
+              {authorList.map((a, idx) => (
+                <div className="table__row" key={`${a.email}-${idx}`}>
+                  <div className="table__cell">
+                    <div className="table__title">
+                      {a.prefix ? `${a.prefix} ` : ''}
+                      {a.firstName} {a.middleName} {a.lastName}
+                    </div>
+                    <div className="table__meta">{a.phone}</div>
+                  </div>
+                  <div className="table__cell">{a.email}</div>
+                  <div className="table__cell">
+                    {[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '—'}
+                  </div>
+                  <div className="table__cell">{a.isCorresponding ? 'Да' : 'Нет'}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {modalOpen ? (
+        <div className="modal-backdrop" onClick={() => setModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>Новое ключевое слово</h3>
+              <button className="modal__close" onClick={() => setModalOpen(false)} aria-label="Закрыть">
+                ×
+              </button>
+            </div>
+            <div className="modal__body">
+              <div className="form-field">
+                <label className="form-label">На русском</label>
+                <input
+                  className="text-input"
+                  value={newKeyword.ru}
+                  onChange={(e) => setNewKeyword((prev) => ({ ...prev, ru: e.target.value }))}
+                  placeholder="Например: Искусственный интеллект"
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">На казахском</label>
+                <input
+                  className="text-input"
+                  value={newKeyword.kz}
+                  onChange={(e) => setNewKeyword((prev) => ({ ...prev, kz: e.target.value }))}
+                  placeholder="Аналитика деректері"
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">На английском</label>
+                <input
+                  className="text-input"
+                  value={newKeyword.en}
+                  onChange={(e) => setNewKeyword((prev) => ({ ...prev, en: e.target.value }))}
+                  placeholder="Artificial Intelligence"
+                />
+              </div>
+            </div>
+            <div className="modal__footer">
+              <button className="button button--ghost" type="button" onClick={() => setModalOpen(false)}>
+                Отмена
+              </button>
+              <button className="button button--primary" type="button" onClick={handleSaveKeyword} disabled={!newKeyword.ru.trim()}>
+                Добавить
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {authorModalOpen ? (
+        <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
+          <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>Добавить автора</h3>
+              <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Закрыть">
+                ×
+              </button>
+            </div>
+            <div className="modal__body author-grid">
+              <div className="form-field">
+                <label className="form-label">Email *</label>
+                <input
+                  className="text-input"
+                  value={authorForm.email}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Префикс</label>
+                <input
+                  className="text-input"
+                  value={authorForm.prefix}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Имя *</label>
+                <input
+                  className="text-input"
+                  value={authorForm.firstName}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Отчество</label>
+                <input
+                  className="text-input"
+                  value={authorForm.middleName}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Фамилия *</label>
+                <input
+                  className="text-input"
+                  value={authorForm.lastName}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Телефон</label>
+                <input
+                  className="text-input"
+                  value={authorForm.phone}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))}
+                />
+              </div>
+              <div className="form-field form-field--span-2">
+                <label className="form-label">Адрес</label>
+                <input
+                  className="text-input"
+                  value={authorForm.address}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Страна *</label>
+                <input
+                  className="text-input"
+                  value={authorForm.country}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-field">
+                <label className="form-label">Аффилиация 1 *</label>
+                <textarea
+                  className="text-input"
+                  rows={3}
+                  value={authorForm.affiliation1}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Аффилиация 2</label>
+                <textarea
+                  className="text-input"
+                  rows={3}
+                  value={authorForm.affiliation2}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Аффилиация 3</label>
+                <textarea
+                  className="text-input"
+                  rows={3}
+                  value={authorForm.affiliation3}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-field">
+                <label className="form-label">Соответствующий автор</label>
+                <div className="pill-list">
+                  <button
+                    type="button"
+                    className={`button button--ghost button--compact ${authorForm.isCorresponding ? 'button--active' : ''}`}
+                    onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: true }))}
+                  >
+                    Да
+                  </button>
+                  <button
+                    type="button"
+                    className={`button button--ghost button--compact ${!authorForm.isCorresponding ? 'button--active' : ''}`}
+                    onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: false }))}
+                  >
+                    Нет
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label className="form-label">ORCID</label>
+                <input
+                  className="text-input"
+                  value={authorForm.orcid}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, orcid: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Scopus Author ID</label>
+                <input
+                  className="text-input"
+                  value={authorForm.scopusId}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, scopusId: e.target.value }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label">Researcher ID</label>
+                <input
+                  className="text-input"
+                  value={authorForm.researcherId}
+                  onChange={(e) => setAuthorForm((p) => ({ ...p, researcherId: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="modal__footer">
+              <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>
+                Отмена
+              </button>
+              <button
+                className="button button--primary"
+                type="button"
+                onClick={saveAuthor}
+                disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}
+              >
+                Сохранить автора
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
