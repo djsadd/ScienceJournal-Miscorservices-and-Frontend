@@ -1,61 +1,53 @@
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import { useLanguage } from '../shared/LanguageContext'
+import { homeCopy } from '../shared/translations'
 
 export function HomePage() {
   const tokens = api.getTokens()
   const isAuthed = Boolean(tokens?.accessToken)
+  const { lang } = useLanguage()
+  const t = homeCopy[lang]
 
   return (
     <div className="public-container home-page">
       <section className="hero">
         <div>
-          <p className="eyebrow">Известия университета «Туран-Астана»</p>
-          <h1 className="hero__title">Вестник Туран-Астана</h1>
-          <p className="subtitle hero__subtitle">
-            Рецензируемое издание Университета «Туран-Астана», публикующее результаты оригинальных исследований в
-            экономике, управлении, праве, социальных и гуманитарных науках.
-          </p>
+          <p className="eyebrow">{t.hero.eyebrow}</p>
+          <h1 className="hero__title">{t.hero.title}</h1>
+          <p className="subtitle hero__subtitle">{t.hero.subtitle}</p>
           <div className="hero__actions">
             {isAuthed ? (
               <>
                 <Link to="/cabinet" className="button button--primary">
-                  Cabinet
+                  {t.hero.buttons.authedPrimary}
                 </Link>
                 <Link to="/cabinet/profile" className="button button--ghost">
-                  Profile
+                  {t.hero.buttons.authedSecondary}
                 </Link>
               </>
             ) : (
               <>
                 <Link to="/login" className="button button--primary">
-                  Login
+                  {t.hero.buttons.guestPrimary}
                 </Link>
                 <Link to="/register" className="button button--ghost">
-                  Register
+                  {t.hero.buttons.guestSecondary}
                 </Link>
               </>
             )}
           </div>
         </div>
         <div className="hero__panel panel">
-          <h3 className="panel-title">Ключевые сведения</h3>
-          <p className="subtitle">
-            Журнал издается с 2019 года, имеет свидетельство о регистрации и международный номер ISSN 2663-631X. Учредитель
-            — Университет «Туран-Астана».
-          </p>
+          <h3 className="panel-title">{t.hero.statsTitle}</h3>
+          <p className="subtitle">{t.hero.statsDescription}</p>
           <div className="stat-block">
-            <div>
-              <div className="stat-value">2019</div>
-              <div className="stat-label">год основания</div>
-            </div>
-            <div>
-              <div className="stat-value">2663-631X</div>
-              <div className="stat-label">ISSN</div>
-            </div>
-            <div>
-              <div className="stat-value">4</div>
-              <div className="stat-label">выпуска в год</div>
-            </div>
+            {t.hero.stats.map((stat) => (
+              <div key={stat.label}>
+                <div className="stat-value">{stat.value}</div>
+                <div className="stat-label">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -63,59 +55,49 @@ export function HomePage() {
       <section id="about" className="section public-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">о журнале</p>
-            <h2 className="panel-title">Миссия и политика</h2>
+            <p className="eyebrow">{t.about.eyebrow}</p>
+            <h2 className="panel-title">{t.about.title}</h2>
           </div>
           <a className="button button--ghost" href="#contacts">
-            Контакты редакции
+            {t.about.cta}
           </a>
         </div>
         <div className="panel">
-          <p className="subtitle">
-            Научный журнал «Вестник Туран-Астана» является рецензируемым изданием, публикующим результаты оригинальных
-            научных исследований в области экономики, управления, права, социальных и гуманитарных наук.
-          </p>
-          <p className="subtitle">
-            Редакционная политика направлена на развитие академического диалога между исследователями, преподавателями и
-            практиками, а также на продвижение лучших научных и прикладных исследований.
-          </p>
+          {t.about.paragraphs.map((paragraph, idx) => (
+            <p className="subtitle" key={idx}>
+              {paragraph}
+            </p>
+          ))}
         </div>
       </section>
 
       <section id="purpose" className="section public-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">цель журнала</p>
-            <h2 className="panel-title">Содействие науке</h2>
+            <p className="eyebrow">{t.purpose.eyebrow}</p>
+            <h2 className="panel-title">{t.purpose.title}</h2>
           </div>
           <a className="button button--ghost" href="#authors">
-            Для авторов
+            {t.purpose.cta}
           </a>
         </div>
         <div className="panel">
-          <p className="subtitle">
-            Цель журнала «Вестник Туран-Астана» — содействовать развитию научных исследований и распространению актуальных
-            знаний в области социально-экономических и гуманитарных наук.
-          </p>
+          <p className="subtitle">{t.purpose.paragraph}</p>
         </div>
       </section>
 
       <section id="editorial" className="section public-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">редакция</p>
-            <h2 className="panel-title">Редколлегия и рецензенты</h2>
+            <p className="eyebrow">{t.editorial.eyebrow}</p>
+            <h2 className="panel-title">{t.editorial.title}</h2>
           </div>
           <a className="button button--ghost" href="#rules">
-            Политика журнала
+            {t.editorial.cta}
           </a>
         </div>
         <div className="grid grid-3">
-          {[
-            { name: 'Михаил Орлов', role: 'Главный редактор', field: 'Физика конденсированного состояния' },
-            { name: 'Дарья Платонова', role: 'Зам. редактора', field: 'Вычислительная медицина' },
-            { name: 'Рецензенты', role: '35+ экспертов', field: 'Слепое рецензирование по профилю' },
-          ].map((person) => (
+          {t.editorial.board.map((person) => (
             <div className="panel person-card" key={person.name}>
               <div className="panel-title">{person.name}</div>
               <p className="subtitle">{person.role}</p>
@@ -128,19 +110,18 @@ export function HomePage() {
       <section id="rules" className="section public-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">тематика</p>
-            <h2 className="panel-title">Направления публикаций</h2>
+            <p className="eyebrow">{t.rules.eyebrow}</p>
+            <h2 className="panel-title">{t.rules.title}</h2>
           </div>
           <Link className="button button--primary" to="/cabinet/submissions">
-            Подать статью
+            {t.rules.cta}
           </Link>
         </div>
         <div className="panel">
           <ul className="list">
-            <li>экономика и управление;</li>
-            <li>право и государственное управление;</li>
-            <li>социальные и гуманитарные науки;</li>
-            <li>маркетинг, финансы и предпринимательство.</li>
+            {t.rules.list.map((rule) => (
+              <li key={rule}>{rule}</li>
+            ))}
           </ul>
         </div>
       </section>
@@ -148,48 +129,42 @@ export function HomePage() {
       <section id="registry" className="section public-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">свидетельства и периодичность</p>
-            <h2 className="panel-title">Регистрационные данные</h2>
+            <p className="eyebrow">{t.registry.eyebrow}</p>
+            <h2 className="panel-title">{t.registry.title}</h2>
           </div>
           <a className="button button--ghost" href="#contacts">
-            Связаться
+            {t.registry.cta}
           </a>
         </div>
         <div className="grid grid-3">
-          <div className="panel issue-card">
-            <div className="panel-title">Свидетельство о регистрации</div>
-            <p className="subtitle">№ 17458-Ж, дата 14.01.2019.</p>
-          </div>
-          <div className="panel issue-card">
-            <div className="panel-title">ISSN</div>
-            <p className="subtitle">2663-631X — международный номер печатного издания.</p>
-          </div>
-          <div className="panel issue-card">
-            <div className="panel-title">Периодичность</div>
-            <p className="subtitle">4 раза в год. Публикации принимаются на русском, казахском и английском языках.</p>
-          </div>
+          {t.registry.items.map((item) => (
+            <div className="panel issue-card" key={item.title}>
+              <div className="panel-title">{item.title}</div>
+              <p className="subtitle">{item.text}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       <section id="contacts" className="section public-section">
         <div className="panel contact-card">
           <div>
-            <p className="eyebrow">контакты</p>
-            <h2 className="panel-title">Редакция</h2>
-            <p className="subtitle">Пишите по вопросам подачи, рецензирования и партнёрств.</p>
+            <p className="eyebrow">{t.contacts.eyebrow}</p>
+            <h2 className="panel-title">{t.contacts.title}</h2>
+            <p className="subtitle">{t.contacts.subtitle}</p>
           </div>
           <div className="contact-grid">
             <div>
-              <div className="meta-label">Email</div>
+              <div className="meta-label">{t.contacts.emailLabel}</div>
               <div>editorial@sciencejournal.edu</div>
             </div>
             <div>
-              <div className="meta-label">Телефон</div>
-              <div>+7 (495) 123-45-67</div>
+              <div className="meta-label">{t.contacts.phoneLabel}</div>
+              <div>{t.contacts.phoneValue}</div>
             </div>
             <div>
-              <div className="meta-label">Адрес</div>
-              <div>Москва, Университетская 1</div>
+              <div className="meta-label">{t.contacts.addressLabel}</div>
+              <div>{t.contacts.addressValue}</div>
             </div>
           </div>
         </div>

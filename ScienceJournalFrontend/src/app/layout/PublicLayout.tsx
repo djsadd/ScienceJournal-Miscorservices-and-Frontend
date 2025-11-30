@@ -1,7 +1,10 @@
-﻿import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import logo from '../../assets/logo.svg'
+import { LanguageProvider, useLanguage } from '../../shared/LanguageContext'
+import type { Lang } from '../../shared/labels'
+import { publicNavCopy } from '../../shared/translations'
 
 interface PublicLayoutProps {
   children: ReactNode
@@ -13,51 +16,52 @@ type NavItem = {
   children?: { href: string; label: string }[]
 }
 
-const topNav: NavItem[] = [
-  { href: '/', label: 'Главная' },
-  { href: '/about', label: 'О журнале' },
-  { href: '/archive', label: 'Архив' },
-  { href: '/search', label: 'Поиск' },
-  { href: '/contacts', label: 'Контакты' },
-]
-
-const dropdownNav: NavItem[] = [
-  {
-    href: '/editorial',
-    label: 'Редколлегия',
-    children: [
-      { href: '/editorial', label: 'Редколлегия и рецензенты' },
-      { href: '/policies', label: 'Редакционная политика' },
-    ],
-  },
-  {
-    href: '/policies',
-    label: 'Правила и политика',
-    children: [
-      { href: '/policies/ethics', label: 'Публикационная этика' },
-      { href: '/policies/ai', label: 'Политика по использованию ИИ' },
-      { href: '/policies/review', label: 'Регламент рецензирования' },
-    ],
-  },
-  {
-    href: '/authors',
-    label: 'Авторам',
-    children: [
-      { href: '/authors/requirements', label: 'Требования к статьям' },
-      { href: '/authors/contract', label: 'Авторский договор' },
-    ],
-  },
-]
-
-export function PublicLayout({ children }: PublicLayoutProps) {
+function PublicLayoutShell({ children }: PublicLayoutProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [lang, setLang] = useState<'KZ' | 'RU' | 'EN'>('RU')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
+  const { lang, setLang } = useLanguage()
+  const nav = publicNavCopy[lang]
   const isDark = theme === 'dark'
+
+  const topNav: NavItem[] = [
+    { href: '/', label: nav.home },
+    { href: '/about', label: nav.about },
+    { href: '/archive', label: nav.archive },
+    { href: '/search', label: nav.search },
+    { href: '/contacts', label: nav.contacts },
+  ]
+
+  const dropdownNav: NavItem[] = [
+    {
+      href: '/editorial',
+      label: nav.editorial.title,
+      children: [
+        { href: '/editorial', label: nav.editorial.board },
+        { href: '/policies', label: nav.editorial.policies },
+      ],
+    },
+    {
+      href: '/policies',
+      label: nav.policies.title,
+      children: [
+        { href: '/policies/ethics', label: nav.policies.ethics },
+        { href: '/policies/ai', label: nav.policies.ai },
+        { href: '/policies/review', label: nav.policies.review },
+      ],
+    },
+    {
+      href: '/authors',
+      label: nav.authors.title,
+      children: [
+        { href: '/authors/requirements', label: nav.authors.requirements },
+        { href: '/authors/contract', label: nav.authors.contract },
+      ],
+    },
+  ]
 
   const handleOpen = (href: string | null) => setOpenDropdown(href)
 
@@ -69,9 +73,12 @@ export function PublicLayout({ children }: PublicLayoutProps) {
             className="public-nav__link nav-dropdown__trigger"
             aria-expanded={openDropdown === item.href}
             onClick={() => handleOpen(openDropdown === item.href ? null : item.href)}
+            type="button"
           >
             {item.label}
-            <span className="caret">{'>'}</span>
+            <span className="caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
           {openDropdown === item.href && (
             <div className="nav-dropdown__menu" onMouseLeave={() => handleOpen(null)}>
@@ -112,6 +119,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       ),
     )
 
+  const themeLabel = isDark ? nav.theme.dark : nav.theme.light
+  const themeIcon = isDark ? nav.theme.iconDark : nav.theme.iconLight
+  const themeAria = isDark ? nav.theme.ariaLight : nav.theme.ariaDark
+
   return (
     <div
       className={`public-shell ${mobileMenuOpen ? 'public-shell--menu-open' : ''} ${
@@ -121,7 +132,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       <header className="public-header">
         <div className="public-top" aria-label="Site navigation">
           <Link to="/" className="brand brand--compact" onClick={() => setMobileMenuOpen(false)}>
-            <img src={logo} alt="Логотип журнала" className="brand-logo brand-logo--plain" />
+            <img src={logo} alt={nav.brandAlt} className="brand-logo brand-logo--plain" />
           </Link>
           <nav className="public-nav public-nav--top">{renderNav(topNav)}</nav>
           <div className="public-actions">
@@ -129,22 +140,22 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               type="button"
               className="theme-toggle theme-toggle--header"
               onClick={() => setTheme(isDark ? 'light' : 'dark')}
-              aria-label={isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}
+              aria-label={themeAria}
             >
               <span className="theme-toggle__icon" aria-hidden="true">
-                {isDark ? '🌙' : '☀️'}
+                {themeIcon}
               </span>
-              <span className="theme-toggle__label">{isDark ? 'Тёмная' : 'Светлая'}</span>
+              <span className="theme-toggle__label">{themeLabel}</span>
             </button>
             <div className="lang-switch">
-              {(['KZ', 'RU', 'EN'] as const).map((code) => (
+              {(['ru', 'kz', 'en'] as Lang[]).map((code) => (
                 <button
                   key={code}
                   className={`lang-chip ${lang === code ? 'lang-chip--active' : ''}`}
                   onClick={() => setLang(code)}
                   type="button"
                 >
-                  {code}
+                  {code.toUpperCase()}
                 </button>
               ))}
             </div>
@@ -153,14 +164,14 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               className="button button--ghost public-actions__desktop"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Кабинет
+              {nav.cabinet}
             </Link>
             <button
               className="mobile-nav-toggle"
               type="button"
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-expanded={mobileMenuOpen}
-              aria-label="Переключить меню"
+              aria-label={mobileMenuOpen ? nav.mobileMenu.ariaClose : nav.mobileMenu.ariaOpen}
             >
               {mobileMenuOpen ? '×' : '≡'}
             </button>
@@ -178,14 +189,14 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               className="button button--primary"
               onClick={() => setIsSearchOpen(true)}
             >
-              Поиск
+              {nav.search}
             </button>
             <Link
               to="/cabinet"
               className="button button--ghost"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Кабинет
+              {nav.cabinet}
             </Link>
           </div>
         </div>
@@ -196,11 +207,12 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         <div className="search-modal__backdrop" onClick={() => setIsSearchOpen(false)}>
           <div className="search-modal" onClick={(e) => e.stopPropagation()}>
             <div className="search-modal__header">
-              <h3>Поиск</h3>
+              <h3>{nav.searchModal.title}</h3>
               <button
                 className="search-modal__close"
                 onClick={() => setIsSearchOpen(false)}
-                aria-label="Закрыть поиск"
+                aria-label={nav.searchModal.close}
+                type="button"
               >
                 ×
               </button>
@@ -208,33 +220,33 @@ export function PublicLayout({ children }: PublicLayoutProps) {
             <div className="search-modal__body">
               <input
                 className="search-modal__input"
-                placeholder="Введите запрос"
+                placeholder={nav.searchModal.placeholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
               />
               <div className="search-modal__hints">
-                <span className="pill">Поиск по архиву</span>
-                <span className="pill">Автор, ключевые слова, том</span>
+                <span className="pill">{nav.searchModal.hints[0]}</span>
+                <span className="pill">{nav.searchModal.hints[1]}</span>
               </div>
             </div>
             <div className="search-modal__footer">
-              <button className="button button--ghost" onClick={() => setIsSearchOpen(false)}>
-                Отмена
+              <button className="button button--ghost" onClick={() => setIsSearchOpen(false)} type="button">
+                {nav.searchModal.cancel}
               </button>
               <Link
                 to="/search"
                 className="button button--primary"
                 onClick={() => setIsSearchOpen(false)}
               >
-                Расширенный поиск
+                {nav.searchModal.submit}
               </Link>
             </div>
           </div>
         </div>
       )}
 
-            <footer className="app-footer">
+      <footer className="app-footer">
         <div className="footer__brand">
           <div className="brand-mark">
             <img src={logo} alt="Science Journal" className="brand-logo" />
@@ -253,4 +265,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
   )
 }
 
-
+export function PublicLayout({ children }: PublicLayoutProps) {
+  return (
+    <LanguageProvider>
+      <PublicLayoutShell>{children}</PublicLayoutShell>
+    </LanguageProvider>
+  )
+}
