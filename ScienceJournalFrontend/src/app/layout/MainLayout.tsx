@@ -11,84 +11,259 @@ interface MainLayoutProps {
 }
 
 type RoleKey = 'author' | 'editor' | 'reviewer' | 'designer'
+type LangKey = 'ru' | 'en' | 'kz'
 
-const roleOptions: Record<RoleKey, string> = {
-  author: 'Author',
-  editor: 'Editor',
-  reviewer: 'Reviewer',
-  designer: 'Designer',
+type SidebarCopy = {
+  roleOptions: Record<RoleKey, string>
+  nav: Record<
+    RoleKey,
+    {
+      title: string
+      items: { label: string; path?: string; tag?: string }[]
+    }[]
+  >
+  resourcesTitle: string
+  terms: string
+  privacy: string
+  logout: string
+  langLabel: string
 }
 
-const roleNav: Record<
-  RoleKey,
-  {
-    title: string
-    items: { label: string; path?: string; tag?: string }[]
-  }[]
-> = {
-  author: [
-    {
-      title: 'Overview',
-      items: [
-        { label: 'Dashboard', path: '/cabinet' },
-        { label: 'Profile', path: '/cabinet/profile' },
+const sidebarCopy: Record<LangKey, SidebarCopy> = {
+  ru: {
+    roleOptions: {
+      author: 'Автор',
+      editor: 'Редактор',
+      reviewer: 'Рецензент',
+      designer: 'Вёрстальщик',
+    },
+    nav: {
+      author: [
+        {
+          title: 'Обзор',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Рукописи',
+          items: [
+            { label: 'Мои подачи', path: '/cabinet/submissions' },
+            { label: 'Новая подача', path: '/cabinet/submission' },
+            { label: 'Договор автора', path: '/authors/contract' },
+          ],
+        },
+      ],
+      editor: [
+        {
+          title: 'Обзор',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Редакция',
+          items: [{ label: 'Назначения', path: '/cabinet/editorial2' }],
+        },
+        {
+          title: 'Выпуски',
+          items: [{ label: 'Номера журнала', path: '/cabinet/volumes' }],
+        },
+      ],
+      reviewer: [
+        {
+          title: 'Обзор',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Рецензии',
+          items: [{ label: 'Мои рецензии', path: '/cabinet/reviews' }],
+        },
+      ],
+      designer: [
+        {
+          title: 'Обзор',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Верстка',
+          items: [
+            { label: 'Доска макетов', path: '/cabinet/layout' },
+            { label: 'Архив (скоро)', tag: 'soon' },
+          ],
+        },
       ],
     },
-    {
-      title: 'Submissions',
-      items: [
-        { label: 'My submissions', path: '/cabinet/submissions' },
-        { label: 'New submission', path: '/cabinet/submission' },
-        { label: 'Author contract', path: '/authors/contract' },
+    resourcesTitle: 'Ресурсы',
+    terms: 'Правила и политика',
+    privacy: 'Приватность',
+    logout: 'Выйти',
+    langLabel: 'Язык',
+  },
+  en: {
+    roleOptions: {
+      author: 'Author',
+      editor: 'Editor',
+      reviewer: 'Reviewer',
+      designer: 'Designer',
+    },
+    nav: {
+      author: [
+        {
+          title: 'Overview',
+          items: [
+            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Profile', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Submissions',
+          items: [
+            { label: 'My submissions', path: '/cabinet/submissions' },
+            { label: 'New submission', path: '/cabinet/submission' },
+            { label: 'Author contract', path: '/authors/contract' },
+          ],
+        },
+      ],
+      editor: [
+        {
+          title: 'Overview',
+          items: [
+            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Profile', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Editorial',
+          items: [{ label: 'Assignments', path: '/cabinet/editorial2' }],
+        },
+        {
+          title: 'Volumes',
+          items: [{ label: 'Journal issues', path: '/cabinet/volumes' }],
+        },
+      ],
+      reviewer: [
+        {
+          title: 'Overview',
+          items: [
+            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Profile', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Reviews',
+          items: [{ label: 'My reviews', path: '/cabinet/reviews' }],
+        },
+      ],
+      designer: [
+        {
+          title: 'Overview',
+          items: [
+            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Profile', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Layouts',
+          items: [
+            { label: 'Layout board', path: '/cabinet/layout' },
+            { label: 'Archive (soon)', tag: 'soon' },
+          ],
+        },
       ],
     },
-  ],
-  editor: [
-    {
-      title: 'Overview',
-      items: [
-        { label: 'Dashboard', path: '/cabinet' },
-        { label: 'Profile', path: '/cabinet/profile' },
+    resourcesTitle: 'Resources',
+    terms: 'Terms & Policies',
+    privacy: 'Privacy',
+    logout: 'Logout',
+    langLabel: 'Language',
+  },
+  kz: {
+    roleOptions: {
+      author: 'Автор',
+      editor: 'Редактор',
+      reviewer: 'Рецензент',
+      designer: 'Дизайнер',
+    },
+    nav: {
+      author: [
+        {
+          title: 'Шолу',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Қолжазбалар',
+          items: [
+            { label: 'Менің өтінімдерім', path: '/cabinet/submissions' },
+            { label: 'Жаңа өтінім', path: '/cabinet/submission' },
+            { label: 'Автор шарты', path: '/authors/contract' },
+          ],
+        },
+      ],
+      editor: [
+        {
+          title: 'Шолу',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Редакция',
+          items: [{ label: 'Тапсырмалар', path: '/cabinet/editorial2' }],
+        },
+        {
+          title: 'Сандар',
+          items: [{ label: 'Журнал нөмірлері', path: '/cabinet/volumes' }],
+        },
+      ],
+      reviewer: [
+        {
+          title: 'Шолу',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Рецензиялар',
+          items: [{ label: 'Менің рецензияларым', path: '/cabinet/reviews' }],
+        },
+      ],
+      designer: [
+        {
+          title: 'Шолу',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+          ],
+        },
+        {
+          title: 'Беттеу',
+          items: [
+            { label: 'Макет тақтасы', path: '/cabinet/layout' },
+            { label: 'Мұрағат (жақында)', tag: 'soon' },
+          ],
+        },
       ],
     },
-    {
-      title: 'Editorial',
-      items: [{ label: 'Assignments', path: '/cabinet/editorial2' }],
-    },
-    {
-      title: 'Volumes',
-      items: [{ label: 'Journal issues', path: '/cabinet/volumes' }],
-    },
-  ],
-  reviewer: [
-    {
-      title: 'Overview',
-      items: [
-        { label: 'Dashboard', path: '/cabinet' },
-        { label: 'Profile', path: '/cabinet/profile' },
-      ],
-    },
-    {
-      title: 'Reviews',
-      items: [{ label: 'My reviews', path: '/cabinet/reviews' }],
-    },
-  ],
-  designer: [
-    {
-      title: 'Overview',
-      items: [
-        { label: 'Dashboard', path: '/cabinet' },
-        { label: 'Profile', path: '/cabinet/profile' },
-      ],
-    },
-    {
-      title: 'Layouts',
-      items: [
-        { label: 'Layout board', path: '/cabinet/layout' },
-        { label: 'Archive (soon)', tag: 'soon' },
-      ],
-    },
-  ],
+    resourcesTitle: 'Ресурстар',
+    terms: 'Ережелер мен саясат',
+    privacy: 'Құпиялылық',
+    logout: 'Шығу',
+    langLabel: 'Тіл',
+  },
 }
 
 const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'designer']
@@ -134,7 +309,9 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
   }, [])
 
-  const sections = useMemo(() => roleNav[activeRole], [activeRole])
+  const locale: LangKey = ['ru', 'en', 'kz'].includes(lang) ? (lang as LangKey) : 'ru'
+  const copy = sidebarCopy[locale]
+  const sections = useMemo(() => copy.nav[activeRole], [activeRole, copy])
 
   return (
     <div className="app-shell">
@@ -164,7 +341,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 } catch {}
               }}
             >
-              {roleOptions[role]}
+              {copy.roleOptions[role]}
             </button>
           ))}
         </div>
@@ -217,10 +394,10 @@ export function MainLayout({ children }: MainLayoutProps) {
         </nav>
 
         <div className="sidebar__footer">
-          <div className="sidebar__footer-title">Resources</div>
+          <div className="sidebar__footer-title">{copy.resourcesTitle}</div>
           <div className="sidebar__footer-links">
-            <a href="#">Terms & Policies</a>
-            <a href="#">Privacy</a>
+            <a href="#">{copy.terms}</a>
+            <a href="#">{copy.privacy}</a>
           </div>
           <button
             className="button button--ghost button--compact"
@@ -230,7 +407,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               navigate('/login')
             }}
           >
-            Logout
+            {copy.logout}
           </button>
         </div>
       </aside>
