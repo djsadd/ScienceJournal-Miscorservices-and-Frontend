@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import logo from '../../assets/logo.svg'
 import { api } from '../../api/client'
+import { useLanguage } from '../../shared/LanguageContext'
+import type { Lang } from '../../shared/labels'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -91,6 +93,7 @@ const roleNav: Record<
 
 const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'designer']
 const isRoleKey = (value: string): value is RoleKey => allRoles.includes(value as RoleKey)
+const languageOptions: Lang[] = ['ru', 'en', 'kz']
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [activeRole, setActiveRole] = useState<RoleKey>(() => {
@@ -99,6 +102,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   })
   const [availableRoles, setAvailableRoles] = useState<RoleKey[]>(allRoles)
   const navigate = useNavigate()
+  const { lang, setLang } = useLanguage()
 
   useEffect(() => {
     let isMounted = true
@@ -163,6 +167,22 @@ export function MainLayout({ children }: MainLayoutProps) {
               {roleOptions[role]}
             </button>
           ))}
+        </div>
+
+        <div className="sidebar__lang">
+          <div className="sidebar__lang-row">
+            {languageOptions.map((code) => (
+              <button
+                key={code}
+                type="button"
+                className={`sidebar-lang-icon ${lang === code ? 'sidebar-lang-icon--active' : ''}`}
+                onClick={() => setLang(code)}
+                aria-label={`Switch to ${code.toUpperCase()}`}
+              >
+                {code.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
 
         <nav className="sidebar__nav">

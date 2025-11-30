@@ -1475,6 +1475,50 @@
   box-shadow: 0 8px 18px rgba(122, 18, 55, 0.15);
 }
 
+.sidebar__lang {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid #ebe4ec;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sidebar__lang-row {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.sidebar-lang-icon {
+  width: 42px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid #e6d8e2;
+  background: #fbfafc;
+  color: #3d404c;
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.05em;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-lang-icon:hover {
+  border-color: #d7c2d0;
+  background: #ffffff;
+}
+
+.sidebar-lang-icon--active {
+  background: #7a1237;
+  border-color: #7a1237;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(122, 18, 55, 0.16);
+}
+
 .sidebar__nav {
   display: flex;
   flex-direction: column;

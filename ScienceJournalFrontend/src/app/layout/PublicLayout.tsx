@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import logo from '../../assets/logo.svg'
-import { LanguageProvider, useLanguage } from '../../shared/LanguageContext'
+import { useLanguage } from '../../shared/LanguageContext'
 import type { Lang } from '../../shared/labels'
 import { publicNavCopy } from '../../shared/translations'
 
@@ -266,9 +266,5 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
 }
 
 export function PublicLayout({ children }: PublicLayoutProps) {
-  return (
-    <LanguageProvider>
-      <PublicLayoutShell>{children}</PublicLayoutShell>
-    </LanguageProvider>
-  )
+  return <PublicLayoutShell>{children}</PublicLayoutShell>
 }

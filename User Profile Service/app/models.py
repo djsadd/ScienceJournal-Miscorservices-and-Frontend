@@ -22,6 +22,8 @@ class UserProfile(Base):
     phone = Column(String, nullable=True)
     organization = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
+    is_council_member = Column(Boolean, default=False)
+    is_collegium_member = Column(Boolean, default=False)
     # Предпочтительный язык пользователя (для подбора рецензентов / локализации)
     preferred_language = Column(String, nullable=False, default=Language.en.value)
 

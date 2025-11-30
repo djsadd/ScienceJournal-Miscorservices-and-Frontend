@@ -15,6 +15,8 @@ class UserProfileBase(BaseModel):
     organization: str | None = None
     roles: List[str] = ["author"]
     preferred_language: Language = Language.en
+    is_council_member: bool = False
+    is_collegium_member: bool = False
 
 
 class UserProfileCreate(UserProfileBase):
@@ -24,6 +26,8 @@ class UserProfileCreate(UserProfileBase):
 class UserProfileOut(UserProfileBase):
     id: int
     user_id: int
+    is_council_member: bool
+    is_collegium_member: bool
 
     class Config:
         orm_mode = True
@@ -69,6 +73,8 @@ class ReviewerFullInfo(BaseModel):
     roles: List[str] = []
     preferred_language: Language
     is_active: bool | None = None
+    is_council_member: bool | None = None
+    is_collegium_member: bool | None = None
 
     # From Auth - Identity Service
     username: str | None = None

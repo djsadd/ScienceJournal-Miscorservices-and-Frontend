@@ -125,6 +125,8 @@ def get_reviewers(
                 "roles": reviewer.roles or [],
                 "preferred_language": reviewer.preferred_language,
                 "is_active": reviewer.is_active,
+                "is_council_member": reviewer.is_council_member,
+                "is_collegium_member": reviewer.is_collegium_member,
                 # defaults for auth data
                 "username": None,
                 "email": None,
