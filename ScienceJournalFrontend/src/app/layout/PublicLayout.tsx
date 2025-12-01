@@ -252,7 +252,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
             <img src={logo} alt="Science Journal" className="brand-logo" />
           </div>
           <div>
-            <div className="brand-title">Izvestiya universiteta "Turan-Astana"</div>
+            <div className="brand-title">Известия университета "Туран-Астана"</div>
             <div className="brand-subtitle">Science Journal - Department of Digital Transformation</div>
           </div>
         </div>

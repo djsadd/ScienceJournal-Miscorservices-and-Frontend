@@ -322,7 +322,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               <img src={logo} alt="Science Journal" className="brand-logo brand-logo--plain" />
             </div>
             <div>
-              <div className="brand-title">Izvestiya universiteta "Turan-Astana"</div>
+              <div className="brand-title">Известия университета "Туран-Астана"</div>
               <div className="brand-subtitle">Science Journal - Department of Digital Transformation</div>
             </div>
           </Link>
@@ -419,7 +419,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               <img src={logo} alt="Science Journal" className="brand-logo" />
             </div>
             <div>
-              <div className="brand-title">Izvestiya universiteta "Turan-Astana"</div>
+              <div className="brand-title">Известия университета "Туран-Астана"</div>
               <div className="brand-subtitle">Science Journal - Department of Digital Transformation</div>
             </div>
           </div>
