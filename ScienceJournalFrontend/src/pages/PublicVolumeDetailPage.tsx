@@ -17,7 +17,7 @@ export default function PublicVolumeDetailPage() {
       setError(null)
       try {
         if (!id) throw new Error('Missing id')
-        const data = await api.getVolumeById<Volume>(id)
+        const data = await api.getPublicVolumeById<Volume>(id)
         if (!cancelled) setVolume(data)
       } catch (e: any) {
         if (!cancelled) setError(e?.bodyJson?.detail || e?.message || 'Не удалось загрузить том')

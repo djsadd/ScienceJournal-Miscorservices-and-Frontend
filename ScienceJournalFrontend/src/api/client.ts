@@ -259,6 +259,10 @@ export const api = {
   getVolumes: <T>(params?: { year?: number; number?: number; month?: number; active_only?: boolean }) =>
     request<T>('/volumes', 'GET', { params }),
   getVolumeById: <T>(id: number | string) => request<T>(`/volumes/${id}`, 'GET'),
+  // Public volumes (guest archive)
+  getPublicVolumes: <T>(params?: { year?: number; number?: number; month?: number }) =>
+    request<T>('/volumes/public', 'GET', { params }),
+  getPublicVolumeById: <T>(id: number | string) => request<T>(`/volumes/public/${id}`, 'GET'),
   createVolume: <T>(body: {
     year: number
     number: number

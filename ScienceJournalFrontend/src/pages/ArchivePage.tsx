@@ -13,7 +13,7 @@ export function ArchivePage() {
   useEffect(() => {
     setLoading(true)
     setError(null)
-    api.getVolumes<ApiVolume[]>({ active_only: false })
+    api.getPublicVolumes<ApiVolume[]>()
       .then((data) => {
         setVolumes(data)
         const years = Array.from(new Set((data || []).map((v) => v.year))).sort((a, b) => b - a)

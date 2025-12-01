@@ -61,6 +61,57 @@ def list_volumes(
     return volumes
 
 
+@router.get("/public", response_model=List[schemas.VolumeOut])
+def list_active_volumes_public(
+    db: Session = Depends(get_db),
+    year: int | None = None,
+    number: int | None = None,
+    month: int | None = None,
+):
+    """Публичный (гостевой) список активных томов.
+
+    Не требует аутентификации. Всегда показывает только тома с `is_active = True`.
+    Поддерживает фильтры по году, номеру и месяцу. Сортировка: новые сначала.
+    """
+    query = db.query(models.Volume).options(
+        joinedload(models.Volume.articles).joinedload(models.Article.authors),
+        joinedload(models.Volume.articles).joinedload(models.Article.keywords),
+    ).filter(models.Volume.is_active.is_(True))
+
+    if year is not None:
+        query = query.filter(models.Volume.year == year)
+    if number is not None:
+        query = query.filter(models.Volume.number == number)
+    if month is not None:
+        query = query.filter(models.Volume.month == month)
+
+    volumes = query.order_by(models.Volume.year.desc(), models.Volume.number.desc()).all()
+    return volumes
+
+
+@router.get("/public/{volume_id}", response_model=schemas.VolumeOut)
+def get_active_volume_public(
+    volume_id: int,
+    db: Session = Depends(get_db),
+):
+    """Публичное получение одного активного тома по ID.
+
+    Возвращает 404 если том не найден или не активен.
+    """
+    volume = (
+        db.query(models.Volume)
+        .options(
+            joinedload(models.Volume.articles).joinedload(models.Article.authors),
+            joinedload(models.Volume.articles).joinedload(models.Article.keywords),
+        )
+        .filter(models.Volume.id == volume_id, models.Volume.is_active.is_(True))
+        .first()
+    )
+    if not volume:
+        raise HTTPException(status_code=404, detail="Active volume not found")
+    return volume
+
+
 @router.get("/{volume_id}", response_model=schemas.VolumeOut)
 def get_volume(
     volume_id: int,
