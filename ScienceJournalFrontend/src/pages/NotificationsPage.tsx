@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Alert from '../shared/components/Alert'
+import { api } from '../api/client'
+
+type UiVariant = 'info' | 'success' | 'warning' | 'error'
 
 type Notification = {
   id: string
-  type: 'info' | 'success' | 'warning' | 'error'
+  type: UiVariant
   title: string
   message?: string
   createdAt: string
@@ -11,56 +14,85 @@ type Notification = {
   link?: { label: string; href: string }
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: 'n1',
-    type: 'info',
-    title: 'Новая рецензия по вашей статье',
-    message: 'Статья «Аналитика данных в образовании» получила обновленную рецензию.',
-    createdAt: '2025-11-30T09:12:00Z',
-    read: false,
-    link: { label: 'Открыть', href: '/cabinet/my-articles/123' },
-  },
-  {
-    id: 'n2',
-    type: 'success',
-    title: 'Статья принята к публикации',
-    message: 'Поздравляем! Ваша статья принята в ближайший выпуск.',
-    createdAt: '2025-11-28T15:40:00Z',
-    read: true,
-    link: { label: 'Перейти к выпуску', href: '/cabinet/volumes' },
-  },
-  {
-    id: 'n3',
-    type: 'warning',
-    title: 'Требуются правки от редактора',
-    message: 'Пожалуйста, внесите правки до 05.12.2025.',
-    createdAt: '2025-11-27T12:05:00Z',
-    read: false,
-    link: { label: 'Открыть задачу', href: '/cabinet/editorial2' },
-  },
-  {
-    id: 'n4',
-    type: 'error',
-    title: 'Не удалось загрузить файл макета',
-    message: 'Попробуйте повторить загрузку позже или свяжитесь с поддержкой.',
-    createdAt: '2025-11-25T08:20:00Z',
-    read: true,
-  },
-]
+type NotificationDto = {
+  id: number
+  user_id: number
+  type: 'system' | 'article_status' | 'review_assignment' | 'editorial' | 'custom'
+  title: string
+  message?: string | null
+  related_entity?: string | null
+  status: 'unread' | 'read'
+  created_at: string
+  read_at?: string | null
+}
+
+const mapTypeToVariant = (t: NotificationDto['type']): UiVariant => {
+  switch (t) {
+    case 'editorial':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
+const toUi = (n: NotificationDto): Notification => ({
+  id: String(n.id),
+  type: mapTypeToVariant(n.type),
+  title: n.title,
+  message: n.message ?? undefined,
+  createdAt: n.created_at,
+  read: n.status === 'read',
+})
 
 export default function NotificationsPage() {
-  const [items, setItems] = useState<Notification[]>(mockNotifications)
+  const [items, setItems] = useState<Notification[]>([])
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await api.get<NotificationDto[]>('/notifications', { params: { limit: 50, offset: 0 } })
+      setItems(data.map(toUi))
+    } catch (e: any) {
+      console.error('Failed to load notifications', e)
+      setError('Не удалось загрузить уведомления')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
 
   const filtered = useMemo(
     () => (filter === 'unread' ? items.filter((n) => !n.read) : items),
     [items, filter],
   )
 
-  const markAllRead = () => setItems((prev) => prev.map((n) => ({ ...n, read: true })))
-  const markOne = (id: string, read: boolean) =>
-    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read } : n)))
+  const markAllRead = async () => {
+    const unread = items.filter((n) => !n.read)
+    if (unread.length === 0) return
+    try {
+      await Promise.all(unread.map((n) => api.markNotificationRead(n.id)))
+    } catch (e) {
+      // Ignore partial failures; will refresh
+    } finally {
+      await load()
+    }
+  }
+  const markOne = async (id: string) => {
+    try {
+      await api.markNotificationRead(id)
+    } catch (e) {
+      // no-op
+    } finally {
+      await load()
+    }
+  }
 
   return (
     <div className="page">
@@ -81,14 +113,21 @@ export default function NotificationsPage() {
           >
             Непрочитанные
           </button>
-          <button type="button" className="button button--primary" onClick={markAllRead}>
+          <button type="button" className="button button--primary" onClick={markAllRead} disabled={loading}>
             Пометить все как прочитанные
+          </button>
+          <button type="button" className="button button--ghost" onClick={load} disabled={loading}>
+            Обновить
           </button>
         </div>
       </div>
 
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {filtered.length === 0 ? (
+        {error ? (
+          <div style={{ padding: 16, color: '#b91c1c' }}>{error}</div>
+        ) : loading ? (
+          <div style={{ padding: 16, color: '#667085' }}>Загрузка…</div>
+        ) : filtered.length === 0 ? (
           <div style={{ padding: 16, color: '#667085' }}>Нет уведомлений</div>
         ) : (
           filtered.map((n) => (
@@ -116,14 +155,10 @@ export default function NotificationsPage() {
                   </time>
                   <span style={{ flex: 1 }} />
                   {!n.read ? (
-                    <button className="button button--ghost" onClick={() => markOne(n.id, true)}>
+                    <button className="button button--ghost" onClick={() => markOne(n.id)}>
                       Пометить как прочитано
                     </button>
-                  ) : (
-                    <button className="button button--ghost" onClick={() => markOne(n.id, false)}>
-                      Пометить как непрочитанное
-                    </button>
-                  )}
+                  ) : null}
                   {n.link ? (
                     <a className="button button--secondary" href={n.link.href}>
                       {n.link.label}

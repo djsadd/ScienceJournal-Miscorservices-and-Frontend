@@ -164,3 +164,21 @@ def get_profile(user_id: int, db: Session = Depends(get_db)):
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     return profile
+
+
+@router.get("/internal/editors/ids", response_model=list[int])
+def get_editor_ids_internal(
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+    db: Session = Depends(get_db),
+):
+    """Internal endpoint: returns user_ids of all editors.
+
+    Protected by X-Service-Secret. Intended for internal service-to-service calls.
+    """
+    if not x_service_secret or x_service_secret != getattr(config, "SHARED_SERVICE_SECRET", ""):
+        raise HTTPException(status_code=403, detail="Invalid service secret")
+
+    # Filter roles array by 'editor'
+    query = db.query(models.UserProfile).filter(models.UserProfile.roles.any("editor"))
+    rows = query.all()
+    return [row.user_id for row in rows if row.user_id is not None]

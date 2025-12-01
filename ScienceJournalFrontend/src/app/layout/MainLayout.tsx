@@ -312,6 +312,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate()
   const { lang, setLang } = useLanguage()
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), [])
+  const [unreadCount, setUnreadCount] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
@@ -340,6 +341,26 @@ export function MainLayout({ children }: MainLayoutProps) {
     loadRoles()
     return () => {
       isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    const loadUnread = async () => {
+      try {
+        const data = await api.get<Array<{ id: number }>>('/notifications', { params: { status: 'unread', limit: 50, offset: 0 } })
+        if (!active) return
+        setUnreadCount(Array.isArray(data) ? data.length : 0)
+      } catch (e) {
+        if (!active) return
+        setUnreadCount(0)
+      }
+    }
+    loadUnread()
+    const interval = setInterval(loadUnread, 60000)
+    return () => {
+      active = false
+      clearInterval(interval)
     }
   }, [])
 
@@ -431,6 +452,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                       onClick={closeSidebar}
                     >
                       <span>{item.label}</span>
+                      {item.path === '/cabinet/notifications' && unreadCount > 0 ? (
+                        <span className="sidebar__tag">{unreadCount}</span>
+                      ) : null}
                       {item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}
                     </NavLink>
                   ) : (

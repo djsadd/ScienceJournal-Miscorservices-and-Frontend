@@ -297,4 +297,11 @@ export const api = {
     is_active: boolean
     article_ids: number[]
   }>) => request<T>(`/volumes/${id}`, 'PATCH', { json: body }),
+  // Notifications
+  getNotifications: <T>(params?: { status?: 'unread' | 'read'; limit?: number; offset?: number }) =>
+    request<T>('/notifications', 'GET', { params }),
+  markNotificationRead: <T>(id: number | string) =>
+    request<T>(`/notifications/${id}/read`, 'POST'),
+  deleteNotification: <T>(id: number | string) =>
+    request<T>(`/notifications/${id}`, 'DELETE'),
 }

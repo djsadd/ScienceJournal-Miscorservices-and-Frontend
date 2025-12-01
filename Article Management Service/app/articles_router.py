@@ -5,6 +5,7 @@ from typing import List
 from jose import jwt, JWTError
 import httpx
 from app import models, schemas, database, config
+import httpx
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
@@ -725,6 +726,27 @@ def create_article(article: schemas.ArticleCreateWithIds, db: Session = Depends(
 
     db.commit()
     db.refresh(new_article)
+
+    # Notify editors about new article
+    try:
+        notifications_url = getattr(config, "NOTIFICATION_SERVICE_URL", "http://notifications:8000")
+        with httpx.Client(timeout=5.0) as client:
+            client.post(
+                f"{notifications_url}/notifications/editor/broadcast-new-article",
+                json={
+                    "article_id": new_article.id,
+                    "title": new_article.title_ru or new_article.title_en or new_article.title_kz or "New article",
+                    "message": None,
+                },
+                headers={
+                    # Forward same Authorization so Notification Service can resolve user for audit if needed
+                    "Authorization": f"Bearer {jwt.encode({'sub': str(current_user['user_id']), 'roles': current_user.get('roles', [])}, config.SECRET_KEY, algorithm=config.ALGORITHM)}"
+                },
+            )
+    except Exception:
+        # soft-fail on notifications
+        pass
+
     return new_article
 
 
@@ -811,6 +833,25 @@ def create_article_by_ids(
 
     db.commit()
     db.refresh(new_article)
+
+    # Notify editors about new article
+    try:
+        notifications_url = getattr(config, "NOTIFICATION_SERVICE_URL", "http://notifications:8000")
+        with httpx.Client(timeout=5.0) as client:
+            client.post(
+                f"{notifications_url}/notifications/editor/broadcast-new-article",
+                json={
+                    "article_id": new_article.id,
+                    "title": new_article.title_ru or new_article.title_en or new_article.title_kz or "New article",
+                    "message": None,
+                },
+                headers={
+                    "Authorization": f"Bearer {jwt.encode({'sub': str(current_user['user_id']), 'roles': current_user.get('roles', [])}, config.SECRET_KEY, algorithm=config.ALGORITHM)}"
+                },
+            )
+    except Exception:
+        pass
+
     return new_article
 
 
