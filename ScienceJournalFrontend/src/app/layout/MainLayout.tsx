@@ -1,5 +1,5 @@
 ﻿import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import logo from '../../assets/logo.svg'
 import { api } from '../../api/client'
@@ -276,8 +276,10 @@ export function MainLayout({ children }: MainLayoutProps) {
     return stored && isRoleKey(stored) ? stored : 'author'
   })
   const [availableRoles, setAvailableRoles] = useState<RoleKey[]>(allRoles)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const navigate = useNavigate()
   const { lang, setLang } = useLanguage()
+  const closeSidebar = useCallback(() => setIsSidebarOpen(false), [])
 
   useEffect(() => {
     let isMounted = true
@@ -309,13 +311,30 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mediaQuery = window.matchMedia('(min-width: 960px)')
+    const handleBreakpointChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (event.matches) {
+        setIsSidebarOpen(false)
+      }
+    }
+    handleBreakpointChange(mediaQuery)
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleBreakpointChange)
+      return () => mediaQuery.removeEventListener('change', handleBreakpointChange)
+    }
+    mediaQuery.addListener(handleBreakpointChange)
+    return () => mediaQuery.removeListener(handleBreakpointChange)
+  }, [])
+
   const locale: LangKey = ['ru', 'en', 'kz'].includes(lang) ? (lang as LangKey) : 'ru'
   const copy = sidebarCopy[locale]
   const sections = useMemo(() => copy.nav[activeRole], [activeRole, copy])
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside id="cabinet-sidebar" className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar__brand">
           <Link to="/" className="brand--compact">
             <div className="brand-mark">
@@ -377,12 +396,17 @@ export function MainLayout({ children }: MainLayoutProps) {
                       className={({ isActive }) =>
                         ['sidebar__link', isActive ? 'sidebar__link--active' : ''].join(' ')
                       }
+                      onClick={closeSidebar}
                     >
                       <span>{item.label}</span>
                       {item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}
                     </NavLink>
                   ) : (
-                    <div key={item.label} className="sidebar__link sidebar__link--static">
+                    <div
+                      key={item.label}
+                      className="sidebar__link sidebar__link--static"
+                      onClick={closeSidebar}
+                    >
                       <span>{item.label}</span>
                       {item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}
                     </div>
@@ -411,7 +435,24 @@ export function MainLayout({ children }: MainLayoutProps) {
           </button>
         </div>
       </aside>
+      <div
+        className={`sidebar-backdrop ${isSidebarOpen ? 'sidebar-backdrop--visible' : ''}`}
+        onClick={closeSidebar}
+        aria-hidden={!isSidebarOpen}
+      />
       <div className="app-body">
+        <div className="mobile-shell-header">
+          <button
+            type="button"
+            className="sidebar-toggle"
+            aria-controls="cabinet-sidebar"
+            aria-expanded={isSidebarOpen}
+            onClick={() => setIsSidebarOpen((prev) => !prev)}
+          >
+            {isSidebarOpen ? 'Close menu' : 'Menu'}
+          </button>
+          <span className="mobile-shell-role">{copy.roleOptions[activeRole]}</span>
+        </div>
         <main className="app-main">{children}</main>
         <footer className="app-footer">
           <div className="footer__brand">
