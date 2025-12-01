@@ -193,7 +193,7 @@ function App() {
         element={
           <RequireAuth>
             <MainLayout>
-              <Dashboard articles={articles} assignments={assignments} users={users} />
+              <Dashboard />
             </MainLayout>
           </RequireAuth>
         }
