@@ -9,6 +9,18 @@ export default function PublicVolumeDetailPage() {
   const [volume, setVolume] = useState<Volume | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Layout records map: articleId -> records
+  type LayoutRecordOut = {
+    id: string
+    article_id?: number | null
+    volume_id?: number | null
+    file_id?: string | null
+    file_url?: string | null
+    created_at?: string | null
+    updated_at?: string | null
+  }
+  const [layoutByArticle, setLayoutByArticle] = useState<Record<number, LayoutRecordOut[]>>({})
+  const [layoutLoading, setLayoutLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -17,7 +29,7 @@ export default function PublicVolumeDetailPage() {
       setError(null)
       try {
         if (!id) throw new Error('Missing id')
-        const data = await api.getPublicVolumeById<Volume>(id)
+        const data = (await api.getPublicVolumeById(id)) as Volume
         if (!cancelled) setVolume(data)
       } catch (e: any) {
         if (!cancelled) setError(e?.bodyJson?.detail || e?.message || 'Не удалось загрузить том')
@@ -28,6 +40,36 @@ export default function PublicVolumeDetailPage() {
     run()
     return () => { cancelled = true }
   }, [id])
+
+  // Fetch layout records for all articles in the volume (best-effort, optional)
+  useEffect(() => {
+    const articles = volume?.articles || []
+    if (!articles || articles.length === 0) return
+    let cancelled = false
+    const load = async () => {
+      setLayoutLoading(true)
+      try {
+        const map: Record<number, LayoutRecordOut[]> = {}
+        await Promise.all(
+          articles.map(async (a) => {
+            const aid = Number((a as any).id)
+            if (!Number.isFinite(aid)) return
+            try {
+              const recs = (await api.getLayoutRecordsByArticle(aid)) as unknown as LayoutRecordOut[]
+              map[aid] = Array.isArray(recs) ? recs : []
+            } catch {
+              map[aid] = []
+            }
+          })
+        )
+        if (!cancelled) setLayoutByArticle(map)
+      } finally {
+        if (!cancelled) setLayoutLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [volume?.articles])
 
   return (
     <div className="public-container">
@@ -67,6 +109,7 @@ export default function PublicVolumeDetailPage() {
               <span>Тип</span>
               <span>Авторы</span>
               <span>Файл</span>
+              <span>Вёрстка</span>
             </div>
             <div className="latest-table__body">
               {volume.articles.map((a: Article) => (
@@ -83,6 +126,19 @@ export default function PublicVolumeDetailPage() {
                     ) : (
                       <span className="meta-label">Нет файла</span>
                     )}
+                  </div>
+                  <div className="latest-table__cell">
+                    {(() => {
+                      const aid = Number((a as any).id)
+                      const recs = Number.isFinite(aid) ? layoutByArticle[aid] || [] : []
+                      if (layoutLoading && recs.length === 0) return <span className="meta-label">Загрузка…</span>
+                      if (recs.length === 0) return <span className="meta-label">Нет вёрстки</span>
+                      const first = recs[0]
+                      const href = toApiFilesUrl(first.file_url || (first.file_id ? `/files/${first.file_id}/download` : undefined)) || '#'
+                      return (
+                        <a className="button button--ghost button--compact" href={href} target="_blank" rel="noreferrer">Скачать вёрстку</a>
+                      )
+                    })()}
                   </div>
                 </div>
               ))}
