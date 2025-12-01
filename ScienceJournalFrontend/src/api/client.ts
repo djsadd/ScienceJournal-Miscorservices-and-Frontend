@@ -221,6 +221,18 @@ export const api = {
     currentTokens = null
     persistTokens(null)
   },
+  // File upload to File Storage (via API Gateway /api/files)
+  uploadFile: async <T>(file: File) => {
+    const fd = new FormData()
+    // Endpoint expects field name "upload"
+    fd.append('upload', file)
+    return request<T>('/files', 'POST', { body: fd })
+  },
+  // Layout records helper (optional, used by editor UI)
+  createLayoutRecord: <T>(body: { article_id: number; volume_id?: number | null; file_id: string; file_url?: string }) =>
+    request<T>('/layout/records', 'POST', { json: body }),
+  getLayoutRecordsByArticle: <T>(articleId: number | string) =>
+    request<T>(`/layout/articles/${articleId}/records`, 'GET'),
   // Domain-specific helpers
   getUnassignedArticles: <T>(params?: {
     status?: string

@@ -245,6 +245,50 @@ export default function EditorArticleDetailPage() {
   }, [])
   const isEditor = (me?.role === 'editor') || (me?.roles?.includes('editor'))
 
+  // Upload layout states (editor-only UI)
+  const [layoutFile, setLayoutFile] = useState<File | null>(null)
+  const [layoutUploading, setLayoutUploading] = useState(false)
+  const [layoutUploadError, setLayoutUploadError] = useState<string | null>(null)
+  const [layoutUploadSuccess, setLayoutUploadSuccess] = useState<string | null>(null)
+
+  type FileOut = {
+    id: string
+    original_name?: string
+    content_type?: string | null
+    size_bytes?: number
+    url?: string
+    created_at?: string
+  }
+
+  // Layout records fetched from Layout Service
+  type LayoutRecordOut = {
+    id: string
+    article_id?: number | null
+    volume_id?: number | null
+    file_id?: string | null
+    file_url?: string | null
+    created_at?: string | null
+    updated_at?: string | null
+  }
+  const [layoutRecords, setLayoutRecords] = useState<LayoutRecordOut[]>([])
+  const [layoutRecordsLoading, setLayoutRecordsLoading] = useState(false)
+  const [layoutRecordsError, setLayoutRecordsError] = useState<string | null>(null)
+
+  const fetchLayoutRecords = async (articleId: number) => {
+    setLayoutRecordsLoading(true)
+    setLayoutRecordsError(null)
+    try {
+      const recs = await api.getLayoutRecordsByArticle<LayoutRecordOut[]>(articleId)
+      try { console.log('[LayoutRecords] fetched:', recs) } catch {}
+      setLayoutRecords(Array.isArray(recs) ? recs : [])
+    } catch (e: any) {
+      const message = e?.bodyJson?.detail || e?.message || 'Не удалось загрузить вёрстку'
+      setLayoutRecordsError(String(message))
+    } finally {
+      setLayoutRecordsLoading(false)
+    }
+  }
+
   const parseDeadlineToISO = (input: string): string | null => {
     const trimmed = input.trim()
     if (!trimmed) return null
@@ -305,6 +349,8 @@ export default function EditorArticleDetailPage() {
       .then((res) => {
         try { console.log('[EditorDetail] Article:', res) } catch {}
         setData(res)
+        // Fetch layout records for this article
+        if (res?.id) fetchLayoutRecords(res.id)
       })
       .catch((e: any) => {
         const message = e?.bodyJson?.detail || e?.message || 'Failed to load'
@@ -498,7 +544,79 @@ export default function EditorArticleDetailPage() {
               {data.cover_letter_file_url && (
                 <a className="button button--ghost button--compact" href={toApiFilesUrl(data.cover_letter_file_url)} target="_blank" rel="noreferrer">Письмо</a>
               )}
+              {/* Render layout files if exist */}
+              {layoutRecordsLoading && (
+                <span className="button button--ghost button--compact" style={{ opacity: 0.6, pointerEvents: 'none' }}>Вёрстка: загрузка…</span>
+              )}
+              {layoutRecordsError && (
+                <span className="button button--ghost button--compact" style={{ color: '#b00020' }} title={layoutRecordsError}>Вёрстка: ошибка</span>
+              )}
+              {layoutRecords && layoutRecords.length > 0 && layoutRecords.map((r, idx) => {
+                const href = toApiFilesUrl(r.file_url || (r.file_id ? `/files/${r.file_id}/download` : undefined)) || '#'
+                const label = `Вёрстка${layoutRecords.length > 1 ? ` ${idx + 1}` : ''}`
+                return (
+                  <a key={r.id} className="button button--ghost button--compact" href={href} target="_blank" rel="noreferrer">{label}</a>
+                )
+              })}
             </div>
+
+            {isEditor && (
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>Загрузка вёрстки рукописи</h4>
+                {layoutUploadError && <div className="alert error" style={{ marginBottom: '0.5rem' }}>Ошибка: {layoutUploadError}</div>}
+                {layoutUploadSuccess && <div className="alert" style={{ marginBottom: '0.5rem' }}>{layoutUploadSuccess}</div>}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input
+                    type="file"
+                    accept="application/pdf,.pdf,.doc,.docx,.zip"
+                    onChange={(e) => {
+                      setLayoutUploadError(null)
+                      setLayoutUploadSuccess(null)
+                      const f = e.target.files && e.target.files[0] ? e.target.files[0] : null
+                      setLayoutFile(f)
+                    }}
+                  />
+                  <button
+                    className="button button--primary"
+                    disabled={!layoutFile || layoutUploading}
+                    onClick={async () => {
+                      if (!layoutFile || !data?.id) return
+                      setLayoutUploading(true)
+                      setLayoutUploadError(null)
+                      setLayoutUploadSuccess(null)
+                      try {
+                        const uploaded = await api.uploadFile<FileOut>(layoutFile)
+                        try { console.log('[LayoutUpload] /api/files response:', uploaded) } catch {}
+                        // Optionally record layout linkage
+                        try {
+                          const rec = await api.createLayoutRecord<LayoutRecordOut>({
+                            article_id: data.id,
+                            file_id: uploaded.id,
+                            file_url: uploaded.url,
+                          })
+                          try { console.log('[LayoutUpload] /api/layout/records response:', rec) } catch {}
+                          // Add to local state for immediate UI reflection
+                          setLayoutRecords((prev) => [rec, ...prev])
+                        } catch (e: any) {
+                          try { console.warn('[LayoutUpload] create layout record failed:', e) } catch {}
+                          // As a fallback, refresh list
+                          try { await fetchLayoutRecords(data.id) } catch {}
+                        }
+                        setLayoutUploadSuccess('Файл загружен. См. консоль для ответа API.')
+                        setToastMessage('Вёрстка загружена')
+                        setToastOpen(true)
+                        setLayoutFile(null)
+                      } catch (e: any) {
+                        const message = e?.bodyJson?.detail || e?.message || 'Не удалось загрузить файл'
+                        setLayoutUploadError(String(message))
+                      } finally {
+                        setLayoutUploading(false)
+                      }
+                    }}
+                  >{layoutUploading ? 'Загружается...' : 'Загрузить вёрстку'}</button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="panel">
