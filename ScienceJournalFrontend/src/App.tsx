@@ -39,6 +39,7 @@ import VolumesPage from './pages/VolumesPage'
 import VolumeDetailPage from './pages/VolumeDetailPage'
 import PublicVolumeDetailPage from './pages/PublicVolumeDetailPage'
 import VolumeEditPage from './pages/VolumeEditPage'
+import NotificationsPage from './pages/NotificationsPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -295,6 +296,16 @@ function App() {
           <RequireAuth>
             <MainLayout>
               <VolumeEditPage />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cabinet/notifications"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <NotificationsPage />
             </MainLayout>
           </RequireAuth>
         }

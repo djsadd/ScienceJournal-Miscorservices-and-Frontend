@@ -27,6 +27,11 @@ type SidebarCopy = {
   privacy: string
   logout: string
   langLabel: string
+  brandTitle: string
+  brandSubtitle: string
+  brandAlt: string
+  mobileMenuOpen: string
+  mobileMenuClose: string
 }
 
 const sidebarCopy: Record<LangKey, SidebarCopy> = {
@@ -44,6 +49,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Дашборд', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -61,6 +67,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Дашборд', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -78,6 +85,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Дашборд', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -91,6 +99,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Дашборд', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -107,6 +116,11 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Приватность',
     logout: 'Выйти',
     langLabel: 'Язык',
+    brandTitle: 'Известия университета "Туран-Астана"',
+    brandSubtitle: 'Science Journal - Department of Digital Transformation',
+    brandAlt: 'Логотип журнала',
+    mobileMenuOpen: 'Меню',
+    mobileMenuClose: 'Закрыть меню',
   },
   en: {
     roleOptions: {
@@ -122,6 +136,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Dashboard', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
+            { label: 'Notifications', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -139,6 +154,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Dashboard', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
+            { label: 'Notifications', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -156,6 +172,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Dashboard', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
+            { label: 'Notifications', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -169,6 +186,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Dashboard', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
+            { label: 'Notifications', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -185,6 +203,11 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Privacy',
     logout: 'Logout',
     langLabel: 'Language',
+    brandTitle: 'Bulletin of Turan-Astana University',
+    brandSubtitle: 'Science Journal - Department of Digital Transformation',
+    brandAlt: 'Science Journal',
+    mobileMenuOpen: 'Menu',
+    mobileMenuClose: 'Close menu',
   },
   kz: {
     roleOptions: {
@@ -200,6 +223,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Дашборд', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -217,6 +241,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Дашборд', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -234,6 +259,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Дашборд', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -247,6 +273,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Дашборд', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
         },
         {
@@ -263,6 +290,11 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Құпиялылық',
     logout: 'Шығу',
     langLabel: 'Тіл',
+    brandTitle: '«Туран-Астана» университетінің хабаршысы',
+    brandSubtitle: 'Science Journal - Цифрлық трансформация департаменті',
+    brandAlt: 'Журнал логотипы',
+    mobileMenuOpen: 'Мәзір',
+    mobileMenuClose: 'Мәзірді жабу',
   },
 }
 
@@ -338,11 +370,11 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="sidebar__brand">
           <Link to="/" className="brand--compact">
             <div className="brand-mark">
-              <img src={logo} alt="Science Journal" className="brand-logo brand-logo--plain" />
+              <img src={logo} alt={copy.brandAlt} className="brand-logo brand-logo--plain" />
             </div>
             <div>
-              <div className="brand-title">Известия университета "Туран-Астана"</div>
-              <div className="brand-subtitle">Science Journal - Department of Digital Transformation</div>
+              <div className="brand-title">{copy.brandTitle}</div>
+              <div className="brand-subtitle">{copy.brandSubtitle}</div>
             </div>
           </Link>
         </div>
@@ -449,7 +481,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             aria-expanded={isSidebarOpen}
             onClick={() => setIsSidebarOpen((prev) => !prev)}
           >
-            {isSidebarOpen ? 'Close menu' : 'Menu'}
+            {isSidebarOpen ? copy.mobileMenuClose : copy.mobileMenuOpen}
           </button>
           <span className="mobile-shell-role">{copy.roleOptions[activeRole]}</span>
         </div>
@@ -457,11 +489,11 @@ export function MainLayout({ children }: MainLayoutProps) {
         <footer className="app-footer">
           <div className="footer__brand">
             <div className="brand-mark">
-              <img src={logo} alt="Science Journal" className="brand-logo" />
+              <img src={logo} alt={copy.brandAlt} className="brand-logo" />
             </div>
             <div>
-              <div className="brand-title">Известия университета "Туран-Астана"</div>
-              <div className="brand-subtitle">Science Journal - Department of Digital Transformation</div>
+              <div className="brand-title">{copy.brandTitle}</div>
+              <div className="brand-subtitle">{copy.brandSubtitle}</div>
             </div>
           </div>
           <div className="footer__meta">

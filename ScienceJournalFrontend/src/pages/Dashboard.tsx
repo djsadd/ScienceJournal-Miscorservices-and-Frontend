@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Article } from '../shared/types'
 import { StatCard } from '../shared/components/StatCard'
 import { api } from '../api/client'
+import { useLanguage } from '../shared/LanguageContext'
+import type { Lang } from '../shared/labels'
+import { formatArticleStatus } from '../shared/labels'
 
 interface MeResponse {
   id: number
@@ -10,37 +13,172 @@ interface MeResponse {
   role: 'author' | 'editor' | 'reviewer'
 }
 
-const statusLabelMap: Record<Article['status'], string> = {
-  draft: 'Черновик',
-  submitted: 'Отправлено',
-  under_review: 'В рецензировании',
-  in_review: 'На рецензии',
-  revisions: 'Требуют правок',
-  accepted: 'Принято',
-  published: 'Опубликовано',
-  withdrawn: 'Отозвано',
-  rejected: 'Отклонено',
+type DashboardCopy = {
+  header: { title: string; subtitle: string }
+  pills: { loading: string; error: string; data: string }
+  roles: { author: string; editor: string; reviewer: string; designer: string; cabinet: string }
+  author: {
+    title: string
+    subtitle: string
+    chip: string
+    latestTitle: string
+    tableHead: { title: string; status: string; action: string }
+    stats: { inReview: string; revisions: string; accepted: string }
+  }
+  editor: { title: string; subtitle: string; stats: { incoming: string; onReview: string; needDecision: string; toLayout: string } }
+  reviewer: { title: string; subtitle: string; stats: { invitations: string; active: string; overdue: string } }
+  designer: { title: string; subtitle: string; stats: { onLayout: string; ready: string } }
+  lastAction: {
+    in_review: string
+    revisions: string
+    accepted: string
+    submitted: string
+    rejected: string
+    updated: string
+  }
+  locale: string
 }
 
-const getLastAction = (article: Article) => {
-  const date = new Date(article.submittedAt).toLocaleDateString('ru-RU')
-  switch (article.status) {
-    case 'in_review':
-      return `Передано на рецензию · ${date}`
-    case 'revisions':
-      return `Ждет правок автора · ${date}`
-    case 'accepted':
-      return `Принято к публикации · ${date}`
-    case 'submitted':
-      return `Отправлено в редакцию · ${date}`
-    case 'rejected':
-      return `Отклонено · ${date}`
-    default:
-      return `Обновлено · ${date}`
-  }
+const dashboardCopy: Record<Lang, DashboardCopy> = {
+  ru: {
+    header: { title: 'Главная панель', subtitle: 'Сводка по ролям и быстрый просмотр последних статей.' },
+    pills: { loading: 'Загрузка…', error: 'Ошибка', data: 'Данные из API' },
+    roles: { author: 'Автор', editor: 'Редактор', reviewer: 'Рецензент', designer: 'Вёрстальщик', cabinet: 'Кабинет' },
+    author: {
+      title: 'Статистика заявок',
+      subtitle: 'Текущее состояние рукописей в работе.',
+      chip: 'Мои материалы',
+      latestTitle: 'Мои последние статьи',
+      tableHead: { title: 'Название', status: 'Статус', action: 'Последнее действие' },
+      stats: { inReview: 'На рецензии', revisions: 'Требуют правок', accepted: 'Приняты' },
+    },
+    editor: {
+      title: 'Поток задач',
+      subtitle: 'Что сейчас требует внимания.',
+      stats: {
+        incoming: 'Входящие новые статьи',
+        onReview: 'На рецензии',
+        needDecision: 'Требуют решения',
+        toLayout: 'На верстке',
+      },
+    },
+    reviewer: {
+      title: 'Мои проверки',
+      subtitle: 'Приглашения и активные рецензии.',
+      stats: { invitations: 'Новые приглашения', active: 'Текущие рецензии', overdue: 'Просроченные' },
+    },
+    designer: {
+      title: 'Выпуск номера',
+      subtitle: 'Статьи на верстке и в очереди на выпуск.',
+      stats: { onLayout: 'На верстке', ready: 'Ожидают выпуска' },
+    },
+    lastAction: {
+      in_review: 'Передано на рецензию',
+      revisions: 'Ждет правок автора',
+      accepted: 'Принято к публикации',
+      submitted: 'Отправлено в редакцию',
+      rejected: 'Отклонено',
+      updated: 'Обновлено',
+    },
+    locale: 'ru-RU',
+  },
+  en: {
+    header: { title: 'Dashboard', subtitle: 'Role summary and quick view of recent papers.' },
+    pills: { loading: 'Loading…', error: 'Error', data: 'API data' },
+    roles: { author: 'Author', editor: 'Editor', reviewer: 'Reviewer', designer: 'Designer', cabinet: 'Dashboard' },
+    author: {
+      title: 'Submission stats',
+      subtitle: 'Current state of your manuscripts.',
+      chip: 'My papers',
+      latestTitle: 'My recent articles',
+      tableHead: { title: 'Title', status: 'Status', action: 'Last action' },
+      stats: { inReview: 'Under review', revisions: 'Revisions needed', accepted: 'Accepted' },
+    },
+    editor: {
+      title: 'Task flow',
+      subtitle: 'What needs attention now.',
+      stats: { incoming: 'Incoming new papers', onReview: 'Under review', needDecision: 'Needs decision', toLayout: 'In layout' },
+    },
+    reviewer: {
+      title: 'My reviews',
+      subtitle: 'Invitations and active reviews.',
+      stats: { invitations: 'New invitations', active: 'Active reviews', overdue: 'Overdue' },
+    },
+    designer: {
+      title: 'Issue production',
+      subtitle: 'Articles in layout and pending release.',
+      stats: { onLayout: 'In layout', ready: 'Awaiting release' },
+    },
+    lastAction: {
+      in_review: 'Sent for review',
+      revisions: 'Awaiting author revisions',
+      accepted: 'Accepted for publication',
+      submitted: 'Submitted to editorial',
+      rejected: 'Rejected',
+      updated: 'Updated',
+    },
+    locale: 'en-US',
+  },
+  kz: {
+    header: { title: 'Дашборд', subtitle: 'Рөлдер бойынша шолу және соңғы мақалалар.' },
+    pills: { loading: 'Жүктелуде…', error: 'Қате', data: 'API деректері' },
+    roles: { author: 'Автор', editor: 'Редактор', reviewer: 'Рецензент', designer: 'Дизайнер', cabinet: 'Кабинет' },
+    author: {
+      title: 'Өтінім статистикасы',
+      subtitle: 'Қолжазбалардың ағымдағы күйі.',
+      chip: 'Менің материалдарым',
+      latestTitle: 'Соңғы мақалаларым',
+      tableHead: { title: 'Атауы', status: 'Күйі', action: 'Соңғы әрекет' },
+      stats: { inReview: 'Рецензияда', revisions: 'Түзетулер қажет', accepted: 'Қабылданды' },
+    },
+    editor: {
+      title: 'Тапсырмалар ағымы',
+      subtitle: 'Қазір назарды қажет ететіндер.',
+      stats: { incoming: 'Келіп түскен мақалалар', onReview: 'Рецензияда', needDecision: 'Шешім қажет', toLayout: 'Беттеуде' },
+    },
+    reviewer: {
+      title: 'Менің тексерулерім',
+      subtitle: 'Шақырулар және белсенді рецензиялар.',
+      stats: { invitations: 'Жаңа шақырулар', active: 'Белсенді рецензиялар', overdue: 'Мерзімі өткен' },
+    },
+    designer: {
+      title: 'Нөмір шығару',
+      subtitle: 'Беттеудегі және шығаруды күтетін мақалалар.',
+      stats: { onLayout: 'Беттеуде', ready: 'Шығаруды күтуде' },
+    },
+    lastAction: {
+      in_review: 'Рецензияға жіберілді',
+      revisions: 'Автор түзетулерін күтуде',
+      accepted: 'Жариялауға қабылданды',
+      submitted: 'Редакцияға жіберілді',
+      rejected: 'Қабылданбады',
+      updated: 'Жаңартылды',
+    },
+    locale: 'kk-KZ',
+  },
+}
+
+function getLastAction(article: Article, copy: DashboardCopy) {
+  const date = new Date(article.submittedAt).toLocaleDateString(copy.locale)
+  const base =
+    article.status === 'in_review'
+      ? copy.lastAction.in_review
+      : article.status === 'revisions'
+        ? copy.lastAction.revisions
+        : article.status === 'accepted'
+          ? copy.lastAction.accepted
+          : article.status === 'submitted'
+            ? copy.lastAction.submitted
+            : article.status === 'rejected'
+              ? copy.lastAction.rejected
+              : copy.lastAction.updated
+  return `${base} · ${date}`
 }
 
 export function Dashboard() {
+  const { lang } = useLanguage()
+  const l: Lang = (['ru', 'en', 'kz'] as const).includes(lang) ? (lang as Lang) : 'ru'
+  const t = dashboardCopy[l]
   const [me, setMe] = useState<MeResponse | null>(null)
   const [authorArticles, setAuthorArticles] = useState<Article[]>([])
   const [editorArticles, setEditorArticles] = useState<Article[]>([])
@@ -116,7 +254,7 @@ export function Dashboard() {
         await Promise.allSettled(tasks)
       } catch (e) {
         console.error('Dashboard load error', e)
-        if (mounted) setError('Не удалось загрузить данные дашборда')
+        if (mounted) setError(t.pills.error)
       } finally {
         if (mounted) setLoading(false)
       }
@@ -140,9 +278,9 @@ export function Dashboard() {
     const revisions = authorArticles.filter((a) => a.status === 'revisions').length
     const accepted = authorArticles.filter((a) => a.status === 'accepted').length
     return [
-      { label: 'На рецензии', value: inReview },
-      { label: 'Требуют правок', value: revisions },
-      { label: 'Приняты', value: accepted },
+      { label: t.author.stats.inReview, value: inReview },
+      { label: t.author.stats.revisions, value: revisions },
+      { label: t.author.stats.accepted, value: accepted },
     ]
   }, [authorArticles])
 
@@ -152,10 +290,10 @@ export function Dashboard() {
     const needDecision = editorArticles.filter((a) => a.status === 'revisions').length
     const toLayout = editorArticles.filter((a) => a.status === 'accepted').length
     return [
-      { label: 'Входящие новые статьи', value: incoming },
-      { label: 'На рецензии', value: onReview },
-      { label: 'Требуют решения', value: needDecision },
-      { label: 'На верстке', value: toLayout },
+      { label: t.editor.stats.incoming, value: incoming },
+      { label: t.editor.stats.onReview, value: onReview },
+      { label: t.editor.stats.needDecision, value: needDecision },
+      { label: t.editor.stats.toLayout, value: toLayout },
     ]
   }, [editorArticles])
 
@@ -167,9 +305,9 @@ export function Dashboard() {
       return d ? d.getTime() < Date.now() && (r.status === 'in_progress' || r.status === 'pending') : false
     }).length
     return [
-      { label: 'Новые приглашения', value: invitations },
-      { label: 'Текущие рецензии', value: active },
-      { label: 'Просроченные', value: overdue },
+      { label: t.reviewer.stats.invitations, value: invitations },
+      { label: t.reviewer.stats.active, value: active },
+      { label: t.reviewer.stats.overdue, value: overdue },
     ]
   }, [reviewItems])
 
@@ -177,33 +315,33 @@ export function Dashboard() {
     const onLayout = editorArticles.filter((a) => a.status === 'accepted').length
     const ready = volumes.filter((v) => v.is_active).length
     return [
-      { label: 'На верстке', value: onLayout },
-      { label: 'Ожидают выпуска', value: ready },
+      { label: t.designer.stats.onLayout, value: onLayout },
+      { label: t.designer.stats.ready, value: ready },
     ]
   }, [editorArticles, volumes])
 
-  const roleLabel = me?.role === 'author' ? 'Автор' : me?.role === 'editor' ? 'Редактор' : me?.role === 'reviewer' ? 'Рецензент' : 'Кабинет'
+  const roleLabel = me?.role === 'author' ? t.roles.author : me?.role === 'editor' ? t.roles.editor : me?.role === 'reviewer' ? t.roles.reviewer : t.roles.cabinet
 
   return (
     <div className="app-container">
       <section className="section-header">
         <div>
           <p className="eyebrow">{roleLabel}</p>
-          <h1 className="page-title">Главная панель</h1>
-          <p className="subtitle">Сводка по ролям и быстрый просмотр последних статей.</p>
+          <h1 className="page-title">{t.header.title}</h1>
+          <p className="subtitle">{t.header.subtitle}</p>
         </div>
-        <div className="pill pill--ghost">{loading ? 'Загрузка…' : error ? 'Ошибка' : 'Данные из API'}</div>
+        <div className="pill pill--ghost">{loading ? t.pills.loading : error ? t.pills.error : t.pills.data}</div>
       </section>
 
       <div className="dashboard-grid">
         <div className="panel role-panel role-panel--wide">
           <div className="role-panel__header">
             <div>
-              <p className="eyebrow">Автор</p>
-              <h2 className="panel-title">Статистика заявок</h2>
-              <p className="subtitle">Текущее состояние рукописей в работе.</p>
+              <p className="eyebrow">{t.roles.author}</p>
+              <h2 className="panel-title">{t.author.title}</h2>
+              <p className="subtitle">{t.author.subtitle}</p>
             </div>
-            <span className="pill">Мои материалы</span>
+            <span className="pill">{t.author.chip}</span>
           </div>
 
           <div className="grid grid-3 role-panel__stats">
@@ -213,11 +351,11 @@ export function Dashboard() {
           </div>
 
           <div className="latest-table">
-            <div className="latest-table__title">Мои последние статьи</div>
+            <div className="latest-table__title">{t.author.latestTitle}</div>
             <div className="latest-table__head">
-              <span>Название</span>
-              <span>Статус</span>
-              <span>Последнее действие</span>
+              <span>{t.author.tableHead.title}</span>
+              <span>{t.author.tableHead.status}</span>
+              <span>{t.author.tableHead.action}</span>
             </div>
             <div className="latest-table__body">
               {latest.map((article) => (
@@ -228,10 +366,10 @@ export function Dashboard() {
                   </div>
                   <div className="latest-table__cell">
                     <span className={`status-chip status-chip--${article.status}`}>
-                      {statusLabelMap[article.status] ?? article.status}
+                      {formatArticleStatus(article.status, l)}
                     </span>
                   </div>
-                  <div className="latest-table__cell latest-table__cell--action">{getLastAction(article)}</div>
+                  <div className="latest-table__cell latest-table__cell--action">{getLastAction(article, t)}</div>
                 </div>
               ))}
             </div>
@@ -241,9 +379,9 @@ export function Dashboard() {
         <div className="panel role-panel">
           <div className="role-panel__header">
             <div>
-              <p className="eyebrow">Редактор</p>
-              <h2 className="panel-title">Поток задач</h2>
-              <p className="subtitle">Что сейчас требует внимания.</p>
+              <p className="eyebrow">{t.roles.editor}</p>
+              <h2 className="panel-title">{t.editor.title}</h2>
+              <p className="subtitle">{t.editor.subtitle}</p>
             </div>
           </div>
           <div className="role-stats role-stats--dense">
@@ -259,9 +397,9 @@ export function Dashboard() {
         <div className="panel role-panel">
           <div className="role-panel__header">
             <div>
-              <p className="eyebrow">Рецензент</p>
-              <h2 className="panel-title">Мои проверки</h2>
-              <p className="subtitle">Приглашения и активные рецензии.</p>
+              <p className="eyebrow">{t.roles.reviewer}</p>
+              <h2 className="panel-title">{t.reviewer.title}</h2>
+              <p className="subtitle">{t.reviewer.subtitle}</p>
             </div>
           </div>
           <div className="role-stats">
@@ -277,9 +415,9 @@ export function Dashboard() {
         <div className="panel role-panel">
           <div className="role-panel__header">
             <div>
-              <p className="eyebrow">Верстальщик</p>
-              <h2 className="panel-title">Выпуск номера</h2>
-              <p className="subtitle">Статьи на верстке и в очереди на выпуск.</p>
+              <p className="eyebrow">{t.roles.designer}</p>
+              <h2 className="panel-title">{t.designer.title}</h2>
+              <p className="subtitle">{t.designer.subtitle}</p>
             </div>
           </div>
           <div className="role-stats">
