@@ -151,6 +151,8 @@ class ArticleCreateWithIds(BaseModel):
     cover_letter_file_id: Optional[str] = None
     keyword_ids: List[int] = Field(default_factory=list)
     author_ids: List[int] = Field(default_factory=list)
+    # Allow creating/linking keywords by names in the same request
+    keywords: List[KeywordCreate] = Field(default_factory=list)
 
 
 class ArticleUpdate(BaseModel):

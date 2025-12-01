@@ -97,6 +97,9 @@ export function AuthorsSubmissionPage() {
     researcherId: '',
   })
   const [authorList, setAuthorList] = useState<AuthorForm[]>([])
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [pendingPayload, setPendingPayload] = useState<any | null>(null)
+  const [confirmLang, setConfirmLang] = useState<Lang>('ru')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -308,6 +311,16 @@ export function AuthorsSubmissionPage() {
     return api.request<FileOut>('/files', 'POST', { body: formData })
   }
 
+  const getFileNameFromInputIndex = (idx: number): string | null => {
+    try {
+      const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="file"].file-input[data-upload-slot="article-file"]'))
+      const file = inputs[idx]?.files?.[0]
+      return file ? file.name : null
+    } catch {
+      return null
+    }
+  }
+
   return (
     <div className="public-container">
       {false && (
@@ -389,6 +402,10 @@ export function AuthorsSubmissionPage() {
                   keyword_ids: selectedKeywords
                     .map((k) => k.id)
                     .filter((id): id is number => typeof id === 'number'),
+                  // Передаём названия новых ключевых слов для авто-создания и привязки
+                  keywords: selectedKeywords
+                    .filter((k) => !k.id)
+                    .map((k) => ({ title_ru: k.ru, title_kz: k.kz, title_en: k.en })),
                   author_ids: authorList
                     .map((a) => a.id)
                     .filter((id): id is number => typeof id === 'number'),
@@ -399,11 +416,9 @@ export function AuthorsSubmissionPage() {
                     consent: confirmConsent,
                   },
                 }
-                // Пример запроса на создание статьи
-                // Ожидается, что backend примет этот JSON на /articles
-                await api.post('/articles', payload)
-                navigate('/cabinet/submissions')
-                // Здесь можно добавить редирект или очистку формы
+                // Открываем модальное окно подтверждения с отчётом
+                setPendingPayload(payload)
+                setConfirmModalOpen(true)
               } catch (error) {
                 console.error('Failed to submit article', error)
               }
@@ -889,6 +904,87 @@ export function AuthorsSubmissionPage() {
               >
                 Сохранить автора
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmModalOpen && pendingPayload ? (
+        <div className="modal-backdrop" onClick={() => setConfirmModalOpen(false)}>
+          <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3>Подтверждение создания статьи</h3>
+              <button className="modal__close" onClick={() => setConfirmModalOpen(false)} aria-label="Закрыть">
+                ×
+              </button>
+            </div>
+            <div className="modal__body">
+              <div className="table">
+                <div className="table__head">
+                  <span>Поле</span>
+                  <span>Значение</span>
+                </div>
+                <div className="table__body">
+                  <div className="table__row"><div className="table__cell">Язык</div><div className="table__cell">
+                    <div className="lang-switch">
+                      {(['ru','kz','en'] as Lang[]).map(code => (
+                        <button
+                          key={code}
+                          type="button"
+                          className={`lang-chip ${confirmLang === code ? 'lang-chip--active' : ''}`}
+                          onClick={() => setConfirmLang(code)}
+                        >{langLabels[code]}</button>
+                      ))}
+                    </div>
+                  </div></div>
+                  <div className="table__row"><div className="table__cell">Заголовок</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.title_ru) || (confirmLang === 'kz' && pendingPayload.title_kz) || (confirmLang === 'en' && pendingPayload.title_en) || '—'}</div></div>
+                  <div className="table__row"><div className="table__cell">Аннотация</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.abstract_ru) || (confirmLang === 'kz' && pendingPayload.abstract_kz) || (confirmLang === 'en' && pendingPayload.abstract_en) || '—'}</div></div>
+                  <div className="table__row"><div className="table__cell">Тип статьи</div><div className="table__cell">{articleType || '—'}</div></div>
+                  <div className="table__row"><div className="table__cell">Ключевые слова</div><div className="table__cell">
+                    {selectedKeywords.length
+                      ? selectedKeywords.map(kw => kw[confirmLang]).filter(Boolean).join(', ')
+                      : '—'}
+                  </div></div>
+                  <div className="table__row"><div className="table__cell">Ответственный автор</div><div className="table__cell">
+                    {(() => {
+                      const responsible = authorList.find(a => a.id === pendingPayload.responsible_user_id)
+                      if (!responsible) return pendingPayload.responsible_user_id ?? '—'
+                      const name = [responsible.prefix, responsible.firstName, responsible.middleName, responsible.lastName].filter(Boolean).join(' ')
+                      return `${name} (${responsible.email})`
+                    })()}
+                  </div></div>
+                  <div className="table__row"><div className="table__cell">Авторы (список)</div><div className="table__cell">
+                    {authorList.length
+                      ? authorList.map(a => [a.prefix, a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')).join('; ')
+                      : '—'}
+                  </div></div>
+                  <div className="table__row"><div className="table__cell">Файл рукописи</div><div className="table__cell">{getFileNameFromInputIndex(0) || (pendingPayload.manuscript_file_id ? 'загружен' : '—')}</div></div>
+                  <div className="table__row"><div className="table__cell">Антиплагиат</div><div className="table__cell">{getFileNameFromInputIndex(3) || (pendingPayload.antiplagiarism_file_id ? 'загружен' : '—')}</div></div>
+                  <div className="table__row"><div className="table__cell">Сведения об авторах</div><div className="table__cell">{getFileNameFromInputIndex(1) || (pendingPayload.author_info_file_id ? 'загружены' : '—')}</div></div>
+                  <div className="table__row"><div className="table__cell">Сопроводительное письмо</div><div className="table__cell">{getFileNameFromInputIndex(2) || (pendingPayload.cover_letter_file_id ? 'загружено' : '—')}</div></div>
+                  <div className="table__row"><div className="table__cell">Генеративный ИИ</div><div className="table__cell">{pendingPayload.generative_ai_info || '—'}</div></div>
+                  <div className="table__row"><div className="table__cell">Подтверждения</div><div className="table__cell">{pendingPayload.confirmations ? ['copyright','originality','consent'].filter((k)=>pendingPayload.confirmations[k]).join(', ') : '—'}</div></div>
+                  <div className="table__row"><div className="table__cell">Комментарии</div><div className="table__cell">{pendingPayload.comments || '—'}</div></div>
+                </div>
+              </div>
+              <p className="form-hint" style={{ marginTop: 12 }}>Вы действительно уверены, что хотите создать статью с указанными данными?</p>
+            </div>
+            <div className="modal__footer">
+              <button className="button button--ghost" type="button" onClick={() => setConfirmModalOpen(false)}>Отмена</button>
+              <button
+                className="button button--primary"
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api.post('/articles', pendingPayload)
+                    setConfirmModalOpen(false)
+                    setPendingPayload(null)
+                    navigate('/cabinet/submissions')
+                  } catch (error) {
+                    console.error('Failed to submit article', error)
+                  }
+                }}
+              >Подтвердить и создать</button>
             </div>
           </div>
         </div>

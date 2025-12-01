@@ -69,3 +69,7 @@ class UserFullInfo(BaseModel):
 
 class UserActivationUpdate(BaseModel):
     is_active: bool
+
+
+class UserRoleUpdate(BaseModel):
+    role: str

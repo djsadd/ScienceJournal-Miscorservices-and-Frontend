@@ -211,3 +211,28 @@ def activate_user(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.patch("/admin/users/{user_id}/role", response_model=schemas.UserOut)
+def update_user_role(
+    user_id: int,
+    role_update: schemas.UserRoleUpdate,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Update a user's role (e.g., set to 'admin')."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    allowed_roles = {"author", "editor", "reviewer", "layout", "admin"}
+    if role_update.role not in allowed_roles:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    user.role = role_update.role
+    # If promoting to admin, ensure active
+    if user.role == "admin":
+        user.is_active = True
+    db.commit()
+    db.refresh(user)
+    return user

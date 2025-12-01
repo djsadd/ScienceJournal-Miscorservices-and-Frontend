@@ -15,6 +15,24 @@ def _file_id_to_url(file_id: str | None):
     return f"/files/{file_id}/download"
 
 
+def _get_or_create_keyword(db: Session, kw: schemas.KeywordCreate) -> models.Keyword:
+    existing = (
+        db.query(models.Keyword)
+        .filter(
+            models.Keyword.title_kz == kw.title_kz,
+            models.Keyword.title_en == kw.title_en,
+            models.Keyword.title_ru == kw.title_ru,
+        )
+        .first()
+    )
+    if existing:
+        return existing
+    new_kw = models.Keyword(title_kz=kw.title_kz, title_en=kw.title_en, title_ru=kw.title_ru)
+    db.add(new_kw)
+    db.flush()
+    return new_kw
+
+
 def get_db():
     db = database.SessionLocal()
     try:
@@ -568,10 +586,52 @@ def create_keyword(
     keyword: schemas.KeywordCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
+    article_id: int | None = None,
 ):
+    """Create a keyword.
+
+    Optionally pass `article_id` to auto-link this keyword to the article
+    during manuscript creation (frontend can call this first, then the article
+    create without needing an extra click).
+    """
     ensure_author(current_user)
-    new_keyword = models.Keyword(**keyword.dict())
-    db.add(new_keyword)
+    # Try to reuse if identical keyword exists
+    existing = (
+        db.query(models.Keyword)
+        .filter(
+            models.Keyword.title_kz == keyword.title_kz,
+            models.Keyword.title_en == keyword.title_en,
+            models.Keyword.title_ru == keyword.title_ru,
+        )
+        .first()
+    )
+    if existing:
+        new_keyword = existing
+    else:
+        new_keyword = models.Keyword(**keyword.dict())
+        db.add(new_keyword)
+        db.flush()
+
+    # If article_id provided, link keyword to article
+    if article_id is not None:
+        article = db.query(models.Article).filter(models.Article.id == article_id).first()
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+        # Avoid duplicate association
+        assoc_exists = db.execute(
+            models.article_keywords.select().where(
+                models.article_keywords.c.article_id == article_id,
+                models.article_keywords.c.keyword_id == new_keyword.id,
+            )
+        ).first()
+        if not assoc_exists:
+            db.execute(
+                models.article_keywords.insert().values(
+                    article_id=article_id,
+                    keyword_id=new_keyword.id,
+                )
+            )
+
     db.commit()
     db.refresh(new_keyword)
     return new_keyword
@@ -606,6 +666,12 @@ def create_author(
 
 @router.post("/", response_model=schemas.ArticleOut)
 def create_article(article: schemas.ArticleCreateWithIds, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    """Create article.
+
+    Supports two ways to attach keywords:
+    - `keyword_ids`: list of existing keyword IDs.
+    - `keywords`: list of objects with `title_kz`, `title_en`, `title_ru` to create or reuse.
+    """
     ensure_author(current_user)
 
     new_article = models.Article(
@@ -638,12 +704,24 @@ def create_article(article: schemas.ArticleCreateWithIds, db: Session = Depends(
         for author in authors:
             db.execute(models.article_authors.insert().values(article_id=new_article.id, author_id=author.id))
 
+    # Link existing keywords by IDs
+    attached_keyword_ids: set[int] = set()
     if article.keyword_ids:
         keywords = db.query(models.Keyword).filter(models.Keyword.id.in_(article.keyword_ids)).all()
         if len(keywords) != len(set(article.keyword_ids)):
             raise HTTPException(status_code=400, detail="One or more keywords not found")
         for keyword in keywords:
-            db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=keyword.id))
+            if keyword.id not in attached_keyword_ids:
+                db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=keyword.id))
+                attached_keyword_ids.add(keyword.id)
+
+    # Create/link keywords passed by names
+    if getattr(article, "keywords", None):
+        for kw_payload in article.keywords:
+            kw = _get_or_create_keyword(db, kw_payload)
+            if kw.id not in attached_keyword_ids:
+                db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=kw.id))
+                attached_keyword_ids.add(kw.id)
 
     db.commit()
     db.refresh(new_article)
@@ -677,6 +755,11 @@ def create_article_by_ids(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
+    """Create article (IDs-based payload).
+
+    Backward compatible with `keyword_ids` and now also accepts `keywords`
+    objects to create or reuse keywords by names.
+    """
     ensure_author(current_user)
 
     new_article = models.Article(
@@ -709,12 +792,22 @@ def create_article_by_ids(
         for author in authors:
             db.execute(models.article_authors.insert().values(article_id=new_article.id, author_id=author.id))
 
+    attached_keyword_ids: set[int] = set()
     if article.keyword_ids:
         keywords = db.query(models.Keyword).filter(models.Keyword.id.in_(article.keyword_ids)).all()
         if len(keywords) != len(set(article.keyword_ids)):
             raise HTTPException(status_code=400, detail="One or more keywords not found")
         for keyword in keywords:
-            db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=keyword.id))
+            if keyword.id not in attached_keyword_ids:
+                db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=keyword.id))
+                attached_keyword_ids.add(keyword.id)
+
+    if getattr(article, "keywords", None):
+        for kw_payload in article.keywords:
+            kw = _get_or_create_keyword(db, kw_payload)
+            if kw.id not in attached_keyword_ids:
+                db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=kw.id))
+                attached_keyword_ids.add(kw.id)
 
     db.commit()
     db.refresh(new_article)
