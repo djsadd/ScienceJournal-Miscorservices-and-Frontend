@@ -39,6 +39,9 @@ export default function VolumeDetailPage() {
         </div>
         <div className="section-actions">
           <Link className="button button--ghost" to="/cabinet/volumes">← Назад к томам</Link>
+          {volume && (
+            <Link className="button" to={`/cabinet/volumes/${volume.id}/edit`}>Редактировать том</Link>
+          )}
         </div>
       </section>
 

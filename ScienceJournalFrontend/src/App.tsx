@@ -38,6 +38,7 @@ import EditorArticleVersionPage from './pages/EditorArticleVersionPage'
 import VolumesPage from './pages/VolumesPage'
 import VolumeDetailPage from './pages/VolumeDetailPage'
 import PublicVolumeDetailPage from './pages/PublicVolumeDetailPage'
+import VolumeEditPage from './pages/VolumeEditPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -284,6 +285,16 @@ function App() {
           <RequireAuth>
             <MainLayout>
               <VolumeDetailPage />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cabinet/volumes/:id/edit"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <VolumeEditPage />
             </MainLayout>
           </RequireAuth>
         }

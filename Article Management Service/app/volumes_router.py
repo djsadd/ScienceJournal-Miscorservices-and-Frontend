@@ -42,7 +42,9 @@ def list_volumes(
     year: int | None = None,
     number: int | None = None,
     month: int | None = None,
-    active_only: bool = True,
+    # Для редактора по умолчанию показываем все (включая неактивные),
+    # для остальных по умолчанию только активные. Пользователь может переопределить через query param.
+    active_only: bool | None = None,
 ):
     query = db.query(models.Volume).options(
         joinedload(models.Volume.articles).joinedload(models.Article.authors),
@@ -54,7 +56,11 @@ def list_volumes(
         query = query.filter(models.Volume.number == number)
     if month is not None:
         query = query.filter(models.Volume.month == month)
-    if active_only:
+    # Определяем, нужно ли фильтровать только активные тома
+    # По умолчанию: редактор видит все, остальные — только активные
+    is_editor = "editor" in current_user.get("roles", [])
+    effective_active_only = (not is_editor) if active_only is None else bool(active_only)
+    if effective_active_only:
         query = query.filter(models.Volume.is_active.is_(True))
     # Порядок новее раньше
     volumes = query.order_by(models.Volume.year.desc(), models.Volume.number.desc()).all()
