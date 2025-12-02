@@ -86,7 +86,6 @@ services:
     build: ./Layout Service
     environment:
       - FILE_SERVICE_URL=http://fileprocessing:7000
-      - DATABASE_URL=postgresql://layout:pass@db/layout
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
     ports:
       - "8006:8000"
