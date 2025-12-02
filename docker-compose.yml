@@ -61,6 +61,9 @@ services:
       - DATABASE_URL=postgresql://reviews:pass@db/reviews
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
       - ARTICLE_SERVICE_URL=http://articles:8000
+      - API_GATEWAY_URL=http://api-gateway:8000
+      - API_GATEWAY_PREFIX=/api
+      - FRONTEND_URL=http://localhost:8081
     ports:
       - "8004:8000"
     depends_on:

@@ -111,6 +111,28 @@ def assign_reviewer(request: schemas.AssignReviewerRequest, db: Session = Depend
     db.add(new_review)
     db.commit()
     db.refresh(new_review)
+    # Try to notify the reviewer via Notification Service (best effort)
+    try:
+        api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+        api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
+        shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+        frontend_url = getattr(config, 'FRONTEND_URL', 'http://localhost:8081')
+        payload = {
+            "user_id": request.reviewer_id,
+            "type": "review_assignment",
+            "title": "Вам назначена рецензия",
+            "message": f"Вам назначена рецензия по статье #{request.article_id}.",
+            "related_entity": f"review:{new_review.id}",
+        }
+        with httpx.Client(timeout=5.0) as client:
+            client.post(
+                f"{api_gateway}{api_prefix}/notifications/internal",
+                json=payload,
+                headers={"X-Service-Secret": shared_secret},
+            )
+    except Exception:
+        # don't block assignment on notification failures
+        pass
     return new_review
 
 # ----------------------------
@@ -193,16 +215,46 @@ def update_review(review_id: int, review: schemas.ReviewUpdate, db: Session = De
     try:
         if db_review.status == models.ReviewStatus.completed:
             api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+            api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
             shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+            frontend_url = getattr(config, 'FRONTEND_URL', 'http://localhost:8081')
             with httpx.Client(timeout=5.0) as client:
+                # Update article status internally
                 client.patch(
-                    f"{api_gateway}/articles/internal/{db_review.article_id}/review-submitted",
+                    f"{api_gateway}{api_prefix}/articles/internal/{db_review.article_id}/review-submitted",
                     headers={"X-Service-Secret": shared_secret}
                 )
+
+                # Fetch assigned editor to notify
+                try:
+                    resp = client.get(
+                        f"{api_gateway}{api_prefix}/articles/internal/{db_review.article_id}/assigned-editor",
+                        headers={"X-Service-Secret": shared_secret},
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json() or {}
+                        editor_id = data.get("assigned_editor_id")
+                        if editor_id:
+                            payload = {
+                                "user_id": int(editor_id),
+                                "type": "editorial",
+                                "title": "Получена рецензия",
+                                "message": f"Рецензент отправил рецензию по статье #{db_review.article_id}.",
+                                "related_entity": f"article:{db_review.article_id}",
+                            }
+                            client.post(
+                                f"{api_gateway}{api_prefix}/notifications/internal",
+                                json=payload,
+                                headers={"X-Service-Secret": shared_secret},
+                            )
+                except Exception:
+                    # Ignore failures in fetching editor or sending notification
+                    pass
     except Exception:
         # Не блокируем ответ рецензенту, если межсервисный вызов не удался
         pass
     return db_review
+    
 
 
 # ----------------------------

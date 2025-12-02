@@ -9,3 +9,5 @@ ALGORITHM = "HS256"
 ARTICLE_SERVICE_URL = os.getenv("ARTICLE_SERVICE_URL", "http://articles:8000")
 API_GATEWAY_URL = os.getenv("API_GATEWAY_URL", "http://localhost:8000")
 SHARED_SERVICE_SECRET = os.getenv("SHARED_SERVICE_SECRET", "service-shared-secret")
+API_GATEWAY_PREFIX = os.getenv("API_GATEWAY_PREFIX", "/api")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8081")

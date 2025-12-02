@@ -1058,6 +1058,23 @@ def mark_review_submitted_internal(
     return {"id": article.id, "status": article.status}
 
 
+@router.get("/internal/{article_id}/assigned-editor")
+def get_assigned_editor_internal(
+    article_id: int,
+    db: Session = Depends(get_db),
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+):
+    """
+    Internal: return assigned editor id for the article.
+    Requires X-Service-Secret header.
+    """
+    ensure_service_secret(x_service_secret)
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return {"article_id": article.id, "assigned_editor_id": article.assigned_editor_id}
+
+
 @router.post("/{article_id}/assign_reviewers")
 async def assign_reviewers(
     article_id: int, 

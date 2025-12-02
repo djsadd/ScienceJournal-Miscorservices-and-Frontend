@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import models, schemas, config
 from app.deps import get_db, get_current_user
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -16,6 +16,34 @@ def create_notification(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
+    notification = models.Notification(
+        user_id=payload.user_id,
+        type=payload.type,
+        title=payload.title,
+        message=payload.message,
+        related_entity=payload.related_entity,
+    )
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+    return notification
+
+
+@router.post("/internal", response_model=schemas.NotificationOut)
+def create_notification_internal(
+    payload: schemas.NotificationCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Service-to-service notification creation protected by shared secret.
+    Accepts the same payload as public create endpoint but validates
+    header `X-Service-Secret` equals `config.SHARED_SERVICE_SECRET`.
+    """
+    secret = request.headers.get("X-Service-Secret")
+    if not secret or secret != config.SHARED_SERVICE_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     notification = models.Notification(
         user_id=payload.user_id,
         type=payload.type,

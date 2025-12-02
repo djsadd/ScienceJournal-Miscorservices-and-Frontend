@@ -11,7 +11,6 @@ type Notification = {
   message?: string
   createdAt: string
   read: boolean
-  link?: { label: string; href: string }
 }
 
 type NotificationDto = {
@@ -24,6 +23,17 @@ type NotificationDto = {
   status: 'unread' | 'read'
   created_at: string
   read_at?: string | null
+}
+
+const stripLinks = (text?: string | null): string | undefined => {
+  if (!text) return undefined
+  // Remove pattern like: "Откройте: http(s)://..."
+  let cleaned = text.replace(/Откройте:\s*https?:\/\/\S+/gi, '')
+  // Remove any remaining URLs
+  cleaned = cleaned.replace(/https?:\/\/\S+/gi, '')
+  // Collapse extra spaces and trim
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').trim()
+  return cleaned || undefined
 }
 
 const mapTypeToVariant = (t: NotificationDto['type']): UiVariant => {
@@ -39,7 +49,7 @@ const toUi = (n: NotificationDto): Notification => ({
   id: String(n.id),
   type: mapTypeToVariant(n.type),
   title: n.title,
-  message: n.message ?? undefined,
+  message: stripLinks(n.message),
   createdAt: n.created_at,
   read: n.status === 'read',
 })
@@ -159,11 +169,7 @@ export default function NotificationsPage() {
                       Пометить как прочитано
                     </button>
                   ) : null}
-                  {n.link ? (
-                    <a className="button button--secondary" href={n.link.href}>
-                      {n.link.label}
-                    </a>
-                  ) : null}
+                  {/* No action button for notifications */}
                 </div>
               </div>
             </div>
