@@ -134,7 +134,7 @@ export default function PublicVolumeDetailPage() {
                       const first = recs[0]
                       const href = toApiFilesUrl(first.file_url || (first.file_id ? `/files/${first.file_id}/download` : undefined)) || '#'
                       return (
-                        <a className="button button--ghost button--compact" href={href} target="_blank" rel="noreferrer">Скачать вёрстку</a>
+                        <a className="button button--ghost button--compact" href={href} target="_blank" rel="noreferrer">Скачать PDF</a>
                       )
                     })()}
                   </div>
