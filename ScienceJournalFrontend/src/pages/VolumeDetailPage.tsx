@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../api/client'
-import { toApiFilesUrl } from '../shared/url'
 import type { Volume, Article } from '../shared/types'
 
 export default function VolumeDetailPage() {
@@ -89,9 +88,7 @@ export default function VolumeDetailPage() {
                   <div className="latest-table__cell">
                     {(() => {
                       const downloadSrc = a.layout_file_url ?? a.manuscript_file_url
-                      return downloadSrc ? (
-                        <a className="button button--ghost button--compact" href={toApiFilesUrl(downloadSrc)} target="_blank" rel="noreferrer">Скачать PDF</a>
-                      ) : (
+                      return downloadSrc ? null : (
                         <span className="meta-label">Нет файла</span>
                       )
                     })()}
