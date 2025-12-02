@@ -87,11 +87,14 @@ export default function VolumeDetailPage() {
                   <div className="latest-table__cell">{a.article_type || '—'}</div>
                   <div className="latest-table__cell">{Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}</div>
                   <div className="latest-table__cell">
-                    {a.manuscript_file_url ? (
-                      <a className="button button--ghost button--compact" href={toApiFilesUrl(a.manuscript_file_url)} target="_blank" rel="noreferrer">Скачать PDF</a>
-                    ) : (
-                      <span className="meta-label">Нет файла</span>
-                    )}
+                    {(() => {
+                      const downloadSrc = a.layout_file_url ?? a.manuscript_file_url
+                      return downloadSrc ? (
+                        <a className="button button--ghost button--compact" href={toApiFilesUrl(downloadSrc)} target="_blank" rel="noreferrer">Скачать PDF</a>
+                      ) : (
+                        <span className="meta-label">Нет файла</span>
+                      )
+                    })()}
                   </div>
                 </div>
               ))}

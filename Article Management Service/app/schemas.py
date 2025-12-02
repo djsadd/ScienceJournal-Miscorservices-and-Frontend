@@ -197,6 +197,8 @@ class ArticleOut(BaseModel):
     manuscript_file_url: Optional[str] = None
     author_info_file_url: Optional[str] = None
     cover_letter_file_url: Optional[str] = None
+    # Ссылка на файл верстки (если доступна)
+    layout_file_url: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     versions: List[ArticleVersionOut] = Field(default_factory=list)

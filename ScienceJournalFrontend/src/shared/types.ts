@@ -60,6 +60,8 @@ export interface Article {
   antiplagiarism_file_url?: string | null
   author_info_file_url?: string | null
   cover_letter_file_url?: string | null
+  // Верстка (если доступна для опубликованных статей)
+  layout_file_url?: string | null
   not_published_elsewhere?: boolean
   plagiarism_free?: boolean
   authors_agree?: boolean

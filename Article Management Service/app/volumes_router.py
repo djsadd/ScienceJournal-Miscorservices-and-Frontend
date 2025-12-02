@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import List
 from jose import jwt, JWTError
 from app import models, schemas, database, config
+import httpx
 
 router = APIRouter(prefix="/volumes", tags=["volumes"])
 
@@ -64,6 +65,7 @@ def list_volumes(
         query = query.filter(models.Volume.is_active.is_(True))
     # Порядок новее раньше
     volumes = query.order_by(models.Volume.year.desc(), models.Volume.number.desc()).all()
+    _enrich_articles_with_layout(volumes)
     return volumes
 
 
@@ -92,6 +94,7 @@ def list_active_volumes_public(
         query = query.filter(models.Volume.month == month)
 
     volumes = query.order_by(models.Volume.year.desc(), models.Volume.number.desc()).all()
+    _enrich_articles_with_layout(volumes)
     return volumes
 
 
@@ -115,6 +118,7 @@ def get_active_volume_public(
     )
     if not volume:
         raise HTTPException(status_code=404, detail="Active volume not found")
+    _enrich_articles_with_layout([volume])
     return volume
 
 
@@ -135,6 +139,7 @@ def get_volume(
     )
     if not volume:
         raise HTTPException(status_code=404, detail="Volume not found")
+    _enrich_articles_with_layout([volume])
     return volume
 
 
@@ -236,6 +241,7 @@ def update_volume(
 
     db.commit()
     db.refresh(volume)
+    _enrich_articles_with_layout([volume])
     return volume
 
 
@@ -254,3 +260,32 @@ def delete_volume(
     db.delete(volume)
     db.commit()
     return None
+
+# Utility: enrich article objects with latest layout file links
+def _enrich_articles_with_layout(volumes: list[models.Volume]):
+    layout_base = getattr(config, "LAYOUT_SERVICE_URL", "http://layout:8000")
+    # Collect unique published article IDs
+    article_map = {}
+    for v in volumes:
+        for a in getattr(v, "articles", []) or []:
+            if a.status == models.ArticleStatus.published:
+                article_map[a.id] = a
+    if not article_map:
+        return
+    # Fetch layout records per article sequentially (low volume); can optimize later
+    for article_id, article in article_map.items():
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                resp = client.get(f"{layout_base}/layout/articles/{article_id}/records")
+                if resp.status_code == 200:
+                    data = resp.json() or []
+                    if data:
+                        # data is list ordered by created_at desc in service implementation
+                        layout_record = data[0]
+                        file_url = layout_record.get("file_url")
+                        if file_url:
+                            # expose layout link; frontend can prefer this over manuscript
+                            setattr(article, "layout_file_url", file_url)
+        except Exception:
+            # Soft-fail: ignore layout errors
+            pass
