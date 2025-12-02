@@ -13,7 +13,7 @@ API_PREFIX = os.getenv("API_PREFIX", "/api")
 # Default to Postgres in container if not provided
 DATABASE_URL = os.getenv(
 	"DATABASE_URL",
-	"postgresql://layout:pass@db/layout"
+	"postgresql://postgres:pass@db/layout"
 )
 
 # Internal
