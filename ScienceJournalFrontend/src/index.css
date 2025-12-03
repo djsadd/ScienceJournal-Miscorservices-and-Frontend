@@ -35,3 +35,122 @@ p {
 button {
   font-family: inherit;
 }
+
+/* Low-vision accessibility mode */
+.low-vision {
+  font-size: 20px;
+  line-height: 1.8;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+.low-vision a {
+  color: #0000ee !important;
+  text-decoration: underline;
+}
+
+.low-vision .button,
+.low-vision .public-nav__link,
+.low-vision .nav-dropdown__item {
+  color: #000 !important;
+  background: #ffff00 !important; /* yellow high-contrast */
+  border: 2px solid #000 !important;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.low-vision .button--primary {
+  background: #00ff00 !important; /* green */
+  color: #000 !important;
+}
+
+.low-vision .button--ghost {
+  background: #ffffff !important;
+  border-color: #000 !important;
+}
+
+/* Dedicated contrast toggle button */
+.button--contrast {
+  background: #000;
+  color: #fff;
+  border: 2px solid #000;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.button--contrast.button--active {
+  background: #444;
+}
+
+/* Improve focus visibility */
+:focus {
+  outline: 3px solid #ff9900;
+  outline-offset: 2px;
+}
+
+.low-vision :focus {
+  outline: 4px solid #ff0000;
+}
+
+/* Typography scaling and spacing */
+.low-vision h1 { font-size: 2.2rem; letter-spacing: 0.02em; }
+.low-vision h2 { font-size: 1.9rem; letter-spacing: 0.02em; }
+.low-vision h3 { font-size: 1.6rem; letter-spacing: 0.01em; }
+.low-vision p, .low-vision li { font-size: 1.15rem; }
+
+/* Navigation and dropdowns */
+.low-vision .public-nav { gap: 12px; }
+.low-vision .nav-dropdown__menu { background: #fff; border: 2px solid #000; }
+.low-vision .caret { font-size: 1.2em; }
+
+/* Mobile menu */
+.low-vision .public-menu { background: #fff !important; border-top: 2px solid #000; }
+.low-vision .mobile-nav-toggle { background: #000 !important; color: #fff !important; border: 2px solid #000; }
+
+/* Forms */
+.low-vision input, .low-vision select, .low-vision textarea {
+  font-size: 1.1rem !important;
+  background: #ffffff !important;
+  color: #000 !important;
+  border: 2px solid #000 !important;
+  padding: 12px 14px !important;
+}
+.low-vision input::placeholder, .low-vision textarea::placeholder { color: #333 !important; }
+
+/* Modals */
+.low-vision .modal, .low-vision .search-modal {
+  background: #fff !important;
+  border: 3px solid #000 !important;
+}
+.low-vision .search-modal__header h3 { font-size: 1.5rem; }
+.low-vision .search-modal__close { min-height: 44px; min-width: 44px; }
+
+/* Tables */
+.low-vision table { border-collapse: collapse; width: 100%; }
+.low-vision th, .low-vision td { border: 2px solid #000; padding: 12px; }
+.low-vision thead { background: #ffff00; }
+
+/* Footer */
+.low-vision .app-footer { background: #fff !important; border-top: 2px solid #000; }
+.low-vision .footer__meta .meta-label { color: #000 !important; }
+
+/* Badges/Pills */
+.low-vision .pill, .low-vision .badge { background: #ffff00 !important; color: #000 !important; border: 2px solid #000 !important; }
+
+/* Links hover/active */
+.low-vision a:hover, .low-vision a:active { color: #000; background: #ffea66; }
+
+/* Cabinet sidebar low-vision */
+.low-vision .sidebar {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-right: 2px solid #000 !important;
+}
+.low-vision .sidebar__section-title { font-size: 1.2rem; }
+.low-vision .sidebar__link { min-height: 44px; padding: 10px 12px; border: 2px solid #000; background: #ffff00; color: #000; }
+.low-vision .sidebar__link--active { background: #00ff00 !important; }
+.low-vision .sidebar__tag { background: #000; color: #fff; border: 2px solid #000; }
+.low-vision .role-chip { min-height: 40px; border: 2px solid #000; background: #ffff00; }
+.low-vision .role-chip--active { background: #00ff00; }
+.low-vision .sidebar-toggle { background: #000; color: #fff; border: 2px solid #000; }
+.low-vision .mobile-accessibility { margin-left: auto; }

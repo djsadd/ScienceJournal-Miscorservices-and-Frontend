@@ -21,6 +21,14 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [lowVision, setLowVision] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('lowVision')
+      return saved === '1'
+    } catch {
+      return false
+    }
+  })
 
   const { lang, setLang } = useLanguage()
   const nav = publicNavCopy[lang]
@@ -121,7 +129,9 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
 
   return (
     <div
-      className={`public-shell ${mobileMenuOpen ? 'public-shell--menu-open' : ''} theme-light`}
+      className={`public-shell ${mobileMenuOpen ? 'public-shell--menu-open' : ''} theme-light ${
+        lowVision ? 'low-vision' : ''
+      }`}
     >
       <header className="public-header">
         <div className="public-top" aria-label="Site navigation">
@@ -131,6 +141,53 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
           <nav className="public-nav public-nav--top">{renderNav(topNav)}</nav>
           <div className="public-actions">
             {/* Theme toggle removed: site uses light theme only */}
+            <button
+              className={`button button--contrast ${lowVision ? 'button--active' : ''}`}
+              type="button"
+              aria-pressed={lowVision}
+              onClick={() => {
+                setLowVision((v) => {
+                  const next = !v
+                  try {
+                    localStorage.setItem('lowVision', next ? '1' : '0')
+                  } catch {}
+                  return next
+                })
+              }}
+            >
+              Версия для слабовидящих
+            </button>
+            {/* Optional text size controls */}
+            <div className="text-size-controls" aria-label="Управление размером текста">
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={() => {
+                  const root = document.querySelector('.public-shell') as HTMLElement | null
+                  if (!root) return
+                  const style = window.getComputedStyle(root)
+                  const current = parseFloat(style.fontSize || '20')
+                  const next = Math.min(current + 2, 26)
+                  root.style.fontSize = `${next}px`
+                }}
+              >
+                A+
+              </button>
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={() => {
+                  const root = document.querySelector('.public-shell') as HTMLElement | null
+                  if (!root) return
+                  const style = window.getComputedStyle(root)
+                  const current = parseFloat(style.fontSize || '20')
+                  const next = Math.max(current - 2, 16)
+                  root.style.fontSize = `${next}px`
+                }}
+              >
+                A-
+              </button>
+            </div>
             <div className="lang-switch">
               {(['ru', 'kz', 'en'] as Lang[]).map((code) => (
                 <button

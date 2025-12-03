@@ -313,6 +313,14 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { lang, setLang } = useLanguage()
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), [])
   const [unreadCount, setUnreadCount] = useState<number>(0)
+  const [lowVision, setLowVision] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('lowVision')
+      return saved === '1'
+    } catch {
+      return false
+    }
+  })
 
   useEffect(() => {
     let isMounted = true
@@ -386,7 +394,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const sections = useMemo(() => copy.nav[activeRole], [activeRole, copy])
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${lowVision ? 'low-vision' : ''}`}>
       <aside id="cabinet-sidebar" className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar__brand">
           <Link to="/" className="brand--compact">
@@ -431,6 +439,24 @@ export function MainLayout({ children }: MainLayoutProps) {
                 {code.toUpperCase()}
               </button>
             ))}
+          </div>
+          <div className="sidebar__accessibility">
+            <button
+              type="button"
+              className={`button button--contrast ${lowVision ? 'button--active' : ''}`}
+              aria-pressed={lowVision}
+              onClick={() => {
+                setLowVision((v) => {
+                  const next = !v
+                  try {
+                    localStorage.setItem('lowVision', next ? '1' : '0')
+                  } catch {}
+                  return next
+                })
+              }}
+            >
+              Версия для слабовидящих
+            </button>
           </div>
         </div>
 
@@ -508,6 +534,22 @@ export function MainLayout({ children }: MainLayoutProps) {
             {isSidebarOpen ? copy.mobileMenuClose : copy.mobileMenuOpen}
           </button>
           <span className="mobile-shell-role">{copy.roleOptions[activeRole]}</span>
+          <button
+            type="button"
+            className={`button button--contrast mobile-accessibility ${lowVision ? 'button--active' : ''}`}
+            aria-pressed={lowVision}
+            onClick={() => {
+              setLowVision((v) => {
+                const next = !v
+                try {
+                  localStorage.setItem('lowVision', next ? '1' : '0')
+                } catch {}
+                return next
+              })
+            }}
+          >
+            Слабовидящим
+          </button>
         </div>
         <main className="app-main">{children}</main>
         <footer className="app-footer">
