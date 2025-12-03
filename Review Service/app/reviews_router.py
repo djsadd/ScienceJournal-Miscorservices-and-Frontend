@@ -232,7 +232,7 @@ def update_review(review_id: int, review: schemas.ReviewUpdate, db: Session = De
         shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
         frontend_url = getattr(config, 'FRONTEND_URL', 'http://localhost:8081')
         payload = {
-            "user_id": db_review.reviewer_id,
+            "user_id": db_review.assigned_editor_id,
             "type": "editorial",
             "title": "Рецензия завершена",
             "message": f"Рецензия по по статье завершена #{db_review.article_id}.",
