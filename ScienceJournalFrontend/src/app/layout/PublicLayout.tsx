@@ -21,11 +21,9 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   const { lang, setLang } = useLanguage()
   const nav = publicNavCopy[lang]
-  const isDark = theme === 'dark'
 
   const topNav: NavItem[] = [
     { href: '/', label: nav.home },
@@ -119,15 +117,11 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
       ),
     )
 
-  const themeLabel = isDark ? nav.theme.dark : nav.theme.light
-  const themeIcon = isDark ? nav.theme.iconDark : nav.theme.iconLight
-  const themeAria = isDark ? nav.theme.ariaLight : nav.theme.ariaDark
+  // Theme toggle removed; no theme labels/icons used
 
   return (
     <div
-      className={`public-shell ${mobileMenuOpen ? 'public-shell--menu-open' : ''} ${
-        isDark ? 'theme-dark' : 'theme-light'
-      }`}
+      className={`public-shell ${mobileMenuOpen ? 'public-shell--menu-open' : ''} theme-light`}
     >
       <header className="public-header">
         <div className="public-top" aria-label="Site navigation">
@@ -136,17 +130,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
           </Link>
           <nav className="public-nav public-nav--top">{renderNav(topNav)}</nav>
           <div className="public-actions">
-            <button
-              type="button"
-              className="theme-toggle theme-toggle--header"
-              onClick={() => setTheme(isDark ? 'light' : 'dark')}
-              aria-label={themeAria}
-            >
-              <span className="theme-toggle__icon" aria-hidden="true">
-                {themeIcon}
-              </span>
-              <span className="theme-toggle__label">{themeLabel}</span>
-            </button>
+            {/* Theme toggle removed: site uses light theme only */}
             <div className="lang-switch">
               {(['ru', 'kz', 'en'] as Lang[]).map((code) => (
                 <button
