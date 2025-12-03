@@ -40,6 +40,7 @@ import VolumeDetailPage from './pages/VolumeDetailPage'
 import PublicVolumeDetailPage from './pages/PublicVolumeDetailPage'
 import VolumeEditPage from './pages/VolumeEditPage'
 import NotificationsPage from './pages/NotificationsPage'
+import VerifyEmailPage from './pages/VerifyEmailPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -308,6 +309,14 @@ function App() {
               <NotificationsPage />
             </MainLayout>
           </RequireAuth>
+        }
+      />
+      <Route
+        path="/auth/verify-email"
+        element={
+          <PublicLayout>
+            <VerifyEmailPage />
+          </PublicLayout>
         }
       />
       <Route
