@@ -145,6 +145,8 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
               className={`button button--contrast ${lowVision ? 'button--active' : ''}`}
               type="button"
               aria-pressed={lowVision}
+              aria-label={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
+              title={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
               onClick={() => {
                 setLowVision((v) => {
                   const next = !v
@@ -155,7 +157,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
                 })
               }}
             >
-              Версия для слабовидящих
+              👁️
             </button>
             {/* Optional text size controls */}
             <div className="text-size-controls" aria-label="Управление размером текста">

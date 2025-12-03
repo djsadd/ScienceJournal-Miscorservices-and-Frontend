@@ -1,13 +1,49 @@
 from datetime import datetime
 from typing import List, Optional
+import logging
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app import models, schemas, config
 from app.deps import get_db, get_current_user
+from app.services.email_service import send_email
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+
+logger = logging.getLogger(__name__)
+
+
+def _get_user_email(user_id: int) -> Optional[str]:
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            r = client.get(f"{config.AUTH_SERVICE_URL}/auth/users/{user_id}")
+            if r.status_code == 200:
+                data = r.json()
+                email = data.get("email")
+                if email and isinstance(email, str):
+                    return email
+    except Exception as e:
+        logger.warning("Failed to resolve user email for %s: %s", user_id, e)
+    return None
+
+
+def _maybe_send_email_for_notification(n: models.Notification) -> None:
+    # Resolve recipient email via Auth service
+    recipient = _get_user_email(n.user_id)
+    if not recipient:
+        logger.info("No email found for user_id=%s; skip email", n.user_id)
+        return
+    subject = n.title
+    text = n.message
+    html = f"<p>{n.message}</p>"
+    try:
+        send_email(recipient, subject, text, html)
+        logger.info("Email sent to %s for notification %s", recipient, n.id)
+    except Exception as e:
+        logger.warning("Email send failed for notification %s: %s", n.id, e)
 
 
 @router.post("/", response_model=schemas.NotificationOut)
@@ -26,6 +62,7 @@ def create_notification(
     db.add(notification)
     db.commit()
     db.refresh(notification)
+    _maybe_send_email_for_notification(notification)
     return notification
 
 
@@ -54,6 +91,7 @@ def create_notification_internal(
     db.add(notification)
     db.commit()
     db.refresh(notification)
+    _maybe_send_email_for_notification(notification)
     return notification
 
 

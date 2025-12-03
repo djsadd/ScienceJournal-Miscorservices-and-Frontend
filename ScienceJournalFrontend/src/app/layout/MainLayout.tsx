@@ -445,6 +445,8 @@ export function MainLayout({ children }: MainLayoutProps) {
               type="button"
               className={`button button--contrast ${lowVision ? 'button--active' : ''}`}
               aria-pressed={lowVision}
+              aria-label={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
+              title={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
               onClick={() => {
                 setLowVision((v) => {
                   const next = !v
@@ -455,7 +457,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 })
               }}
             >
-              Версия для слабовидящих
+              👁️
             </button>
           </div>
         </div>
@@ -538,6 +540,8 @@ export function MainLayout({ children }: MainLayoutProps) {
             type="button"
             className={`button button--contrast mobile-accessibility ${lowVision ? 'button--active' : ''}`}
             aria-pressed={lowVision}
+            aria-label={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
+            title={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
             onClick={() => {
               setLowVision((v) => {
                 const next = !v
@@ -548,7 +552,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               })
             }}
           >
-            Слабовидящим
+            👁️
           </button>
         </div>
         <main className="app-main">{children}</main>

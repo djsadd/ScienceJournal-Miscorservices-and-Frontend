@@ -23,6 +23,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://auth:pass@db/auth
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - NOTIFICATIONS_SERVICE_URL=http://notifications:8000
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
     ports:
       - "8001:8000"
     depends_on:
@@ -115,6 +117,15 @@ services:
     environment:
       - DATABASE_URL=postgresql://notifications:pass@db/notifications
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - AUTH_SERVICE_URL=http://auth:8000
+      # Email configuration
+      - EMAIL_HOST=${EMAIL_HOST:-smtp.mail.ru}
+      - EMAIL_PORT=${EMAIL_PORT:-465}
+      - EMAIL_USE_SSL=${EMAIL_USE_SSL:-true}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-${EMAIL_HOST_USER}}
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-true}
     ports:
       - "8008:8000"
     depends_on:

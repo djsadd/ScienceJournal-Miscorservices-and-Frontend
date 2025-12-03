@@ -20,8 +20,8 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Username or email already registered")
     hashed_password = security.hash_password(user.password)
     
-    # Editors and reviewers require approval - set is_active to False
-    is_active = user.role not in ["editor", "reviewer"]
+    # Require email verification for all roles - set is_active to False until confirmed
+    is_active = False
     
     new_user = models.User(
         username=user.username,
@@ -57,7 +57,56 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         # Fail-soft: auth registration succeeds even if profile call fails
         pass
 
+    # Create notification (and email) via Notification Service with verification link
+    try:
+        # issue email verification token (JWT signed)
+        verify_token = security.create_access_token({"sub": str(new_user.id), "purpose": "email_verify"})
+        verify_link = f"http://localhost:8001/auth/verify-email?token={verify_token}"
+        notify_payload = {
+            "user_id": new_user.id,
+            "type": "system",
+            "title": "Подтверждение электронной почты",
+            "message": (
+                "Вы успешно зарегистрированы в ScienceJournal. "
+                "Для активации аккаунта подтвердите эл. почту по ссылке: "
+                f"{verify_link}"
+            ),
+            "related_entity": f"auth:register:{new_user.id}",
+        }
+        with httpx.Client(timeout=5.0) as client:
+            client.post(
+                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
+                json=notify_payload,
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+    except Exception:
+        # Fail-soft: continue even if notifications service is unavailable
+        pass
+
     return new_user
+
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    """Verify email using a signed token and activate the user."""
+    try:
+        payload = jwt.decode(token, config.SECRET_KEY, algorithms=[config.ALGORITHM])
+        sub = payload.get("sub")
+        purpose = payload.get("purpose")
+        if not sub or purpose != "email_verify":
+            raise HTTPException(status_code=400, detail="Invalid verification token")
+        user_id = int(sub)
+    except (JWTError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Activate user upon successful verification
+    user.is_active = True
+    db.commit()
+    return {"status": "verified", "user_id": user.id}
 
 @router.post("/login", response_model=schemas.Token)
 def login(form_data: schemas.UserCreate, db: Session = Depends(get_db)):
