@@ -1,8 +1,42 @@
 import { useState } from 'react'
+import { useLanguage } from '../shared/LanguageContext'
 
 type Filter = 'board' | 'council'
 
 export function EditorialPage() {
+  const { lang } = useLanguage()
+  const t = {
+    ru: {
+      eyebrow: 'редакция',
+      title: 'Редакционная коллегия и совет',
+      subtitle: 'Состав редколлегии и редсовета журнала «Известия университета Туран-Астана».',
+      boardBtn: 'Редакционная коллегия',
+      councilBtn: 'Редакционный совет',
+      secretary: 'Ответственный секретарь: Нурманов А. М.',
+      councilTitle: 'Редакционный совет',
+      councilText: 'Состав редсовета публикуется в ближайшем обновлении.',
+    },
+    en: {
+      eyebrow: 'editorial',
+      title: 'Editorial board and council',
+      subtitle: 'Members of the editorial board and council of “Bulletin of Turan-Astana University”.',
+      boardBtn: 'Editorial board',
+      councilBtn: 'Editorial council',
+      secretary: 'Managing secretary: Nurmanov A. M.',
+      councilTitle: 'Editorial council',
+      councilText: 'Council members will be published in the next update.',
+    },
+    kz: {
+      eyebrow: 'редакция',
+      title: 'Редакциялық алқа және кеңес',
+      subtitle: '«Туран-Астана» университетінің хабаршысы редакциялық алқасы мен кеңесі.',
+      boardBtn: 'Редакциялық алқа',
+      councilBtn: 'Редакциялық кеңес',
+      secretary: 'Жауапты хатшы: Нурманов А. М.',
+      councilTitle: 'Редакциялық кеңес',
+      councilText: 'Кеңес құрамы келесі жаңартуда жарияланады.',
+    },
+  }[lang]
   const [filter, setFilter] = useState<Filter>('board')
 
   const board = [
@@ -32,24 +66,22 @@ export function EditorialPage() {
   return (
     <div className="public-container">
       <div className="section public-section">
-        <p className="eyebrow">редакция</p>
-        <h1 className="hero__title">Редакционная коллегия и совет</h1>
-        <p className="subtitle">
-          Состав редколлегии и редсовета журнала «Известия университета Туран-Астана».
-        </p>
+        <p className="eyebrow">{t.eyebrow}</p>
+        <h1 className="hero__title">{t.title}</h1>
+        <p className="subtitle">{t.subtitle}</p>
 
         <div className="filter-bar">
           <button
             className={`filter-chip ${filter === 'board' ? 'filter-chip--active' : ''}`}
             onClick={() => setFilter('board')}
           >
-            Редакционная коллегия
+            {t.boardBtn}
           </button>
           <button
             className={`filter-chip ${filter === 'council' ? 'filter-chip--active' : ''}`}
             onClick={() => setFilter('council')}
           >
-            Редакционный совет
+            {t.councilBtn}
           </button>
         </div>
 
@@ -67,15 +99,15 @@ export function EditorialPage() {
                 </div>
               ))}
             </div>
-            <div className="meta-label" style={{ marginTop: 16 }}>Ответственный секретарь: Нурманов А. М.</div>
+            <div className="meta-label" style={{ marginTop: 16 }}>{t.secretary}</div>
           </>
         )}
 
         {filter === 'council' && (
           <>
             <div className="panel">
-              <div className="panel-title">Редакционный совет</div>
-              <p className="subtitle">Состав редсовета публикуется в ближайшем обновлении.</p>
+              <div className="panel-title">{t.councilTitle}</div>
+              <p className="subtitle">{t.councilText}</p>
             </div>
           </>
         )}
