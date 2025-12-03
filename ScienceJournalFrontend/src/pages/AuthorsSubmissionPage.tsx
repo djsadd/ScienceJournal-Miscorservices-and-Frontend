@@ -100,6 +100,7 @@ export function AuthorsSubmissionPage() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [pendingPayload, setPendingPayload] = useState<any | null>(null)
   const [confirmLang, setConfirmLang] = useState<Lang>('ru')
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -333,6 +334,38 @@ export function AuthorsSubmissionPage() {
     }
   }
 
+  const validateForm = (): boolean => {
+    const nextErrors: Record<string, string> = {}
+    if (!articleType) nextErrors.articleType = 'Выберите тип статьи'
+    ;(['ru', 'kz', 'en'] as Lang[]).forEach((lang) => {
+      if (!titles[lang]?.trim()) nextErrors[`title_${lang}`] = 'Заполните заголовок'
+      if (!abstracts[lang]?.trim()) nextErrors[`abstract_${lang}`] = 'Заполните аннотацию'
+      if (!authors[lang]?.trim()) nextErrors[`authors_${lang}`] = 'Укажите авторов'
+    })
+    if (selectedKeywords.length === 0) nextErrors.keywords = 'Добавьте хотя бы одно ключевое слово'
+    if (authorList.length === 0) nextErrors.authorList = 'Добавьте минимум одного автора'
+    const manuscript = getFileNameFromInputIndex(0)
+    const antiplag = getFileNameFromInputIndex(3)
+    const authorInfo = getFileNameFromInputIndex(1)
+    const coverLetter = getFileNameFromInputIndex(2)
+    if (!manuscript) nextErrors.manuscript = 'Загрузите файл рукописи'
+    if (!antiplag) nextErrors.antiplagiarism = 'Загрузите файл антиплагиата'
+    if (!authorInfo) nextErrors.authorInfo = 'Загрузите сведения об авторах'
+    if (!coverLetter) nextErrors.coverLetter = 'Загрузите сопроводительное письмо'
+    if (!confirmCopyright) nextErrors.confirmCopyright = 'Подтвердите отсутствие параллельной подачи'
+    if (!confirmOriginality) nextErrors.confirmOriginality = 'Подтвердите отсутствие плагиата'
+    if (!confirmConsent) nextErrors.confirmConsent = 'Подтвердите согласие всех авторов'
+
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) {
+      const firstErrorKey = Object.keys(nextErrors)[0]
+      const el = document.querySelector<HTMLElement>(`[data-error-key="${firstErrorKey}"]`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return false
+    }
+    return true
+  }
+
   return (
     <div className="public-container">
       {false && (
@@ -369,6 +402,7 @@ export function AuthorsSubmissionPage() {
             onSubmit={async (e) => {
               e.preventDefault()
               try {
+                if (!validateForm()) return
                 const form = e.currentTarget as HTMLFormElement
                 const fileInputs = Array.from(
                   form.querySelectorAll<HTMLInputElement>('input[type="file"].file-input[data-upload-slot="article-file"]'),
@@ -462,12 +496,15 @@ export function AuthorsSubmissionPage() {
                 className="chip-select"
                 value={articleType}
                 onChange={(e) => setArticleType(e.target.value)}
+                data-error-key="articleType"
+                style={errors.articleType ? { borderColor: 'red' } : undefined}
               >
               <option value="">---------</option>
               {articleTypes.map((type) => (
                 <option key={type}>{type}</option>
               ))}
             </select>
+            {errors.articleType ? (<p className="form-hint" style={{ color: 'red' }}>{errors.articleType}</p>) : null}
           </div>
 
           <div className="form-field form-field--article-file">
@@ -513,6 +550,8 @@ export function AuthorsSubmissionPage() {
                 }
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
+                data-error-key="keywords"
+                style={errors.keywords ? { borderColor: 'red' } : undefined}
               />
               <input type="hidden" name="keywords" value={selectedKeywordsValue} />
             </div>
@@ -540,6 +579,7 @@ export function AuthorsSubmissionPage() {
                 Добавить новое ключевое слово
               </button>
             ) : null}
+            {errors.keywords ? (<p className="form-hint" style={{ color: 'red' }}>{errors.keywords}</p>) : null}
           </div>
 
           <div className="form-field">
@@ -566,7 +606,10 @@ export function AuthorsSubmissionPage() {
               placeholder={titlePlaceholders[activeLang]}
               value={titles[activeLang]}
               onChange={(e) => setTitles((prev) => ({ ...prev, [activeLang]: e.target.value }))}
+              data-error-key={`title_${activeLang}`}
+              style={errors[`title_${activeLang}`] ? { borderColor: 'red' } : undefined}
             />
+            {errors[`title_${activeLang}`] ? (<p className="form-hint" style={{ color: 'red' }}>{errors[`title_${activeLang}`]}</p>) : null}
           </div>
 
           <div className="form-field">
@@ -577,7 +620,10 @@ export function AuthorsSubmissionPage() {
               placeholder={abstractPlaceholders[activeLang]}
               value={abstracts[activeLang]}
               onChange={(e) => setAbstracts((prev) => ({ ...prev, [activeLang]: e.target.value }))}
+              data-error-key={`abstract_${activeLang}`}
+              style={errors[`abstract_${activeLang}`] ? { borderColor: 'red' } : undefined}
             />
+            {errors[`abstract_${activeLang}`] ? (<p className="form-hint" style={{ color: 'red' }}>{errors[`abstract_${activeLang}`]}</p>) : null}
           </div>
 
           <div className="form-field">
@@ -587,7 +633,10 @@ export function AuthorsSubmissionPage() {
               placeholder={authorsPlaceholders[activeLang]}
               value={authors[activeLang]}
               onChange={(e) => setAuthors((prev) => ({ ...prev, [activeLang]: e.target.value }))}
+              data-error-key={`authors_${activeLang}`}
+              style={errors[`authors_${activeLang}`] ? { borderColor: 'red' } : undefined}
             />
+            {errors[`authors_${activeLang}`] ? (<p className="form-hint" style={{ color: 'red' }}>{errors[`authors_${activeLang}`]}</p>) : null}
           </div>
 
           <div className="form-field">
@@ -596,11 +645,15 @@ export function AuthorsSubmissionPage() {
               type="file"
               className="file-input"
               data-upload-slot="article-file"
+              data-error-key="manuscript"
+              style={errors.manuscript ? { outline: '2px solid red' } : undefined}
             />
+            {errors.manuscript ? (<p className="form-hint" style={{ color: 'red' }}>{errors.manuscript}</p>) : null}
           </div>
           <div className="form-field">
             <label className="form-label">Загрузить сведения об антиплагиате</label>
-            <input type="file" className="file-input" data-upload-slot="article-file" />
+            <input type="file" className="file-input" data-upload-slot="article-file" data-error-key="antiplagiarism" style={errors.antiplagiarism ? { outline: '2px solid red' } : undefined} />
+            {errors.antiplagiarism ? (<p className="form-hint" style={{ color: 'red' }}>{errors.antiplagiarism}</p>) : null}
           </div>
 
           {false && (
@@ -611,11 +664,13 @@ export function AuthorsSubmissionPage() {
           )}
           <div className="form-field">
             <label className="form-label">Файл со сведениями об авторах (*.doc, *.docx)</label>
-            <input type="file" className="file-input" data-upload-slot="article-file" />
+            <input type="file" className="file-input" data-upload-slot="article-file" data-error-key="authorInfo" style={errors.authorInfo ? { outline: '2px solid red' } : undefined} />
+            {errors.authorInfo ? (<p className="form-hint" style={{ color: 'red' }}>{errors.authorInfo}</p>) : null}
           </div>
           <div className="form-field">
             <label className="form-label">Сопроводительное письмо (*.pdf)</label>
-            <input type="file" className="file-input" data-upload-slot="article-file" />
+            <input type="file" className="file-input" data-upload-slot="article-file" data-error-key="coverLetter" style={errors.coverLetter ? { outline: '2px solid red' } : undefined} />
+            {errors.coverLetter ? (<p className="form-hint" style={{ color: 'red' }}>{errors.coverLetter}</p>) : null}
           </div>
 
           <div className="form-field">
@@ -634,25 +689,31 @@ export function AuthorsSubmissionPage() {
                 type="checkbox"
                 checked={confirmCopyright}
                 onChange={(e) => setConfirmCopyright(e.target.checked)}
+                data-error-key="confirmCopyright"
               />{' '}
               Статья ранее не публиковалась и не рассматривается другим журналом
             </label>
+            {errors.confirmCopyright ? (<p className="form-hint" style={{ color: 'red' }}>{errors.confirmCopyright}</p>) : null}
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={confirmOriginality}
                 onChange={(e) => setConfirmOriginality(e.target.checked)}
+                data-error-key="confirmOriginality"
               />{' '}
               В статье отсутствует плагиат
             </label>
+            {errors.confirmOriginality ? (<p className="form-hint" style={{ color: 'red' }}>{errors.confirmOriginality}</p>) : null}
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={confirmConsent}
                 onChange={(e) => setConfirmConsent(e.target.checked)}
+                data-error-key="confirmConsent"
               />{' '}
               Все авторы подтверждают согласие с поданной версией
             </label>
+            {errors.confirmConsent ? (<p className="form-hint" style={{ color: 'red' }}>{errors.confirmConsent}</p>) : null}
 
           <button className="button button--primary" type="submit">
             Отправить статью
@@ -728,6 +789,7 @@ export function AuthorsSubmissionPage() {
           </div>
         )}
       </div>
+      {errors.authorList ? (<p className="form-hint" style={{ color: 'red' }}>{errors.authorList}</p>) : null}
 
       {modalOpen ? (
         <div className="modal-backdrop" onClick={() => setModalOpen(false)}>
