@@ -14,3 +14,4 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7
 USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://users:8000")
 NOTIFICATIONS_SERVICE_URL = os.getenv("NOTIFICATIONS_SERVICE_URL", "http://notifications:8000")
 SHARED_SERVICE_SECRET = os.getenv("SHARED_SERVICE_SECRET", "service-shared-secret")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8001")

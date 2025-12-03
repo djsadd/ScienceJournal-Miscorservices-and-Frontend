@@ -25,6 +25,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
       - NOTIFICATIONS_SERVICE_URL=http://notifications:8000
       - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:8001}
     ports:
       - "8001:8000"
     depends_on:

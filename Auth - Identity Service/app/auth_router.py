@@ -61,7 +61,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     try:
         # issue email verification token (JWT signed)
         verify_token = security.create_access_token({"sub": str(new_user.id), "purpose": "email_verify"})
-        verify_link = f"http://localhost:8001/auth/verify-email?token={verify_token}"
+        verify_link = f"{config.PUBLIC_BASE_URL}/auth/verify-email?token={verify_token}"
         notify_payload = {
             "user_id": new_user.id,
             "type": "system",
