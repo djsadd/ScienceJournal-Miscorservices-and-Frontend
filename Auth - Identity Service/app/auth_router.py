@@ -78,6 +78,37 @@ def login(form_data: schemas.UserCreate, db: Session = Depends(get_db)):
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 
+@router.post("/refresh", response_model=schemas.Token)
+def refresh_token(payload: schemas.RefreshTokenRequest, db: Session = Depends(get_db)):
+    """Refresh access token using a valid refresh token.
+
+    Accepts JSON: {"refresh_token": "..."}
+    Returns: {"access_token": "...", "refresh_token": "...", "token_type": "bearer"}
+    """
+    if not payload.refresh_token:
+        raise HTTPException(status_code=400, detail="Missing refresh_token")
+
+    try:
+        decoded = jwt.decode(payload.refresh_token, config.SECRET_KEY, algorithms=[config.ALGORITHM])
+        sub = decoded.get("sub")
+        if sub is None:
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+        user_id = int(sub)
+    except (JWTError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account inactive")
+
+    # Issue a new access token and rotate refresh token
+    access_token = security.create_access_token({"sub": str(user.id), "roles": [user.role]})
+    new_refresh_token = security.create_refresh_token({"sub": str(user.id)})
+    return {"access_token": access_token, "refresh_token": new_refresh_token, "token_type": "bearer"}
+
+
 def get_current_user_id(authorization: str = Header(None)) -> int:
     """Extract user_id from JWT token"""
     if not authorization:

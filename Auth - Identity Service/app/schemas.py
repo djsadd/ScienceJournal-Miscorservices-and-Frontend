@@ -73,3 +73,8 @@ class UserActivationUpdate(BaseModel):
 
 class UserRoleUpdate(BaseModel):
     role: str
+
+
+class RefreshTokenRequest(BaseModel):
+    """Request body for token refresh."""
+    refresh_token: str
