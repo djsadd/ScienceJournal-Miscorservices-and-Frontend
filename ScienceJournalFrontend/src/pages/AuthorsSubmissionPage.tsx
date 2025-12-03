@@ -148,11 +148,15 @@ export function AuthorsSubmissionPage() {
       const query = keywordInput.trim().toLowerCase()
       if (!query) return []
       return keywords.filter((kw) => {
-        const title = kw.ru.toLowerCase()
+        const titleRu = kw.ru.toLowerCase()
+        const titleKz = kw.kz.toLowerCase()
+        const titleEn = kw.en.toLowerCase()
         const isSelected = selectedKeywords.some(
           (selected) => (selected.id ?? selected.ru) === (kw.id ?? kw.ru),
         )
-        return !isSelected && title.includes(query)
+        return (
+          !isSelected && (titleRu.includes(query) || titleKz.includes(query) || titleEn.includes(query))
+        )
       })
     },
     [keywords, keywordInput, selectedKeywords],
@@ -165,6 +169,14 @@ export function AuthorsSubmissionPage() {
     if (exists) return
     setSelectedKeywords((prev) => [...prev, keyword])
     setKeywordInput('')
+  }
+
+  const handleRemoveKeyword = (keyword: Keyword) => {
+    setSelectedKeywords((prev) =>
+      prev.filter(
+        (k) => (k.id ?? k.ru) !== (keyword.id ?? keyword.ru),
+      ),
+    )
   }
 
   const authorMatches = useMemo(
@@ -467,15 +479,38 @@ export function AuthorsSubmissionPage() {
                     <span
                       key={kw.id ?? kw.ru}
                       className="status-chip status-chip--submitted"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      {kw.ru}
+                      {kw.ru} / {kw.kz} / {kw.en}
+                      <button
+                        type="button"
+                        aria-label="Удалить ключевое слово"
+                        onClick={() => handleRemoveKeyword(kw)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'inherit',
+                          fontSize: 14,
+                          lineHeight: 1,
+                          padding: 0,
+                        }}
+                      >
+                        ×
+                      </button>
                     </span>
                   ))}
                 </div>
               ) : null}
               <input
                 className="text-input"
-                placeholder="Введите ключевое слово"
+                placeholder={
+                  activeLang === 'ru'
+                    ? 'Введите ключевое слово'
+                    : activeLang === 'kz'
+                    ? 'Кілт сөзді енгізіңіз'
+                    : 'Enter a keyword'
+                }
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
               />
@@ -491,7 +526,7 @@ export function AuthorsSubmissionPage() {
           className="status-chip status-chip--submitted"
           onClick={() => handleAddKeyword(kw)}
         >
-          {kw.ru}
+          {kw.ru} / {kw.kz} / {kw.en}
         </button>
       ))
     ) : (
@@ -942,7 +977,12 @@ export function AuthorsSubmissionPage() {
                   <div className="table__row"><div className="table__cell">Тип статьи</div><div className="table__cell">{articleType || '—'}</div></div>
                   <div className="table__row"><div className="table__cell">Ключевые слова</div><div className="table__cell">
                     {selectedKeywords.length
-                      ? selectedKeywords.map(kw => kw[confirmLang]).filter(Boolean).join(', ')
+                      ? selectedKeywords
+                          .map(kw =>
+                            confirmLang === 'ru' ? kw.ru : confirmLang === 'kz' ? kw.kz : kw.en,
+                          )
+                          .filter(Boolean)
+                          .join(', ')
                       : '—'}
                   </div></div>
                   <div className="table__row"><div className="table__cell">Ответственный автор</div><div className="table__cell">
