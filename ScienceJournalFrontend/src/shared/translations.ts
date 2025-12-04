@@ -65,6 +65,32 @@ type HomeCopy = {
   }
 }
 
+type LoginCopy = {
+  headerEyebrow: string
+  headerTitle: string
+  headerSubtitle: string
+  alertTitle: string
+  fields: { identifierLabel: string; identifierPlaceholder: string; passwordLabel: string; passwordPlaceholder: string }
+  rememberDevice: string
+  needHelp: string
+  submitIdle: string
+  submitBusy: string
+  footerPrompt: string
+  footerRegister: string
+  asideEyebrow: string
+  asideTitle: string
+  asideSubtitle: string
+  badges: [string, string, string]
+  steps: { title: string; text: string }[]
+  errors: {
+    pendingApproval: string
+    accessDenied: string
+    invalidCreds: string
+    apiFail: string
+    networkFail: string
+  }
+}
+
 export const publicNavCopy: Record<Lang, NavCopy> = {
   ru: {
     brandAlt: 'Логотип журнала',
@@ -415,6 +441,117 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       addressLabel: 'Мекенжай',
       phoneValue: '+7 (7172) 123-456',
       addressValue: 'Астана, Тұран даңғылы, 1',
+    },
+  },
+}
+
+export const loginCopy: Record<Lang, LoginCopy> = {
+  ru: {
+    headerEyebrow: 'Вход',
+    headerTitle: 'Войти и продолжить работу',
+    headerSubtitle:
+      'Используйте учетные данные Science Journal, чтобы получить доступ к кабинету, заданиям и публикациям.',
+    alertTitle: 'Нет доступа',
+    fields: {
+      identifierLabel: 'Username или Email',
+      identifierPlaceholder: 'username или name@example.com',
+      passwordLabel: 'Пароль',
+      passwordPlaceholder: 'Введите пароль',
+    },
+    rememberDevice: 'Запомнить устройство',
+    needHelp: 'Нужна помощь?',
+    submitIdle: 'Войти',
+    submitBusy: 'Отправляем...',
+    footerPrompt: 'Еще нет аккаунта?',
+    footerRegister: 'Зарегистрироваться',
+    asideEyebrow: 'Для чего входить',
+    asideTitle: 'Работа с материалами',
+    asideSubtitle:
+      'Получайте доступ к заявкам, рецензиям, верстке и редактированию. Сохраняем ваши действия под защищенным токеном.',
+    badges: ['Безопасное подключение', 'Разграничение ролей', 'Работа в одном окне'],
+    steps: [
+      { title: 'Войти в кабинет', text: 'Вводите username или email и пароль, чтобы открыть инструменты.' },
+      { title: 'Работайте с заявками', text: 'Отвечайте, публикуйте и рецензируйте в одном интерфейсе.' },
+      { title: 'Сохраняйте прогресс', text: 'Данные защищены токенами доступа и обновления.' },
+    ],
+    errors: {
+      pendingApproval: 'Ваш аккаунт ожидает подтверждения администратором. Доступ будет открыт после проверки.',
+      accessDenied: 'Доступ в систему закрыт. Обратитесь к администратору или в поддержку.',
+      invalidCreds: 'Неверные учетные данные. Проверьте email/username и пароль.',
+      apiFail: 'Не удалось выполнить вход. Повторите попытку позже.',
+      networkFail: 'Не удалось выполнить вход. Проверьте подключение и попробуйте снова.',
+    },
+  },
+  en: {
+    headerEyebrow: 'Login',
+    headerTitle: 'Sign in to continue',
+    headerSubtitle:
+      'Use your Science Journal credentials to access your dashboard, tasks and publications.',
+    alertTitle: 'Access denied',
+    fields: {
+      identifierLabel: 'Username or Email',
+      identifierPlaceholder: 'username or name@example.com',
+      passwordLabel: 'Password',
+      passwordPlaceholder: 'Enter your password',
+    },
+    rememberDevice: 'Remember this device',
+    needHelp: 'Need help?',
+    submitIdle: 'Log in',
+    submitBusy: 'Submitting...',
+    footerPrompt: 'No account yet?',
+    footerRegister: 'Register',
+    asideEyebrow: 'Why sign in',
+    asideTitle: 'Work with submissions',
+    asideSubtitle:
+      'Access submissions, reviews, layout and editing. Your actions are saved under a secure token.',
+    badges: ['Secure connection', 'Role-based access', 'Single workspace'],
+    steps: [
+      { title: 'Sign in to cabinet', text: 'Enter username or email and password to unlock tools.' },
+      { title: 'Work with submissions', text: 'Respond, publish and review in one interface.' },
+      { title: 'Save progress', text: 'Data protected with access and refresh tokens.' },
+    ],
+    errors: {
+      pendingApproval: 'Your account is pending administrator approval. Access will open after review.',
+      accessDenied: 'Access to the system is closed. Contact the administrator or support.',
+      invalidCreds: 'Invalid credentials. Check your email/username and password.',
+      apiFail: 'Failed to log in. Please try again later.',
+      networkFail: 'Failed to log in. Check your connection and try again.',
+    },
+  },
+  kz: {
+    headerEyebrow: 'Кіру',
+    headerTitle: 'Жұмысты жалғастыру үшін кіріңіз',
+    headerSubtitle:
+      'Science Journal тіркелгі деректерін пайдаланып, кабинетке, тапсырмаларға және жарияланымдарға қол жеткізіңіз.',
+    alertTitle: 'Қол жеткізу жоқ',
+    fields: {
+      identifierLabel: 'Пайдаланушы аты немесе Email',
+      identifierPlaceholder: 'username немесе name@example.com',
+      passwordLabel: 'Құпиясөз',
+      passwordPlaceholder: 'Құпиясөзіңізді енгізіңіз',
+    },
+    rememberDevice: 'Құрылғыны есте сақтау',
+    needHelp: 'Көмек керек пе?',
+    submitIdle: 'Кіру',
+    submitBusy: 'Жіберілуде...',
+    footerPrompt: 'Әлі тіркелген жоқсыз ба?',
+    footerRegister: 'Тіркелу',
+    asideEyebrow: 'Неліктен кіру керек',
+    asideTitle: 'Материалдармен жұмыс',
+    asideSubtitle:
+      'Өтінімдерге, рецензияларға, беттеу және редакциялауға қол жеткізіңіз. Әрекеттеріңіз қауіпсіз токенмен сақталады.',
+    badges: ['Қауіпсіз қосылу', 'Рөлдер бойынша қолжетімділік', 'Бір терезе'],
+    steps: [
+      { title: 'Кабинетке кіру', text: 'Құралдарды ашу үшін username немесе email мен құпиясөзді енгізіңіз.' },
+      { title: 'Өтінімдермен жұмыс', text: 'Жауап беріңіз, жариялаңыз және рецензиялаңыз — бір интерфейсте.' },
+      { title: 'Прогресті сақтау', text: 'Деректерге қолжетімділік және жаңарту токендерімен қорғалады.' },
+    ],
+    errors: {
+      pendingApproval: 'Тіркелгіңіз әкімші мақұлдауын күтуде. Қараудан кейін қол жеткізу ашылады.',
+      accessDenied: 'Жүйеге қолжетімділік жабық. Әкімшімен немесе қолдау қызметімен байланысыңыз.',
+      invalidCreds: 'Деректер қате. Email/username және құпиясөзді тексеріңіз.',
+      apiFail: 'Кіру сәтсіз. Кейінірек қайталап көріңіз.',
+      networkFail: 'Кіру сәтсіз. Қосылымды тексеріп, қайталап көріңіз.',
     },
   },
 }
