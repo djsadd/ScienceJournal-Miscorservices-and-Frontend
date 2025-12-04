@@ -250,6 +250,7 @@ export default function EditorArticleDetailPage() {
   const [layoutUploading, setLayoutUploading] = useState(false)
   const [layoutUploadError, setLayoutUploadError] = useState<string | null>(null)
   const [layoutUploadSuccess, setLayoutUploadSuccess] = useState<string | null>(null)
+  const [layoutDragActive, setLayoutDragActive] = useState(false)
 
   type FileOut = {
     id: string
@@ -570,19 +571,53 @@ export default function EditorArticleDetailPage() {
             {isEditor && (
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
                 <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>Загрузка вёрстки рукописи</h4>
+                <p className="form-hint" style={{ marginTop: 0 }}>Поддерживаемые форматы: PDF, DOC, DOCX, ZIP. Максимум зависит от сервера.</p>
                 {layoutUploadError && <div className="alert error" style={{ marginBottom: '0.5rem' }}>Ошибка: {layoutUploadError}</div>}
                 {layoutUploadSuccess && <div className="alert" style={{ marginBottom: '0.5rem' }}>{layoutUploadSuccess}</div>}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setLayoutDragActive(true) }}
+                  onDragLeave={(e) => { e.preventDefault(); setLayoutDragActive(false) }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setLayoutDragActive(false)
+                    setLayoutUploadError(null)
+                    setLayoutUploadSuccess(null)
+                    const f = e.dataTransfer.files && e.dataTransfer.files[0] ? e.dataTransfer.files[0] : null
+                    if (f) setLayoutFile(f)
+                  }}
+                  style={{
+                    border: '2px dashed ' + (layoutDragActive ? '#4a90e2' : '#ccc'),
+                    borderRadius: 8,
+                    padding: '1rem',
+                    background: layoutDragActive ? 'rgba(74,144,226,0.06)' : '#fafafa',
+                    transition: 'all 0.15s ease',
+                    marginBottom: '0.75rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <input
+                      id="layout-file-input"
+                      type="file"
+                      accept="application/pdf,.pdf,.doc,.docx,.zip"
+                      onChange={(e) => {
+                        setLayoutUploadError(null)
+                        setLayoutUploadSuccess(null)
+                        const f = e.target.files && e.target.files[0] ? e.target.files[0] : null
+                        setLayoutFile(f)
+                      }}
+                    />
+                    <label htmlFor="layout-file-input" className="button button--ghost button--compact">Выбрать файл</label>
+                    <span style={{ color: '#666' }}>или перетащите сюда</span>
+                  </div>
+                  {layoutFile && (
+                    <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span className="badge">{layoutFile.name}</span>
+                      <span className="form-hint">{(layoutFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                      <button className="button button--ghost button--compact" onClick={() => setLayoutFile(null)}>Очистить</button>
+                    </div>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input
-                    type="file"
-                    accept="application/pdf,.pdf,.doc,.docx,.zip"
-                    onChange={(e) => {
-                      setLayoutUploadError(null)
-                      setLayoutUploadSuccess(null)
-                      const f = e.target.files && e.target.files[0] ? e.target.files[0] : null
-                      setLayoutFile(f)
-                    }}
-                  />
                   <button
                     className="button button--primary"
                     disabled={!layoutFile || layoutUploading}
@@ -594,7 +629,6 @@ export default function EditorArticleDetailPage() {
                       try {
                         const uploaded = await api.uploadFile<FileOut>(layoutFile)
                         try { console.log('[LayoutUpload] /api/files response:', uploaded) } catch {}
-                        // Optionally record layout linkage
                         try {
                           const rec = await api.createLayoutRecord<LayoutRecordOut>({
                             article_id: data.id,
@@ -602,11 +636,9 @@ export default function EditorArticleDetailPage() {
                             file_url: uploaded.url,
                           })
                           try { console.log('[LayoutUpload] /api/layout/records response:', rec) } catch {}
-                          // Add to local state for immediate UI reflection
                           setLayoutRecords((prev) => [rec, ...prev])
                         } catch (e: any) {
                           try { console.warn('[LayoutUpload] create layout record failed:', e) } catch {}
-                          // As a fallback, refresh list
                           try { await fetchLayoutRecords(data.id) } catch {}
                         }
                         setLayoutUploadSuccess('Файл загружен. См. консоль для ответа API.')
@@ -621,6 +653,11 @@ export default function EditorArticleDetailPage() {
                       }
                     }}
                   >{layoutUploading ? 'Загружается...' : 'Загрузить вёрстку'}</button>
+                  <button
+                    className="button button--ghost"
+                    disabled={!layoutFile || layoutUploading}
+                    onClick={() => setLayoutFile(null)}
+                  >Отмена</button>
                 </div>
               </div>
             )}
