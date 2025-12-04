@@ -4,8 +4,7 @@ import { api, ApiError } from '../api/client'
 import { Alert } from '../shared/components/Alert'
 
 export function LoginPage() {
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -17,7 +16,8 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       setErrorMsg(null)
-      const payload = { username, email, password }
+      // Backend accepts username OR email in the `username` field
+      const payload = { username: identifier, password }
       const response = await api.post<{ access_token: string; refresh_token?: string; token_type?: string }>(
         '/auth/login',
         payload,
@@ -75,24 +75,13 @@ export function LoginPage() {
             </Alert>
           )}
           <label className="form-field">
-            <span className="form-label">Username</span>
+            <span className="form-label">Username или Email</span>
             <input
               className="text-input"
               type="text"
-              placeholder="your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </label>
-          <label className="form-field">
-            <span className="form-label">Email</span>
-            <input
-              className="text-input"
-              type="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="username или name@example.com"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
             />
           </label>
@@ -152,7 +141,7 @@ export function LoginPage() {
             <span className="auth-step__number">1</span>
             <div>
               <div className="auth-step__title">Войти в кабинет</div>
-              <div className="auth-step__text">Вводите username и пароль, чтобы открыть инструменты.</div>
+              <div className="auth-step__text">Вводите username или email и пароль, чтобы открыть инструменты.</div>
             </div>
           </div>
           <div className="auth-step">

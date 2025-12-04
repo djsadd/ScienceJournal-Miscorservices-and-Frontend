@@ -109,8 +109,12 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     return {"status": "verified", "user_id": user.id}
 
 @router.post("/login", response_model=schemas.Token)
-def login(form_data: schemas.UserCreate, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.username == form_data.username).first()
+def login(form_data: schemas.LoginRequest, db: Session = Depends(get_db)):
+    # Allow login via either username or email using the same field
+    identifier = form_data.username
+    user = db.query(models.User).filter(
+        (models.User.username == identifier) | (models.User.email == identifier)
+    ).first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     

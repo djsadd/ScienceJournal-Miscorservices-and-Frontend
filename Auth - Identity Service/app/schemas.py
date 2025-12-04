@@ -78,3 +78,9 @@ class UserRoleUpdate(BaseModel):
 class RefreshTokenRequest(BaseModel):
     """Request body for token refresh."""
     refresh_token: str
+
+
+class LoginRequest(BaseModel):
+    """Login payload supporting username OR email as identifier."""
+    username: str
+    password: str
