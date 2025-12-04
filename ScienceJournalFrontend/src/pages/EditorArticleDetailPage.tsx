@@ -273,6 +273,9 @@ export default function EditorArticleDetailPage() {
   const [layoutRecords, setLayoutRecords] = useState<LayoutRecordOut[]>([])
   const [layoutRecordsLoading, setLayoutRecordsLoading] = useState(false)
   const [layoutRecordsError, setLayoutRecordsError] = useState<string | null>(null)
+  // Author details modal state
+  const [authorModalOpen, setAuthorModalOpen] = useState(false)
+  const [selectedAuthor, setSelectedAuthor] = useState<AuthorOut | null>(null)
 
   const fetchLayoutRecords = async (articleId: number) => {
     setLayoutRecordsLoading(true)
@@ -505,7 +508,11 @@ export default function EditorArticleDetailPage() {
                   {data.authors.map((a) => (
                     <div className="table__row" key={a.id}>
                       <div className="table__cell">
-                        <div className="table__title">{`${a.last_name} ${a.first_name}${a.patronymic ? ' ' + a.patronymic : ''}`}</div>
+                        <div className="table__title">
+                          <a href="#" style={{ textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); setSelectedAuthor(a); setAuthorModalOpen(true) }}>
+                            {`${a.last_name} ${a.first_name}${a.patronymic ? ' ' + a.patronymic : ''}`}
+                          </a>
+                        </div>
                         <div className="table__meta">{a.prefix || ''}</div>
                       </div>
                       <div className="table__cell">{a.email}</div>
@@ -709,6 +716,34 @@ export default function EditorArticleDetailPage() {
             )}
           </div>
         </section>
+      )}
+      {authorModalOpen && selectedAuthor && (
+        <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0 }}>Автор</h3>
+              <button className="modal__close" onClick={() => setAuthorModalOpen(false)}>×</button>
+            </div>
+            <div className="modal__body">
+              <div className="details-grid">
+                <div><strong>ФИО:</strong> {`${selectedAuthor.last_name} ${selectedAuthor.first_name}${selectedAuthor.patronymic ? ' ' + selectedAuthor.patronymic : ''}`}</div>
+                <div><strong>Префикс:</strong> {selectedAuthor.prefix || '—'}</div>
+                <div><strong>Email:</strong> {selectedAuthor.email}</div>
+                <div><strong>Телефон:</strong> {selectedAuthor.phone || '—'}</div>
+                <div><strong>Адрес:</strong> {selectedAuthor.address || '—'}</div>
+                <div><strong>Страна:</strong> {selectedAuthor.country || '—'}</div>
+                <div style={{ gridColumn: '1 / -1' }}><strong>Аффилиация(и):</strong><br/>{[selectedAuthor.affiliation1, selectedAuthor.affiliation2, selectedAuthor.affiliation3].filter(Boolean).join('; ') || '—'}</div>
+                <div><strong>Контактный автор:</strong> {selectedAuthor.is_corresponding ? 'Да' : 'Нет'}</div>
+                <div><strong>ORCID:</strong> {selectedAuthor.orcid || '—'}</div>
+                <div><strong>Scopus Author ID:</strong> {selectedAuthor.scopus_author_id || '—'}</div>
+                <div><strong>ResearcherID:</strong> {selectedAuthor.researcher_id || '—'}</div>
+              </div>
+            </div>
+            <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button className="button button--primary" onClick={() => setAuthorModalOpen(false)}>Закрыть</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {isAcceptOpen && (
