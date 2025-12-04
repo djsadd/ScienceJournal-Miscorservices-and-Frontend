@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { useLanguage } from '../shared/LanguageContext'
+import { registerCopy } from '../shared/translations'
 
 export function RegisterPage() {
+  const { lang } = useLanguage()
+  const t = registerCopy[lang]
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [username, setUsername] = useState('')
@@ -25,11 +29,11 @@ export function RegisterPage() {
     try {
       setError(null)
       if (password !== confirm) {
-        setError('Passwords do not match')
+        setError(t.errors.passwordMismatch)
         return
       }
       if (!acceptTerms) {
-        setError('Please accept the terms and privacy policy')
+        setError(t.errors.acceptRequired)
         return
       }
 
@@ -61,12 +65,9 @@ export function RegisterPage() {
     <div className="public-container auth-layout">
       <section className="public-section auth-card">
         <div className="auth-header">
-          <p className="eyebrow">Новый аккаунт</p>
-          <h1 className="hero__title">Регистрация в Science Journal</h1>
-          <p className="subtitle">
-            Создайте профиль автора, редактора или рецензента. После подтверждения мы пришлём инструкции на электронную
-            почту.
-          </p>
+          <p className="eyebrow">{t.headerEyebrow}</p>
+          <h1 className="hero__title">{t.headerTitle}</h1>
+          <p className="subtitle">{t.headerSubtitle}</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -77,22 +78,22 @@ export function RegisterPage() {
           )}
           <div className="grid grid-2 auth-grid">
             <label className="form-field">
-              <span className="form-label">First name</span>
+              <span className="form-label">{t.fields.firstName.label}</span>
               <input
                 className="text-input"
                 type="text"
-                placeholder="Your first name"
+                placeholder={t.fields.firstName.placeholder}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
               />
             </label>
             <label className="form-field">
-              <span className="form-label">Last name</span>
+              <span className="form-label">{t.fields.lastName.label}</span>
               <input
                 className="text-input"
                 type="text"
-                placeholder="Your last name"
+                placeholder={t.fields.lastName.placeholder}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
@@ -100,11 +101,11 @@ export function RegisterPage() {
             </label>
           </div>
           <label className="form-field">
-            <span className="form-label">Username</span>
+            <span className="form-label">{t.fields.username.label}</span>
             <input
               className="text-input"
               type="text"
-              placeholder="Login / username"
+              placeholder={t.fields.username.placeholder}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -112,68 +113,68 @@ export function RegisterPage() {
           </label>
           <div className="grid grid-2 auth-grid">
             <label className="form-field">
-              <span className="form-label">Organization</span>
+              <span className="form-label">{t.fields.organization.label}</span>
               <input
                 className="text-input"
                 type="text"
-                placeholder="University, company"
+                placeholder={t.fields.organization.placeholder}
                 value={organization}
                 onChange={(e) => setOrganization(e.target.value)}
               />
             </label>
             <label className="form-field">
-              <span className="form-label">Institution</span>
+              <span className="form-label">{t.fields.institution.label}</span>
               <input
                 className="text-input"
                 type="text"
-                placeholder="Department, lab, institute"
+                placeholder={t.fields.institution.placeholder}
                 value={institution}
                 onChange={(e) => setInstitution(e.target.value)}
               />
             </label>
           </div>
           <label className="form-field">
-            <span className="form-label">Work email</span>
+            <span className="form-label">{t.fields.email.label}</span>
             <input
               className="text-input"
               type="email"
-              placeholder="name@example.com"
+              placeholder={t.fields.email.placeholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </label>
           <label className="form-field">
-            <span className="form-label">Role</span>
+            <span className="form-label">{t.fields.role.label}</span>
             <select
               className="text-input"
               value={role}
               onChange={(e) => setRole(e.target.value as 'author' | 'editor' | 'reviewer')}
             >
-              <option value="author">Author</option>
-              <option value="reviewer">Reviewer</option>
-              <option value="editor">Editor</option>
+              <option value="author">{t.fields.role.options.author}</option>
+              <option value="reviewer">{t.fields.role.options.reviewer}</option>
+              <option value="editor">{t.fields.role.options.editor}</option>
             </select>
           </label>
           <div className="grid grid-2 auth-grid">
             <label className="form-field">
-              <span className="form-label">Password</span>
+              <span className="form-label">{t.fields.password.label}</span>
               <input
                 className="text-input"
                 type="password"
-                placeholder="Minimum 8 characters"
+                placeholder={t.fields.password.placeholder}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <span className="form-hint">Use letters, numbers, and special symbols.</span>
+              <span className="form-hint">{t.fields.password.hint}</span>
             </label>
             <label className="form-field">
-              <span className="form-label">Confirm password</span>
+              <span className="form-label">{t.fields.confirm.label}</span>
               <input
                 className="text-input"
                 type="password"
-                placeholder="Repeat password once more"
+                placeholder={t.fields.confirm.placeholder}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
@@ -189,7 +190,7 @@ export function RegisterPage() {
                 onChange={(e) => setAcceptTerms(e.target.checked)}
                 required
               />
-              <span>I accept the offer and privacy policy</span>
+              <span>{t.fields.accept}</span>
             </label>
             <label className="checkbox">
               <input
@@ -197,18 +198,18 @@ export function RegisterPage() {
                 checked={notifyStatus}
                 onChange={(e) => setNotifyStatus(e.target.checked)}
               />
-              <span>Send me updates and emails</span>
+              <span>{t.fields.notify}</span>
             </label>
           </div>
 
           <button type="submit" className="button button--primary auth-submit" disabled={submitting}>
-            {submitting ? "Sending..." : "Register"}
+            {submitting ? t.submitBusy : t.submitIdle}
           </button>
 
           <div className="auth-footer">
-            <span>Already have an account?</span>
+            <span>{t.footerPrompt}</span>
             <Link to="/login" className="auth-link">
-              Sign in
+              {t.footerLogin}
             </Link>
           </div>
         </form>
@@ -216,42 +217,39 @@ export function RegisterPage() {
 
       <section className="public-section auth-aside">
         <div className="auth-note">
-          <p className="eyebrow">Перед стартом</p>
-          <h2 className="panel-title">Укажите роль и профиль</h2>
-          <p className="subtitle">
-            Регистрация открывает доступ к инструментам автора, рецензента или редактора. Мы сверяем профиль с
-            требованиями журнала, чтобы подобрать нужные права.
-          </p>
+          <p className="eyebrow">{t.asideEyebrow}</p>
+          <h2 className="panel-title">{t.asideTitle}</h2>
+          <p className="subtitle">{t.asideSubtitle}</p>
         </div>
 
         <div className="auth-steps">
           <div className="auth-step">
             <span className="auth-step__number">1</span>
             <div>
-              <div className="auth-step__title">Заполните профиль</div>
-              <div className="auth-step__text">Укажите актуальные контакты и организацию, чтобы редакция могла связаться.</div>
+              <div className="auth-step__title">{t.steps[0].title}</div>
+              <div className="auth-step__text">{t.steps[0].text}</div>
             </div>
           </div>
           <div className="auth-step">
             <span className="auth-step__number">2</span>
             <div>
-              <div className="auth-step__title">Выберите роль</div>
-              <div className="auth-step__text">Автор, редактор или рецензент — права будут настроены после проверки.</div>
+              <div className="auth-step__title">{t.steps[1].title}</div>
+              <div className="auth-step__text">{t.steps[1].text}</div>
             </div>
           </div>
           <div className="auth-step">
             <span className="auth-step__number">3</span>
             <div>
-              <div className="auth-step__title">Получите подтверждение</div>
-              <div className="auth-step__text">Мы отправим письмо с подтверждением регистрации и дальнейшими шагами.</div>
+              <div className="auth-step__title">{t.steps[2].title}</div>
+              <div className="auth-step__text">{t.steps[2].text}</div>
             </div>
           </div>
         </div>
 
         <div className="auth-meta">
-          <div className="auth-meta__item">Поддержка: support@sciencejournal.kz</div>
-          <div className="auth-meta__item">Среднее время активации — 1 рабочий день</div>
-          <div className="auth-meta__item">В любой момент можно обновить профиль и контакты</div>
+          <div className="auth-meta__item">{t.meta[0]}</div>
+          <div className="auth-meta__item">{t.meta[1]}</div>
+          <div className="auth-meta__item">{t.meta[2]}</div>
         </div>
       </section>
     </div>

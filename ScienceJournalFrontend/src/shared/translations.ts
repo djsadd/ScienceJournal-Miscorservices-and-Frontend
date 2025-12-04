@@ -91,6 +91,35 @@ type LoginCopy = {
   }
 }
 
+type RegisterCopy = {
+  headerEyebrow: string
+  headerTitle: string
+  headerSubtitle: string
+  fields: {
+    firstName: { label: string; placeholder: string }
+    lastName: { label: string; placeholder: string }
+    username: { label: string; placeholder: string }
+    organization: { label: string; placeholder: string }
+    institution: { label: string; placeholder: string }
+    email: { label: string; placeholder: string }
+    role: { label: string; options: { author: string; reviewer: string; editor: string } }
+    password: { label: string; placeholder: string; hint: string }
+    confirm: { label: string; placeholder: string }
+    accept: string
+    notify: string
+  }
+  submitIdle: string
+  submitBusy: string
+  footerPrompt: string
+  footerLogin: string
+  asideEyebrow: string
+  asideTitle: string
+  asideSubtitle: string
+  steps: { title: string; text: string }[]
+  meta: [string, string, string]
+  errors: { passwordMismatch: string; acceptRequired: string }
+}
+
 export const publicNavCopy: Record<Lang, NavCopy> = {
   ru: {
     brandAlt: 'Логотип журнала',
@@ -552,6 +581,144 @@ export const loginCopy: Record<Lang, LoginCopy> = {
       invalidCreds: 'Деректер қате. Email/username және құпиясөзді тексеріңіз.',
       apiFail: 'Кіру сәтсіз. Кейінірек қайталап көріңіз.',
       networkFail: 'Кіру сәтсіз. Қосылымды тексеріп, қайталап көріңіз.',
+    },
+  },
+}
+
+export const registerCopy: Record<Lang, RegisterCopy> = {
+  ru: {
+    headerEyebrow: 'Новый аккаунт',
+    headerTitle: 'Регистрация в Science Journal',
+    headerSubtitle:
+      'Создайте профиль автора, редактора или рецензента. После подтверждения мы пришлём инструкции на электронную почту.',
+    fields: {
+      firstName: { label: 'Имя', placeholder: 'Ваше имя' },
+      lastName: { label: 'Фамилия', placeholder: 'Ваша фамилия' },
+      username: { label: 'Username', placeholder: 'Логин / username' },
+      organization: { label: 'Организация', placeholder: 'Университет, компания' },
+      institution: { label: 'Подразделение', placeholder: 'Кафедра, лаборатория, институт' },
+      email: { label: 'Рабочий email', placeholder: 'name@example.com' },
+      role: { label: 'Роль', options: { author: 'Автор', reviewer: 'Рецензент', editor: 'Редактор' } },
+      password: {
+        label: 'Пароль',
+        placeholder: 'Минимум 8 символов',
+        hint: 'Используйте буквы, цифры и специальные символы.',
+      },
+      confirm: { label: 'Подтвердите пароль', placeholder: 'Повторите пароль ещё раз' },
+      accept: 'Я принимаю оферту и политику конфиденциальности',
+      notify: 'Присылать обновления и письма',
+    },
+    submitIdle: 'Зарегистрироваться',
+    submitBusy: 'Отправляем...',
+    footerPrompt: 'Уже есть аккаунт?',
+    footerLogin: 'Войти',
+    asideEyebrow: 'Перед стартом',
+    asideTitle: 'Укажите роль и профиль',
+    asideSubtitle:
+      'Регистрация открывает доступ к инструментам автора, рецензента или редактора. Мы сверяем профиль с требованиями журнала, чтобы подобрать нужные права.',
+    steps: [
+      { title: 'Заполните профиль', text: 'Укажите контакты и организацию, чтобы редакция могла связаться.' },
+      { title: 'Выберите роль', text: 'Автор, редактор или рецензент — права настроим после проверки.' },
+      { title: 'Получите подтверждение', text: 'Отправим письмо с подтверждением и дальнейшими шагами.' },
+    ],
+    meta: [
+      'Поддержка: support@sciencejournal.kz',
+      'Среднее время активации — 1 рабочий день',
+      'Профиль и контакты можно обновить в любой момент',
+    ],
+    errors: {
+      passwordMismatch: 'Пароли не совпадают',
+      acceptRequired: 'Примите условия оферты и политику конфиденциальности',
+    },
+  },
+  en: {
+    headerEyebrow: 'New account',
+    headerTitle: 'Register in Science Journal',
+    headerSubtitle:
+      'Create a profile as an author, editor or reviewer. We will email further instructions after approval.',
+    fields: {
+      firstName: { label: 'First name', placeholder: 'Your first name' },
+      lastName: { label: 'Last name', placeholder: 'Your last name' },
+      username: { label: 'Username', placeholder: 'Login / username' },
+      organization: { label: 'Organization', placeholder: 'University, company' },
+      institution: { label: 'Institution', placeholder: 'Department, lab, institute' },
+      email: { label: 'Work email', placeholder: 'name@example.com' },
+      role: { label: 'Role', options: { author: 'Author', reviewer: 'Reviewer', editor: 'Editor' } },
+      password: {
+        label: 'Password',
+        placeholder: 'Minimum 8 characters',
+        hint: 'Use letters, numbers, and special symbols.',
+      },
+      confirm: { label: 'Confirm password', placeholder: 'Repeat password once more' },
+      accept: 'I accept the offer and privacy policy',
+      notify: 'Send me updates and emails',
+    },
+    submitIdle: 'Register',
+    submitBusy: 'Sending...',
+    footerPrompt: 'Already have an account?',
+    footerLogin: 'Sign in',
+    asideEyebrow: 'Before you start',
+    asideTitle: 'Select role and profile',
+    asideSubtitle:
+      'Registration opens access to author, reviewer or editor tools. We align your profile with journal requirements to grant proper permissions.',
+    steps: [
+      { title: 'Fill out profile', text: 'Provide contacts and organization so the editorial team can reach you.' },
+      { title: 'Choose a role', text: 'Author, editor or reviewer — permissions set after verification.' },
+      { title: 'Get confirmation', text: 'We will send an email with confirmation and next steps.' },
+    ],
+    meta: [
+      'Support: support@sciencejournal.kz',
+      'Average activation time — 1 business day',
+      'You can update profile and contacts at any time',
+    ],
+    errors: {
+      passwordMismatch: 'Passwords do not match',
+      acceptRequired: 'Please accept the terms and privacy policy',
+    },
+  },
+  kz: {
+    headerEyebrow: 'Жаңа аккаунт',
+    headerTitle: 'Science Journal жүйесінде тіркелу',
+    headerSubtitle:
+      'Автор, редактор немесе рецензент ретінде профиль жасаңыз. Мақұлдаудан кейін нұсқауларды электрондық поштамен жібереміз.',
+    fields: {
+      firstName: { label: 'Аты', placeholder: 'Атыңыз' },
+      lastName: { label: 'Тегі', placeholder: 'Тегіңіз' },
+      username: { label: 'Пайдаланушы аты', placeholder: 'Логин / username' },
+      organization: { label: 'Ұйым', placeholder: 'Университет, компания' },
+      institution: { label: 'Бөлімше', placeholder: 'Кафедра, зертхана, институт' },
+      email: { label: 'Жұмыс email', placeholder: 'name@example.com' },
+      role: { label: 'Рөл', options: { author: 'Автор', reviewer: 'Рецензент', editor: 'Редактор' } },
+      password: {
+        label: 'Құпиясөз',
+        placeholder: 'Ең аз 8 таңба',
+        hint: 'Әріптер, цифрлар және арнайы таңбаларды қолданыңыз.',
+      },
+      confirm: { label: 'Құпиясөзді растау', placeholder: 'Құпиясөзді қайта енгізіңіз' },
+      accept: 'Мен оферта мен құпиялылық саясатын қабылдаймын',
+      notify: 'Маған жаңартулар мен хаттарды жіберіңіз',
+    },
+    submitIdle: 'Тіркелу',
+    submitBusy: 'Жіберілуде...',
+    footerPrompt: 'Аккаунт бар ма?',
+    footerLogin: 'Кіру',
+    asideEyebrow: 'Бастамас бұрын',
+    asideTitle: 'Рөл мен профильді көрсетіңіз',
+    asideSubtitle:
+      'Тіркелу автор, рецензент немесе редактор құралдарына қол жеткізуді ашады. Біз профильді журнал талаптарымен сәйкестендіріп, тиісті құқықтар береміз.',
+    steps: [
+      { title: 'Профильді толтырыңыз', text: 'Редакция байланысуы үшін контактілер мен ұйымды көрсетіңіз.' },
+      { title: 'Рөлді таңдаңыз', text: 'Автор, редактор немесе рецензент — құқықтар тексерістен кейін беріледі.' },
+      { title: 'Растау алыңыз', text: 'Тіркеуді растау және келесі қадамдар туралы хат жібереміз.' },
+    ],
+    meta: [
+      'Қолдау: support@sciencejournal.kz',
+      'Белсендірудің орташа уақыты — 1 жұмыс күні',
+      'Профиль мен контактілерді кез келген уақытта жаңартуға болады',
+    ],
+    errors: {
+      passwordMismatch: 'Құпиясөздер сәйкес емес',
+      acceptRequired: 'Оферта мен құпиялылық саясатын қабылдаңыз',
     },
   },
 }
