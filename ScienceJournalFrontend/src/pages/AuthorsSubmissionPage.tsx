@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 
-const articleTypes = ['Оригинальная статья', 'Обзор', 'Короткое сообщение', 'Методическая статья']
+const articleTypes = ['Оригинальная статья', 'Обзорная статья']
 const mapArticleTypeToApi: Record<string, 'original' | 'review'> = {
   'Оригинальная статья': 'original',
   'Обзорная статья': 'review',
