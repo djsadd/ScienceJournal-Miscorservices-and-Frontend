@@ -622,7 +622,7 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       { title: 'Получите подтверждение', text: 'Отправим письмо с подтверждением и дальнейшими шагами.' },
     ],
     meta: [
-      'Поддержка: support@sciencejournal.kz',
+      'Поддержка: digital@tau-edu.kz',
       'Среднее время активации — 1 рабочий день',
       'Профиль и контакты можно обновить в любой момент',
     ],
@@ -667,7 +667,7 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       { title: 'Get confirmation', text: 'We will send an email with confirmation and next steps.' },
     ],
     meta: [
-      'Support: support@sciencejournal.kz',
+      'Support: digital@tau-edu.kz',
       'Average activation time — 1 business day',
       'You can update profile and contacts at any time',
     ],
@@ -712,7 +712,7 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       { title: 'Растау алыңыз', text: 'Тіркеуді растау және келесі қадамдар туралы хат жібереміз.' },
     ],
     meta: [
-      'Қолдау: support@sciencejournal.kz',
+      'Қолдау: digital@tau-edu.kz',
       'Белсендірудің орташа уақыты — 1 жұмыс күні',
       'Профиль мен контактілерді кез келген уақытта жаңартуға болады',
     ],
