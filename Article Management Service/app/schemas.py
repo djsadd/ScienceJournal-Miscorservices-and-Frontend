@@ -222,6 +222,16 @@ class ArticleStatusUpdate(BaseModel):
     status: ArticleStatus
 
 
+class AntiplagiarismUploadRequest(BaseModel):
+    """
+    Request payload to attach an antiplagiarism file to an article.
+    Prefer sending `file_id` returned by File Storage `/files` upload.
+    Alternatively, `file_url` may be provided directly.
+    """
+    file_id: Optional[str] = None
+    file_url: Optional[str] = None
+
+
 class VolumeBase(BaseModel):
     year: int
     number: int

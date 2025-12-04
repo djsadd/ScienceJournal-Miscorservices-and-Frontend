@@ -254,6 +254,9 @@ export const api = {
   // Change article status (editor role required)
   changeArticleStatus: <T>(articleId: string | number, status: string) =>
     request<T>(`/articles/${articleId}/status`, 'PATCH', { json: { status } }),
+  // Set antiplagiarism file (editor-only)
+  setAntiplagiarismFile: <T>(articleId: string | number, body: { file_id?: string; file_url?: string }) =>
+    request<T>(`/articles/${articleId}/antiplagiarism`, 'POST', { json: body }),
   // Reviews
   getReviewById: <T>(reviewId: number | string) => request<T>(`/reviews/${reviewId}`, 'GET'),
   getMyReviews: <T>() => request<T>('/reviews/my-reviews', 'GET'),

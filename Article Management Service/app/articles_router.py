@@ -15,6 +15,14 @@ def _file_id_to_url(file_id: str | None):
         return None
     return f"/files/{file_id}/download"
 
+def _prefer_url(file_id: str | None, file_url: str | None):
+    """
+    Prefer constructing API download URL from file_id; otherwise use provided file_url.
+    """
+    if file_id:
+        return _file_id_to_url(file_id)
+    return file_url
+
 
 def _get_or_create_keyword(db: Session, kw: schemas.KeywordCreate) -> models.Keyword:
     existing = (
@@ -1036,6 +1044,32 @@ def change_status(
     db.commit()
     db.refresh(article)
     return {"id": article.id, "status": article.status}
+
+
+@router.post("/{article_id}/antiplagiarism", response_model=schemas.ArticleOut)
+def set_antiplagiarism_file(
+    article_id: int,
+    payload: schemas.AntiplagiarismUploadRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Editor-only: attach/update antiplagiarism file for the article.
+    Accepts JSON payload with `file_id` (preferred) or `file_url` returned by File Storage upload.
+    """
+    ensure_editor(current_user)
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    new_url = _prefer_url(payload.file_id, payload.file_url)
+    if not new_url:
+        raise HTTPException(status_code=400, detail="file_id or file_url is required")
+
+    article.antiplagiarism_file_url = new_url
+    db.commit()
+    db.refresh(article)
+    return article
 
 
 @router.patch("/internal/{article_id}/review-submitted")

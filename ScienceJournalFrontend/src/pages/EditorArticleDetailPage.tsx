@@ -251,6 +251,12 @@ export default function EditorArticleDetailPage() {
   const [layoutUploadError, setLayoutUploadError] = useState<string | null>(null)
   const [layoutUploadSuccess, setLayoutUploadSuccess] = useState<string | null>(null)
   const [layoutDragActive, setLayoutDragActive] = useState(false)
+  // Antiplagiarism upload states
+  const [antiFile, setAntiFile] = useState<File | null>(null)
+  const [antiUploading, setAntiUploading] = useState(false)
+  const [antiError, setAntiError] = useState<string | null>(null)
+  const [antiSuccess, setAntiSuccess] = useState<string | null>(null)
+  const [antiDragActive, setAntiDragActive] = useState(false)
 
   type FileOut = {
     id: string
@@ -657,6 +663,91 @@ export default function EditorArticleDetailPage() {
                     className="button button--ghost"
                     disabled={!layoutFile || layoutUploading}
                     onClick={() => setLayoutFile(null)}
+                  >Отмена</button>
+                </div>
+              </div>
+            )}
+
+            {isEditor && (
+              <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>Загрузка файла антиплагиата</h4>
+                <p className="form-hint" style={{ marginTop: 0 }}>Поддерживаемые форматы: PDF, DOC, DOCX, ZIP. Файл будет привязан к статье.</p>
+                {antiError && <div className="alert error" style={{ marginBottom: '0.5rem' }}>Ошибка: {antiError}</div>}
+                {antiSuccess && <div className="alert" style={{ marginBottom: '0.5rem' }}>{antiSuccess}</div>}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setAntiDragActive(true) }}
+                  onDragLeave={(e) => { e.preventDefault(); setAntiDragActive(false) }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setAntiDragActive(false)
+                    setAntiError(null)
+                    setAntiSuccess(null)
+                    const f = e.dataTransfer.files && e.dataTransfer.files[0] ? e.dataTransfer.files[0] : null
+                    if (f) setAntiFile(f)
+                  }}
+                  style={{
+                    border: '2px dashed ' + (antiDragActive ? '#4a90e2' : '#ccc'),
+                    borderRadius: 8,
+                    padding: '1rem',
+                    background: antiDragActive ? 'rgba(74,144,226,0.06)' : '#fafafa',
+                    transition: 'all 0.15s ease',
+                    marginBottom: '0.75rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <input
+                      id="anti-file-input"
+                      type="file"
+                      accept="application/pdf,.pdf,.doc,.docx,.zip"
+                      onChange={(e) => {
+                        setAntiError(null)
+                        setAntiSuccess(null)
+                        const f = e.target.files && e.target.files[0] ? e.target.files[0] : null
+                        setAntiFile(f)
+                      }}
+                    />
+                    <label htmlFor="anti-file-input" className="button button--ghost button--compact">Выбрать файл</label>
+                    <span style={{ color: '#666' }}>или перетащите сюда</span>
+                  </div>
+                  {antiFile && (
+                    <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span className="badge">{antiFile.name}</span>
+                      <span className="form-hint">{(antiFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                      <button className="button button--ghost button--compact" onClick={() => setAntiFile(null)}>Очистить</button>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    className="button button--primary"
+                    disabled={!antiFile || antiUploading}
+                    onClick={async () => {
+                      if (!antiFile || !data?.id) return
+                      setAntiUploading(true)
+                      setAntiError(null)
+                      setAntiSuccess(null)
+                      try {
+                        const uploaded = await api.uploadFile<FileOut>(antiFile)
+                        try { console.log('[AntiUpload] /api/files response:', uploaded) } catch {}
+                        // link to article via new endpoint
+                        const updated = await api.setAntiplagiarismFile<ArticleOut>(data.id, { file_id: uploaded.id })
+                        setData(updated)
+                        setAntiSuccess('Файл антиплагиата загружен и привязан к статье')
+                        setToastMessage('Антиплагиат загружен')
+                        setToastOpen(true)
+                        setAntiFile(null)
+                      } catch (e: any) {
+                        const message = e?.bodyJson?.detail || e?.message || 'Не удалось загрузить/привязать файл антиплагиата'
+                        setAntiError(String(message))
+                      } finally {
+                        setAntiUploading(false)
+                      }
+                    }}
+                  >{antiUploading ? 'Загружается...' : 'Загрузить антиплагиат'}</button>
+                  <button
+                    className="button button--ghost"
+                    disabled={!antiFile || antiUploading}
+                    onClick={() => setAntiFile(null)}
                   >Отмена</button>
                 </div>
               </div>
