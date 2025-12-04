@@ -5,6 +5,7 @@ import { toApiFilesUrl } from '../shared/url'
 import { formatArticleStatus, formatArticleType } from '../shared/labels'
 import ConfirmModal from '../shared/components/ConfirmModal'
 import Toast from '../shared/components/Toast'
+import CollapsibleSection from '../shared/components/CollapsibleSection'
 
 // Minimal interfaces matching backend ArticleOut
 interface KeywordOut {
@@ -499,8 +500,7 @@ export default function EditorArticleDetailPage() {
             )}
           </div>
 
-          <div className="panel">
-            <h3 className="panel-title">Авторы</h3>
+          <CollapsibleSection title="Авторы" defaultOpen>
             {data.authors.length === 0 ? (
               <div className="table__empty">Авторы пока не добавлены.</div>
             ) : (
@@ -530,10 +530,9 @@ export default function EditorArticleDetailPage() {
                 </div>
               </div>
             )}
-          </div>
+          </CollapsibleSection>
 
-          <div className="panel">
-            <h3 className="panel-title">Ключевые слова</h3>
+          <CollapsibleSection title="Ключевые слова" defaultOpen>
             {data.keywords.length === 0 ? (
               <div className="table__empty">Ключевые слова не указаны.</div>
             ) : (
@@ -543,10 +542,9 @@ export default function EditorArticleDetailPage() {
                 ))}
               </div>
             )}
-          </div>
+          </CollapsibleSection>
 
-          <div className="panel">
-            <h3 className="panel-title">Файлы</h3>
+          <CollapsibleSection title="Файлы" defaultOpen>
             <div className="actions">
               <a className="button button--ghost button--compact" href={toApiFilesUrl(data.manuscript_file_url) || '#'} target="_blank" rel="noreferrer">Рукопись</a>
               {data.antiplagiarism_file_url && (
@@ -752,10 +750,9 @@ export default function EditorArticleDetailPage() {
                 </div>
               </div>
             )}
-          </div>
+          </CollapsibleSection>
 
-          <div className="panel">
-            <h3 className="panel-title">Версии</h3>
+          <CollapsibleSection title="Версии" defaultOpen>
             {data.versions.length === 0 ? (
               <div className="table__empty">Версий пока нет.</div>
             ) : (
@@ -783,11 +780,11 @@ export default function EditorArticleDetailPage() {
                 </div>
               </div>
             )}
-          </div>
+          </CollapsibleSection>
 
 
 
-          <div className="panel">
+          <CollapsibleSection title="Рецензенты" defaultOpen>
             <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
               <h3 className="panel-title" style={{ margin: 0 }}>Рецензенты</h3>
               {data.status !== 'rejected' && (
@@ -842,7 +839,7 @@ export default function EditorArticleDetailPage() {
                 </div>
               </div>
             )}
-          </div>
+          </CollapsibleSection>
         </section>
       )}
       {authorModalOpen && selectedAuthor && (
