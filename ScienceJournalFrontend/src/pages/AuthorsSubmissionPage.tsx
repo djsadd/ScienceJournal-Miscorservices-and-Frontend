@@ -215,8 +215,10 @@ export function AuthorsSubmissionPage() {
         kz: created.title_kz,
         en: created.title_en,
       }
+      // Add to available list and immediately select it
       setKeywords((prev) => [...prev, keyword])
-      setKeywordInput(keyword.ru)
+      setSelectedKeywords((prev) => [...prev, keyword])
+      setKeywordInput('')
       setNewKeyword({ ru: '', kz: '', en: '' })
       setModalOpen(false)
     } catch (error) {

@@ -15,6 +15,7 @@ def _file_id_to_url(file_id: str | None):
         return None
     return f"/files/{file_id}/download"
 
+
 def _prefer_url(file_id: str | None, file_url: str | None):
     """
     Prefer constructing API download URL from file_id; otherwise use provided file_url.
