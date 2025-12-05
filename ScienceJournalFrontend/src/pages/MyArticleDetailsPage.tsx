@@ -541,7 +541,7 @@ export function MyArticleDetailsPage() {
 
       <div className="panel">
         <p className="eyebrow">Ключевые слова</p>
-        {article.status === 'withdrawn' ? (
+        {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision', 'draft'].includes(article.status)) ? (
           <>
             {selectedKeywords.length > 0 ? (
               <div className="pill-list" style={{ marginBottom: '0.5rem' }}>
