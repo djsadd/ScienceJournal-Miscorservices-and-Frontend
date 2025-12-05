@@ -1,80 +1,55 @@
-/* Beautiful email verification page styles */
+/* Minimalist light theme for email verification */
 
 :root {
-  --bg: #0b1020;
-  --card: #121933;
-  --text: #e6e9f2;
-  --muted: #aab1c7;
-  --primary: #5dd6b6;
-  --primary-strong: #38caa6;
-  --error: #ff6b6b;
-  --ring: rgba(93, 214, 182, 0.25);
+  --bg: #faf8f4;            /* off-white with warm tint */
+  --card: #ffffff;          /* pure white card */
+  --text: #3b2f2f;          /* deep brown for body */
+  --muted: #8a7b6a;         /* soft brown-gray for secondary */
+  --accent: #a67c52;        /* light-brown (university color) */
+  --accent-strong: #8c673f; /* slightly darker brown */
+  --border: #e9e3d9;        /* subtle beige border */
+  --error: #b84a3a;         /* warm red-brown */
 }
 
 * { box-sizing: border-box; }
 
 .verify-wrapper {
   min-height: 100vh;
+  background: var(--bg);
   display: grid;
-  place-items: center;
-  position: relative;
-  overflow: hidden;
-  background: radial-gradient(1200px 600px at 10% 10%, #0f1731 0%, var(--bg) 60%),
-              radial-gradient(800px 400px at 90% 20%, #152049 0%, transparent 60%);
+  grid-template-rows: auto 1fr;
 }
 
-.verify-bg::before,
-.verify-bg::after {
-  content: "";
-  position: absolute;
-  inset: -20vmax;
-  background: conic-gradient(from 90deg, rgba(93,214,182,.15), transparent 30%, rgba(93,214,182,.1));
-  filter: blur(60px);
-  transform: rotate(8deg);
-  pointer-events: none;
+.verify-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: #fff9f0; /* very light warm strip */
+}
+
+.verify-logo {
+  height: 28px;
+  width: auto;
 }
 
 .verify-card {
-  width: min(720px, calc(100% - 32px));
-  margin: 24px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-  border: 1px solid rgba(255,255,255,.08);
-  box-shadow: 0 24px 80px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.1);
-  color: var(--text);
-  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 24px;
 }
 
 .verify-header {
-  padding: 32px 32px 0 32px;
+  width: min(720px, 92%);
+  margin: 0 auto 8px;
   text-align: center;
 }
 
-.verify-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 12px;
-}
-
-.verify-icon svg { width: 100%; height: 100%; }
-
-.icon-ring {
-  fill: none;
-  stroke: var(--ring);
-  stroke-width: 8;
-}
-
-.icon-check {
-  fill: none;
-  stroke: var(--primary);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .verify-title {
-  margin: 4px 0 4px;
-  font-size: 28px;
+  margin: 8px 0 6px;
+  font-size: 26px;
+  color: var(--text);
   letter-spacing: .2px;
 }
 
@@ -85,22 +60,28 @@
 }
 
 .verify-state, .verify-success, .verify-error {
-  padding: 24px 32px 32px 32px;
+  width: min(720px, 92%);
+  margin: 12px auto 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
   text-align: center;
+  box-shadow: 0 8px 24px rgba(140,103,63,0.08);
 }
 
 .verify-message {
-  margin: 0 0 16px 0;
-  line-height: 1.55;
+  margin: 0 0 14px 0;
+  line-height: 1.6;
   color: var(--text);
 }
 
 .spinner {
-  width: 32px;
-  height: 32px;
-  margin: 8px auto 16px;
-  border: 3px solid rgba(255,255,255,.15);
-  border-top-color: var(--primary);
+  width: 28px;
+  height: 28px;
+  margin: 4px auto 12px;
+  border: 2px solid #e6dccd;
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin .9s linear infinite;
 }
@@ -109,14 +90,14 @@
 
 .verify-btn {
   display: inline-block;
-  padding: 12px 18px;
-  border-radius: 10px;
-  color: #0b1020;
-  background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
   text-decoration: none;
   font-weight: 600;
   letter-spacing: .2px;
-  box-shadow: 0 6px 18px rgba(93,214,182,.35);
+  box-shadow: 0 6px 16px rgba(166,124,82,.25);
   transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
 }
 
@@ -124,15 +105,15 @@
 .verify-btn:active { transform: translateY(0); }
 
 .verify-btn.outline {
-  margin-top: 8px;
+  margin-top: 6px;
   background: transparent;
-  color: var(--text);
-  border: 1px solid rgba(255,255,255,.2);
+  color: var(--accent-strong);
+  border: 1px solid var(--border);
   box-shadow: none;
 }
 
 .verify-help {
-  margin-top: 10px;
+  margin-top: 8px;
   color: var(--muted);
   font-size: 13px;
 }

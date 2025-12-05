@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import './VerifyEmailPage.css'
+import logoUrl from '../assets/logo.svg'
 
 function useQuery() {
   return new URLSearchParams(useLocation().search)
@@ -43,14 +44,11 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="verify-wrapper">
+      <header className="verify-topbar">
+        <img src={logoUrl} alt="Университет" className="verify-logo" />
+      </header>
       <div className="verify-card">
         <div className="verify-header">
-          <div className="verify-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" className="icon-ring" />
-              <path d="M9.5 12.5l2 2 4-5" className="icon-check" />
-            </svg>
-          </div>
           <h1 className="verify-title">Подтверждение электронной почты</h1>
           <p className="verify-subtitle">Спасибо, что с нами!</p>
         </div>
