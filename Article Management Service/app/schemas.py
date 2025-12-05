@@ -211,6 +211,8 @@ class ArticleOut(BaseModel):
 
 class AssignedEditorUpdate(BaseModel):
     editor_id: int | None = None
+    # Optional comments from editor to be sent to the author via Notification Service
+    comment_for_author: str | None = None
 
 
 class AssignReviewerRequest(BaseModel):
@@ -220,6 +222,7 @@ class AssignReviewerRequest(BaseModel):
 
 class ArticleStatusUpdate(BaseModel):
     status: ArticleStatus
+    comment_for_author: str | None = None
 
 
 class AntiplagiarismUploadRequest(BaseModel):

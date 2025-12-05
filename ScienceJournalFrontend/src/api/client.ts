@@ -252,8 +252,8 @@ export const api = {
   getArticleReviewers: <T>(articleId: string | number) => request<T>(`/articles/${articleId}/reviewers`, 'GET'),
   getReviewers: <T>(language?: 'ru' | 'kz') => request<T>('/users/reviewers', 'GET', { params: { language } }),
   // Change article status (editor role required)
-  changeArticleStatus: <T>(articleId: string | number, status: string) =>
-    request<T>(`/articles/${articleId}/status`, 'PATCH', { json: { status } }),
+  changeArticleStatus: <T>(articleId: string | number, status: string, options?: { comment_for_author?: string }) =>
+    request<T>(`/articles/${articleId}/status`, 'PATCH', { json: { status, ...(options?.comment_for_author ? { comment_for_author: options.comment_for_author } : {}) } }),
   // Set antiplagiarism file (editor-only)
   setAntiplagiarismFile: <T>(articleId: string | number, body: { file_id?: string; file_url?: string }) =>
     request<T>(`/articles/${articleId}/antiplagiarism`, 'POST', { json: body }),

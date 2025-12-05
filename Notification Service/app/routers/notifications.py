@@ -58,6 +58,8 @@ def create_notification(
         title=payload.title,
         message=payload.message,
         related_entity=payload.related_entity,
+        article_id=payload.article_id,
+        article_version_id=payload.article_version_id,
     )
     db.add(notification)
     db.commit()
@@ -87,6 +89,42 @@ def create_notification_internal(
         title=payload.title,
         message=payload.message,
         related_entity=payload.related_entity,
+        article_id=payload.article_id,
+        article_version_id=payload.article_version_id,
+    )
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+    _maybe_send_email_for_notification(notification)
+    return notification
+
+
+@router.post("/article", response_model=schemas.NotificationOut)
+def create_article_notification(
+    payload: schemas.NotificationArticleCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Create a notification tied to a specific manuscript (article), including editor comments.
+
+    Request body:
+    - user_id: recipient user id
+    - article_id: manuscript id
+    - article_version_id: optional version id
+    - comments: free text to send to the recipient (stored as message)
+    - title: optional notification title (default provided if omitted)
+    - type: optional NotificationType (defaults to 'editorial')
+    """
+    title = payload.title or "Комментарии по рукописи"
+    notification = models.Notification(
+        user_id=payload.user_id,
+        type=payload.type or models.NotificationType.editorial,
+        title=title,
+        message=payload.comments,
+        related_entity=f"article:{payload.article_id}",
+        article_id=payload.article_id,
+        article_version_id=payload.article_version_id,
     )
     db.add(notification)
     db.commit()

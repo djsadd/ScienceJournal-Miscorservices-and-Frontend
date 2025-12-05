@@ -1037,12 +1037,37 @@ def change_status(
     article = db.query(models.Article).filter(models.Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
+    # Применяем статус из запроса
     article.status = payload.status
-    # Если редактор переводит статью в статус проверки редактором, закрепим редактора за статьей
+    # Если переводим в статус проверки редактором — закрепляем текущего редактора
     if payload.status == models.ArticleStatus.editor_check:
         article.assigned_editor_id = int(current_user["user_id"])
     db.commit()
     db.refresh(article)
+    notifications_url = getattr(config, "NOTIFICATION_SERVICE_URL", "http://notifications:8081")
+
+    # 1) Уведомление автора о комментариях редактора (если есть комментарий)
+    try:
+
+        with httpx.Client(timeout=5.0) as client:
+            editor_sub = str(article.assigned_editor_id or current_user.get("user_id") or 0)
+            token = jwt.encode({"sub": editor_sub, "roles": ["editor"]}, config.SECRET_KEY, algorithm=config.ALGORITHM)
+
+            client.post(
+                f"{notifications_url}/notifications/article",
+                json={
+                    "user_id": int(article.responsible_user_id),
+                    "article_id": int(article.id),
+                    "comments": payload.comment_for_author,
+                    "title": "Комментарии по рукописи",
+                    "type": "article_status",
+                },
+                headers={"Authorization": f"Bearer {token}"},
+            )
+    except Exception:
+        # Нефатальная ошибка уведомлений
+        pass
+
     return {"id": article.id, "status": article.status}
 
 

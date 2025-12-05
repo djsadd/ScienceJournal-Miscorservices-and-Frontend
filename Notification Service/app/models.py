@@ -25,7 +25,11 @@ class Notification(Base):
     type = Column(Enum(NotificationType), default=NotificationType.system, nullable=False)
     title = Column(String, nullable=False)
     message = Column(String, nullable=False)
-    related_entity = Column(String, nullable=True)  # e.g. "article:123"
+    related_entity = Column(String, nullable=True)  # e.g. "article:123" (legacy/general reference)
+    # Optional attachment to a specific manuscript (article) or its version
+    # Avoid hard FK constraints across services; store as plain integers
+    article_id = Column(Integer, nullable=True)
+    article_version_id = Column(Integer, nullable=True)
     status = Column(Enum(NotificationStatus), default=NotificationStatus.unread, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     read_at = Column(DateTime(timezone=True), nullable=True)

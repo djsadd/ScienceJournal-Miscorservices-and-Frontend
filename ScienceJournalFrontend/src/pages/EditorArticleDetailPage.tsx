@@ -142,16 +142,27 @@ export default function EditorArticleDetailPage() {
     }
   }
 
+  const [isRevisionOpen, setIsRevisionOpen] = useState(false)
+  const [revisionComment, setRevisionComment] = useState('')
+
   const handleSendForRevision = async () => {
     if (!data) return
     setStatusUpdating(true)
     setStatusError(null)
     try {
-      const res = await api.changeArticleStatus<{ id: number; status: string }>(data.id, 'sent_for_revision')
+      const res = await api.changeArticleStatus<{ id: number; status: string }>(
+        data.id,
+        'sent_for_revision',
+        revisionComment.trim() ? { comment_for_author: revisionComment.trim() } : undefined
+      )
+      try { console.log('[SendForRevision] PATCH /articles/'+data.id+'/status response:', res) } catch {}
       setData({ ...data, status: res.status })
       setToastMessage('Отправлено автору на доработку')
       setToastOpen(true)
+      setIsRevisionOpen(false)
+      setRevisionComment('')
     } catch (e: any) {
+      try { console.error('[SendForRevision] error:', e) } catch {}
       const message = e?.bodyJson?.detail || e?.message || 'Не удалось изменить статус'
       setStatusError(String(message))
     } finally {
@@ -467,7 +478,7 @@ export default function EditorArticleDetailPage() {
                       >
                         Отклонить
                       </button>
-                      <button className="button button--warn" disabled={statusUpdating} onClick={handleSendForRevision}>
+                      <button className="button button--warn" disabled={statusUpdating} onClick={() => setIsRevisionOpen(true)}>
                         Отправить на доработку
                       </button>
                           <button className="button button--primary" onClick={() => setIsAcceptOpen(true)}>
@@ -942,6 +953,31 @@ export default function EditorArticleDetailPage() {
             </div>
             <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button className="button button--ghost" onClick={() => setIsAcceptOpen(false)}>Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isRevisionOpen && (
+        <div className="modal-backdrop" onClick={() => setIsRevisionOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0 }}>Отправить на доработку</h3>
+              <button className="modal__close" onClick={() => setIsRevisionOpen(false)}>×</button>
+            </div>
+            <div className="modal__body">
+              <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.5rem' }}>Комментарии для автора</label>
+              <textarea
+                className="text-input"
+                style={{ width: '100%', minHeight: '160px' }}
+                placeholder="Опишите, что нужно доработать..."
+                value={revisionComment}
+                onChange={(e) => setRevisionComment(e.target.value)}
+              />
+            </div>
+            <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button className="button button--ghost" onClick={() => setIsRevisionOpen(false)}>Отмена</button>
+              <button className="button button--warn" disabled={statusUpdating} onClick={handleSendForRevision}>Отправить на доработку</button>
             </div>
           </div>
         </div>
