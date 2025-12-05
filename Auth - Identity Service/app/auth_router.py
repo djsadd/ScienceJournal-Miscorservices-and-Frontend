@@ -20,8 +20,8 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Username or email already registered")
     hashed_password = security.hash_password(user.password)
     
-    # Require email verification for all roles - set is_active to False until confirmed
-    is_active = False
+    # Авто-активация только для роли автора; остальные неактивны
+    is_active = True if user.role == "author" else False
     
     new_user = models.User(
         username=user.username,
@@ -57,28 +57,47 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         # Fail-soft: auth registration succeeds even if profile call fails
         pass
 
-    # Create notification (and email) via Notification Service with verification link
+    # Create notification (and email) via Notification Service
     try:
-        # issue email verification token (JWT signed)
-        verify_token = security.create_access_token({"sub": str(new_user.id), "purpose": "email_verify"})
-        verify_link = f"{config.PUBLIC_BASE_URL}/auth/verify-email?token={verify_token}"
-        notify_payload = {
-            "user_id": new_user.id,
-            "type": "system",
-            "title": "Подтверждение электронной почты",
-            "message": (
-                "Вы успешно зарегистрированы в ScienceJournal. "
-                "Для активации аккаунта подтвердите эл. почту по ссылке: "
-                f"{verify_link}"
-            ),
-            "related_entity": f"auth:register:{new_user.id}",
-        }
         with httpx.Client(timeout=5.0) as client:
-            client.post(
-                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
-                json=notify_payload,
-                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
-            )
+            if new_user.role == "author":
+                # Автор активируется сразу, отправим приветственное письмо
+                notify_payload = {
+                    "user_id": new_user.id,
+                    "type": "system",
+                    "title": "Регистрация завершена",
+                    "message": (
+                        "Вы успешно зарегистрированы и ваш аккаунт активирован как Автор. "
+                        "Вы можете войти и начать работу."
+                    ),
+                    "related_entity": f"auth:register:{new_user.id}",
+                }
+                client.post(
+                    f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
+                    json=notify_payload,
+                    headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+                )
+            else:
+                # Для редакторов/рецензентов требуем подтверждение почты, но активацию делает админ
+                verify_token = security.create_access_token({"sub": str(new_user.id), "purpose": "email_verify"})
+                verify_link = f"{config.PUBLIC_BASE_URL}/auth/verify-email?token={verify_token}"
+                notify_payload = {
+                    "user_id": new_user.id,
+                    "type": "system",
+                    "title": "Подтверждение электронной почты",
+                    "message": (
+                        "Вы успешно зарегистрированы в ScienceJournal. "
+                        "Подтвердите эл. почту по ссылке: "
+                        f"{verify_link}. "
+                        "После подтверждения администратор активирует ваш аккаунт."
+                    ),
+                    "related_entity": f"auth:register:{new_user.id}",
+                }
+                client.post(
+                    f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
+                    json=notify_payload,
+                    headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+                )
     except Exception:
         # Fail-soft: continue even if notifications service is unavailable
         pass
@@ -103,10 +122,15 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Activate user upon successful verification
-    user.is_active = True
-    db.commit()
-    return {"status": "verified", "user_id": user.id}
+    # После подтверждения почты: авто-активация только для автора
+    if user.role == "author":
+        user.is_active = True
+        db.commit()
+        return {"status": "verified", "activated": True, "user_id": user.id}
+    else:
+        # Для редактора/рецензента аккаунт остаётся неактивным до решения админа
+        db.commit()
+        return {"status": "verified", "activated": False, "user_id": user.id}
 
 @router.post("/login", response_model=schemas.Token)
 def login(form_data: schemas.LoginRequest, db: Session = Depends(get_db)):
