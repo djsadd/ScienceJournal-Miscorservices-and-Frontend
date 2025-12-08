@@ -684,6 +684,7 @@ def create_article(article: schemas.ArticleCreateWithIds, db: Session = Depends(
     """
     ensure_author(current_user)
 
+    # responsible_user_id is always bound to current_user
     new_article = models.Article(
         title_kz=article.title_kz,
         title_en=article.title_en,
@@ -694,7 +695,7 @@ def create_article(article: schemas.ArticleCreateWithIds, db: Session = Depends(
         doi=article.doi,
         status=models.ArticleStatus.submitted,
         article_type=article.article_type,
-        responsible_user_id=article.responsible_user_id,
+        responsible_user_id=int(current_user["user_id"]),
         antiplagiarism_file_url=_file_id_to_url(article.antiplagiarism_file_id),
         not_published_elsewhere=article.not_published_elsewhere,
         plagiarism_free=article.plagiarism_free,
@@ -793,6 +794,7 @@ def create_article_by_ids(
     """
     ensure_author(current_user)
 
+    # responsible_user_id is always bound to current_user
     new_article = models.Article(
         title_kz=article.title_kz,
         title_en=article.title_en,
@@ -803,7 +805,7 @@ def create_article_by_ids(
         doi=article.doi,
         status=article.status,
         article_type=article.article_type,
-        responsible_user_id=article.responsible_user_id,
+        responsible_user_id=int(current_user["user_id"]),
         antiplagiarism_file_url=_file_id_to_url(article.antiplagiarism_file_id),
         not_published_elsewhere=article.not_published_elsewhere,
         plagiarism_free=article.plagiarism_free,

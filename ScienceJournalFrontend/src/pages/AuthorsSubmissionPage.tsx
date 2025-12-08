@@ -352,11 +352,9 @@ export function AuthorsSubmissionPage() {
     const coverLetter = getFileNameFromInputIndex(2)
     if (!manuscript) nextErrors.manuscript = 'Загрузите файл рукописи в формате .docx'
     else if (!manuscript.toLowerCase().endsWith('.docx')) nextErrors.manuscript = 'Поддерживается только формат .docx'
-    if (!antiplag) nextErrors.antiplagiarism = 'Загрузите файл антиплагиата в формате .pdf'
-    else if (!antiplag.toLowerCase().endsWith('.pdf')) nextErrors.antiplagiarism = 'Поддерживается только формат .pdf'
+    if (!antiplag) nextErrors.antiplagiarism = 'Загрузите файл антиплагиата'
     if (!authorInfo) nextErrors.authorInfo = 'Загрузите сведения об авторах'
-    if (!coverLetter) nextErrors.coverLetter = 'Загрузите сопроводительное письмо в формате .pdf'
-    else if (!coverLetter.toLowerCase().endsWith('.pdf')) nextErrors.coverLetter = 'Поддерживается только формат .pdf'
+    if (!coverLetter) nextErrors.coverLetter = 'Загрузите сопроводительное письмо'
     if (!confirmCopyright) nextErrors.confirmCopyright = 'Подтвердите отсутствие параллельной подачи'
     if (!confirmOriginality) nextErrors.confirmOriginality = 'Подтвердите отсутствие плагиата'
     if (!confirmConsent) nextErrors.confirmConsent = 'Подтвердите согласие всех авторов'
@@ -645,7 +643,7 @@ export function AuthorsSubmissionPage() {
           </div>
 
           <div className="form-field">
-            <label className="form-label">Загрузить рукопись (*.docx)</label>
+            <label className="form-label">Загрузить рукопись (любой формат текста: .docx)</label>
             <input
               type="file"
               className="file-input"
@@ -658,7 +656,7 @@ export function AuthorsSubmissionPage() {
           </div>
           <div className="form-field">
             <label className="form-label">Загрузить сведения об антиплагиате</label>
-            <input type="file" className="file-input" data-upload-slot="article-file" data-error-key="antiplagiarism" accept=".pdf" style={errors.antiplagiarism ? { outline: '2px solid red' } : undefined} />
+            <input type="file" className="file-input" data-upload-slot="article-file" data-error-key="antiplagiarism" style={errors.antiplagiarism ? { outline: '2px solid red' } : undefined} />
             {errors.antiplagiarism ? (<p className="form-hint" style={{ color: 'red' }}>{errors.antiplagiarism}</p>) : null}
           </div>
 
