@@ -1137,6 +1137,66 @@ def get_assigned_editor_internal(
     return {"article_id": article.id, "assigned_editor_id": article.assigned_editor_id}
 
 
+@router.get("/internal/{article_id}/reviewer-detail")
+def get_article_reviewer_detail_internal(
+    article_id: int,
+    db: Session = Depends(get_db),
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+):
+    """
+    Internal: return sanitized article details for reviewer consumption.
+    Excludes authors and versions; includes basic metadata, abstracts, file URLs and keywords.
+
+    Requires X-Service-Secret header.
+    """
+    ensure_service_secret(x_service_secret)
+    from sqlalchemy.orm import joinedload
+    article = (
+        db.query(models.Article)
+        .options(
+            joinedload(models.Article.keywords)
+        )
+        .filter(models.Article.id == article_id)
+        .first()
+    )
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    # Build sanitized payload (no authors, no versions)
+    return {
+        "id": article.id,
+        "title_kz": article.title_kz,
+        "title_en": article.title_en,
+        "title_ru": article.title_ru,
+        "abstract_kz": article.abstract_kz,
+        "abstract_en": article.abstract_en,
+        "abstract_ru": article.abstract_ru,
+        "doi": article.doi,
+        "status": article.status,
+        "article_type": article.article_type,
+        "responsible_user_id": article.responsible_user_id,
+        "antiplagiarism_file_url": article.antiplagiarism_file_url,
+        "not_published_elsewhere": article.not_published_elsewhere,
+        "plagiarism_free": article.plagiarism_free,
+        "authors_agree": article.authors_agree,
+        "generative_ai_info": article.generative_ai_info,
+        "manuscript_file_url": article.manuscript_file_url,
+        "cover_letter_file_url": article.cover_letter_file_url,
+        "layout_file_url": getattr(article, "layout_file_url", None),
+        "created_at": article.created_at,
+        "updated_at": article.updated_at,
+        "keywords": [
+            {
+                "id": kw.id,
+                "title_kz": kw.title_kz,
+                "title_en": kw.title_en,
+                "title_ru": kw.title_ru,
+            }
+            for kw in (article.keywords or [])
+        ],
+    }
+
+
 @router.post("/{article_id}/assign_reviewers")
 async def assign_reviewers(
     article_id: int, 

@@ -5,6 +5,8 @@ import type { ReviewDetail } from '../shared/types'
 import Alert from '../shared/components/Alert'
 import ConfirmModal from '../shared/components/ConfirmModal'
 import Toast from '../shared/components/Toast'
+import { toApiFilesUrl } from '../shared/url'
+import { formatArticleStatus, formatArticleType } from '../shared/labels'
 
 export default function ReviewDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -15,6 +17,11 @@ export default function ReviewDetailsPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [toastOpen, setToastOpen] = useState(false)
+  const [lang, setLang] = useState<'ru' | 'en' | 'kz'>(() => {
+    const params = new URLSearchParams(window.location.search)
+    const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
+    return fromQuery && ['ru', 'en', 'kz'].includes(fromQuery) ? fromQuery : 'ru'
+  })
 
   useEffect(() => {
     if (!id) return
@@ -56,7 +63,22 @@ export default function ReviewDetailsPage() {
     }
   }, [id])
 
-  const title = useMemo(() => data?.article_title ?? `Рецензия #${id}` , [data, id])
+  const title = useMemo(() => {
+    if (data?.article) {
+      return (
+        (lang === 'ru' ? data.article.title_ru : lang === 'en' ? data.article.title_en : data.article.title_kz) ||
+        data.article.title_ru || data.article.title_en || data.article.title_kz ||
+        data?.article_title || `Рецензия #${id}`
+      )
+    }
+    return data?.article_title ?? `Рецензия #${id}`
+  }, [data, id, lang])
+
+  const abstract = useMemo(() => {
+    if (!data?.article) return null
+    const a = data.article
+    return (lang === 'ru' ? a.abstract_ru : lang === 'en' ? a.abstract_en : a.abstract_kz) || a.abstract_ru || a.abstract_en || a.abstract_kz || null
+  }, [data, lang])
 
   const form = useMemo(() => ({
     comments: data?.comments ?? '',
@@ -164,8 +186,75 @@ export default function ReviewDetailsPage() {
           <h1 className="page-title">{title}</h1>
           <p className="subtitle">Детали рецензии и ответы по критериям.</p>
         </div>
-        <div className="pill pill--ghost">ID: {id}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div className="pill pill--ghost">ID: {id}</div>
+          <div className="lang-switch">
+            {(['ru','en','kz'] as const).map((l) => (
+              <button key={l} className={`lang-chip ${lang === l ? 'lang-chip--active' : ''}`} onClick={() => setLang(l)}>{l.toUpperCase()}</button>
+            ))}
+          </div>
+        </div>
       </section>
+
+      {/* Article summary (no authors, no versions) */}
+      {data?.article && (
+        <section className="section">
+          <div className="panel">
+            <div className="article-meta">
+              <span className="meta-label">Тип:</span> {formatArticleType(String(data.article.article_type || ''), lang)}
+              <span className="dot">•</span>
+              <span className="meta-label">Статус:</span> {formatArticleStatus(String(data.article.status || ''), lang)}
+              <span className="dot">•</span>
+              <span className="meta-label">DOI:</span> {data.article.doi || '—'}
+              {data.article.created_at ? (
+                <>
+                  <span className="dot">•</span>
+                  <span className="meta-label">Создано:</span> {new Date(data.article.created_at).toLocaleString()}
+                </>
+              ) : null}
+            </div>
+            {abstract && (
+              <div style={{ marginTop: '1.5rem', lineHeight: '1.6', color: '#444' }}>
+                <h4 style={{ marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 600, color: '#555' }}>
+                  {lang === 'ru' ? 'Аннотация' : lang === 'en' ? 'Abstract' : 'Аңдатпа'}
+                </h4>
+                <p style={{ whiteSpace: 'pre-wrap', textAlign: 'justify' }}>{abstract}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="panel">
+            <h3 className="panel-title" style={{ marginTop: 0 }}>Ключевые слова</h3>
+            {!data.article.keywords || data.article.keywords.length === 0 ? (
+              <div className="table__empty">Ключевые слова не указаны.</div>
+            ) : (
+              <div className="pill-list">
+                {data.article.keywords.map((k) => (
+                  <span key={k.id} className="pill pill--ghost">{k.title_ru || k.title_en || k.title_kz}</span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="panel">
+            <h3 className="panel-title" style={{ marginTop: 0 }}>Файлы</h3>
+            <div className="actions">
+              {data.article.manuscript_file_url && (
+                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.article.manuscript_file_url) || '#'} target="_blank" rel="noreferrer">Рукопись</a>
+              )}
+              {data.article.antiplagiarism_file_url && (
+                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.article.antiplagiarism_file_url)} target="_blank" rel="noreferrer">Антиплагиат</a>
+              )}
+              {data.article.cover_letter_file_url && (
+                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.article.cover_letter_file_url)} target="_blank" rel="noreferrer">Письмо</a>
+              )}
+              {data.article.layout_file_url && (
+                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.article.layout_file_url)} target="_blank" rel="noreferrer">Вёрстка</a>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="panel">
         {success ? <Alert variant="success" className="mb-2" title={success} /> : null}

@@ -337,4 +337,46 @@ def get_review_detail(review_id: int, db: Session = Depends(get_db), current_use
         raise HTTPException(status_code=404, detail="Review not found")
     if db_review.reviewer_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="You can only view your assigned reviews")
-    return db_review
+    # Base payload from ORM (Pydantic will handle mapping)
+    payload = db_review
+
+    # Try to enrich with article preview via API Gateway -> Articles internal endpoint
+    try:
+        api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+        api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
+        shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.get(
+                f"{api_gateway}{api_prefix}/articles/internal/{db_review.article_id}/reviewer-detail",
+                headers={"X-Service-Secret": shared_secret},
+            )
+        if resp.status_code == 200:
+            article = resp.json()
+            # Attach under .article key for schema
+            # We cannot mutate ORM, so convert to dict and return
+            base = {
+                'id': db_review.id,
+                'article_id': db_review.article_id,
+                'reviewer_id': db_review.reviewer_id,
+                'comments': db_review.comments,
+                'recommendation': db_review.recommendation,
+                'status': db_review.status,
+                'deadline': db_review.deadline,
+                'importance_applicability': db_review.importance_applicability,
+                'novelty_application': db_review.novelty_application,
+                'originality': db_review.originality,
+                'innovation_product': db_review.innovation_product,
+                'results_significance': db_review.results_significance,
+                'coherence': db_review.coherence,
+                'style_quality': db_review.style_quality,
+                'editorial_compliance': db_review.editorial_compliance,
+                'created_at': db_review.created_at,
+                'updated_at': db_review.updated_at,
+                'article': article,
+            }
+            return base  # Pydantic model will coerce
+    except Exception:
+        # Soft-fail: return base review fields
+        pass
+
+    return payload

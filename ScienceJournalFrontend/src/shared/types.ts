@@ -158,6 +158,27 @@ export interface ReviewDetail {
   editorial_compliance?: string | null
   created_at?: string | null
   updated_at?: string | null
+  // Enriched article preview for reviewer (without authors and versions)
+  article?: {
+    id: number
+    title_kz?: string | null
+    title_en?: string | null
+    title_ru?: string | null
+    abstract_kz?: string | null
+    abstract_en?: string | null
+    abstract_ru?: string | null
+    doi?: string | null
+    status?: string | null
+    article_type?: string | null
+    manuscript_file_url?: string | null
+    antiplagiarism_file_url?: string | null
+    author_info_file_url?: string | null
+    cover_letter_file_url?: string | null
+    layout_file_url?: string | null
+    created_at?: string | null
+    updated_at?: string | null
+    keywords?: { id: number; title_kz?: string | null; title_en?: string | null; title_ru?: string | null }[]
+  } | null
 }
 
 // API: Volume with embedded articles (simplified shape based on backend VolumeBase + joined articles)
