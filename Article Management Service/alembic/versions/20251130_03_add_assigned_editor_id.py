@@ -16,7 +16,11 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('articles', sa.Column('assigned_editor_id', sa.Integer(), nullable=True))
+    try:
+        op.add_column('articles', sa.Column('assigned_editor_id', sa.Integer(), nullable=True))
+    except Exception:
+        # If column already exists, ignore
+        pass
 
 
 def downgrade() -> None:

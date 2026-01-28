@@ -18,8 +18,12 @@ depends_on = None
 
 def upgrade() -> None:
     # Add version_code column to article_versions table
-    op.add_column('article_versions', 
-                  sa.Column('version_code', sa.String(), nullable=True))
+    try:
+        op.add_column('article_versions', 
+                      sa.Column('version_code', sa.String(), nullable=True))
+    except Exception:
+        # If column already exists, ignore
+        pass
 
 
 def downgrade() -> None:
