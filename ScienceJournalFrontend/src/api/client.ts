@@ -234,6 +234,8 @@ export const api = {
   getLayoutRecordsByArticle: <T>(articleId: number | string) =>
     request<T>(`/layout/articles/${articleId}/records`, 'GET'),
   // Domain-specific helpers
+  getAuthors: <T>() => request<T>('/articles/authors', 'GET'),
+  getKeywords: <T>() => request<T>('/articles/keywords', 'GET'),
   getUnassignedArticles: <T>(params?: {
     status?: string
     author_name?: string
@@ -247,6 +249,24 @@ export const api = {
   getEditorArticleDetail: <T>(id: string | number) => request<T>(`/articles/editor/${id}`, 'GET'),
   getEditorArticleVersion: <T>(articleId: string | number, versionId: string | number) =>
     request<T>(`/articles/editor/${articleId}/versions/${versionId}`, 'GET'),
+  // Fast article publication for editors
+  quickPublishArticle: <T>(body: {
+    title_kz: string
+    title_en: string
+    title_ru: string
+    abstract_kz?: string
+    abstract_en?: string
+    abstract_ru?: string
+    doi?: string
+    article_type?: 'original' | 'review'
+    layout_file_id?: string
+    manuscript_file_id?: string
+    author_info_file_id?: string
+    generative_ai_info?: string
+    keyword_ids?: number[]
+    author_ids?: number[]
+    keywords?: Array<{ title_kz?: string; title_en?: string; title_ru?: string }>
+  }) => request<T>('/articles/quick-publish', 'POST', { json: body }),
   assignReviewers: <T>(articleId: string | number, body: { reviewer_ids: number[]; deadline?: string }) =>
     request<T>(`/articles/${articleId}/assign_reviewers`, 'POST', { json: body }),
   getArticleReviewers: <T>(articleId: string | number) => request<T>(`/articles/${articleId}/reviewers`, 'GET'),

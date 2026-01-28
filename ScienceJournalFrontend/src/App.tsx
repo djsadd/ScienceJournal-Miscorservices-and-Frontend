@@ -41,6 +41,7 @@ import PublicVolumeDetailPage from './pages/PublicVolumeDetailPage'
 import VolumeEditPage from './pages/VolumeEditPage'
 import NotificationsPage from './pages/NotificationsPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
+import QuickPublishPage from './pages/QuickPublishPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -297,6 +298,16 @@ function App() {
           <RequireAuth>
             <MainLayout>
               <VolumeEditPage />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cabinet/quick-publish"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <QuickPublishPage />
             </MainLayout>
           </RequireAuth>
         }

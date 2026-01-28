@@ -155,6 +155,25 @@ class ArticleCreateWithIds(BaseModel):
     keywords: List[KeywordCreate] = Field(default_factory=list)
 
 
+class ArticleQuickPublish(BaseModel):
+    """Fast article creation for editors - publishes directly without review stages"""
+    title_kz: str
+    title_en: str
+    title_ru: str
+    abstract_kz: Optional[str] = None
+    abstract_en: Optional[str] = None
+    abstract_ru: Optional[str] = None
+    doi: Optional[str] = None
+    article_type: ArticleType = ArticleType.original
+    layout_file_id: Optional[str] = None  # Pre-formatted file URL
+    manuscript_file_id: Optional[str] = None
+    author_info_file_id: Optional[str] = None
+    generative_ai_info: Optional[str] = None
+    keyword_ids: List[int] = Field(default_factory=list)
+    author_ids: List[int] = Field(default_factory=list)
+    keywords: List[KeywordCreate] = Field(default_factory=list)
+
+
 class ArticleUpdate(BaseModel):
     title_kz: Optional[str] = None
     title_en: Optional[str] = None
