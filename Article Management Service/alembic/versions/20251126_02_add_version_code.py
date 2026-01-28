@@ -7,6 +7,7 @@ Create Date: 2025-11-26
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -17,13 +18,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add version_code column to article_versions table
-    try:
+    # Check if column already exists
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('article_versions')]
+    
+    if 'version_code' not in columns:
         op.add_column('article_versions', 
                       sa.Column('version_code', sa.String(), nullable=True))
-    except Exception:
-        # If column already exists, ignore
-        pass
 
 
 def downgrade() -> None:

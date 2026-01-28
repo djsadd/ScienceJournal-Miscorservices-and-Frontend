@@ -7,6 +7,7 @@ Create Date: 2025-11-30
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = '20251130_02'
@@ -16,11 +17,13 @@ depends_on = None
 
 
 def upgrade() -> None:
-    try:
+    # Check if column already exists
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('volumes')]
+    
+    if 'month' not in columns:
         op.add_column('volumes', sa.Column('month', sa.Integer(), nullable=True))
-    except Exception:
-        # If column already exists, ignore
-        pass
 
 
 def downgrade() -> None:

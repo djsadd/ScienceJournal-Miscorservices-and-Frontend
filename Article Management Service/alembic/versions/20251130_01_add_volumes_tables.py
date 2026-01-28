@@ -7,6 +7,7 @@ Create Date: 2025-11-30
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = '20251130_01'
@@ -16,7 +17,11 @@ depends_on = None
 
 
 def upgrade() -> None:
-    try:
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    table_names = inspector.get_table_names()
+    
+    if 'volumes' not in table_names:
         op.create_table(
             'volumes',
             sa.Column('id', sa.Integer(), primary_key=True),
@@ -30,11 +35,8 @@ def upgrade() -> None:
             sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
             sa.UniqueConstraint('year', 'number', name='uq_volumes_year_number'),
         )
-    except Exception:
-        # If table already exists, ignore
-        pass
 
-    try:
+    if 'volume_articles' not in table_names:
         op.create_table(
             'volume_articles',
             sa.Column('volume_id', sa.Integer(), nullable=False),
@@ -43,9 +45,6 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(['article_id'], ['articles.id']),
             sa.PrimaryKeyConstraint('volume_id', 'article_id'),
         )
-    except Exception:
-        # If table already exists, ignore
-        pass
 
 
 def downgrade() -> None:
