@@ -10,7 +10,7 @@ interface ArticleSearchResult {
   pagination: { total_count: number; page: number; page_size: number; total_pages: number; has_next: boolean; has_prev: boolean }
 }
 
-type FormState = { year?: number; number?: number; month?: number | null; title_kz?: string | null; title_en?: string | null; title_ru?: string | null; description?: string | null; is_active?: boolean; article_ids?: number[] }
+type FormState = { year?: number; number?: string; month?: number | null; title_kz?: string | null; title_en?: string | null; title_ru?: string | null; description?: string | null; is_active?: boolean; article_ids?: number[] }
 
 export default function VolumeEditPage() {
   const { id } = useParams()
@@ -159,8 +159,8 @@ export default function VolumeEditPage() {
               <input type="number" value={form.year ?? ''} onChange={e => updateField('year', Number(e.target.value))} />
             </label>
             <label>
-              <span>Номер</span>
-              <input type="number" value={form.number ?? ''} onChange={e => updateField('number', Number(e.target.value))} />
+              <span>Номер журнала</span>
+              <input type="text" value={form.number ?? ''} onChange={e => updateField('number', e.target.value || undefined)} placeholder="Например: 1, 1-2, 2-3" />
             </label>
             <label>
               <span>Месяц</span>

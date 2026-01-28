@@ -6,7 +6,7 @@ function VolumesPage() {
   const [volumes, setVolumes] = useState<Volume[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<{ year?: number; number?: number; month?: number; active_only?: boolean }>({
+  const [filters, setFilters] = useState<{ year?: number; number?: string; month?: number; active_only?: boolean }>({
     active_only: true,
   })
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -49,7 +49,7 @@ function VolumesPage() {
     const { name, value } = e.target
     setFilters((prev) => ({
       ...prev,
-      [name]: value === '' ? undefined : name === 'active_only' ? value === 'true' : Number(value),
+      [name]: value === '' ? undefined : name === 'active_only' ? value === 'true' : name === 'number' ? value : Number(value),
     }))
   }
 
@@ -74,8 +74,8 @@ function VolumesPage() {
               <input className="search" type="number" name="year" value={filters.year ?? ''} onChange={onFilterChange} placeholder="2025" />
             </div>
             <div className="filter-group">
-              <label className="filter-label">Номер</label>
-              <input className="search" type="number" name="number" value={filters.number ?? ''} onChange={onFilterChange} placeholder="1" />
+              <label className="filter-label">Номер журнала</label>
+              <input className="search" type="text" name="number" value={filters.number ?? ''} onChange={onFilterChange} placeholder="Например: 1 или 1-2" />
             </div>
             <div className="filter-group">
               <label className="filter-label">Месяц</label>
@@ -104,7 +104,7 @@ function VolumesPage() {
                 try {
                   const payload = {
                     year: Number(createData.year),
-                    number: Number(createData.number),
+                    number: createData.number,
                     month: createData.month ? Number(createData.month) : undefined,
                     title_kz: createData.title_kz || undefined,
                     title_en: createData.title_en || undefined,
@@ -131,8 +131,8 @@ function VolumesPage() {
                 <input className="text-input" type="number" value={createData.year} onChange={(e) => setCreateData((p) => ({ ...p, year: e.target.value }))} required />
               </label>
               <label className="form-label">
-                Номер*
-                <input className="text-input" type="number" value={createData.number} onChange={(e) => setCreateData((p) => ({ ...p, number: e.target.value }))} required />
+                Номер журнала*
+                <input className="text-input" type="text" value={createData.number} onChange={(e) => setCreateData((p) => ({ ...p, number: e.target.value }))} placeholder="Например: 1 или 1-2" required />
               </label>
               <label className="form-label">
                 Месяц (1-12)

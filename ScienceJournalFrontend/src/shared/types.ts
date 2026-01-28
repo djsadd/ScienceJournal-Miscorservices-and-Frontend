@@ -185,7 +185,7 @@ export interface ReviewDetail {
 export interface Volume {
   id?: number
   year: number
-  number: number
+  number: string
   month?: number | null
   title_kz?: string | null
   title_en?: string | null
