@@ -29,13 +29,28 @@ export default function QuickPublishPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [authors, setAuthors] = useState<Author[]>([])
   const [keywords, setKeywords] = useState<Keyword[]>([])
   const [selectedAuthors, setSelectedAuthors] = useState<SelectedItem[]>([])
   const [selectedKeywords, setSelectedKeywords] = useState<SelectedItem[]>([])
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [keywordModalOpen, setKeywordModalOpen] = useState(false)
-  const [newAuthor, setNewAuthor] = useState({ first_name: '', last_name: '' })
+  const [newAuthor, setNewAuthor] = useState({
+    email: '',
+    prefix: '',
+    first_name: '',
+    patronymic: '',
+    last_name: '',
+    phone: '',
+    address: '',
+    country: 'Kazakhstan',
+    affiliation1: '',
+    affiliation2: '',
+    affiliation3: '',
+    is_corresponding: false,
+    orcid: '',
+    scopus_author_id: '',
+    researcher_id: '',
+  })
   const [newKeyword, setNewKeyword] = useState({ ru: '', en: '', kz: '' })
   const [fileLayoutName, setFileLayoutName] = useState<string | null>(null)
   const [fileManuscriptName, setFileManuscriptName] = useState<string | null>(null)
@@ -61,15 +76,11 @@ export default function QuickPublishPage() {
     keywordIds: [],
   })
 
-  // Load authors and keywords
+  // Load keywords
   useEffect(() => {
     const load = async () => {
       try {
-        const [authorsData, keywordsData] = await Promise.all([
-          api.getAuthors<Author[]>(),
-          api.getKeywords<Keyword[]>(),
-        ])
-        setAuthors(authorsData)
+        const keywordsData = await api.getKeywords<Keyword[]>()
         setKeywords(keywordsData)
       } catch (e: any) {
         setError(e?.message || 'Failed to load data')
@@ -189,15 +200,52 @@ export default function QuickPublishPage() {
   }
 
   const saveNewAuthor = async () => {
-    if (!newAuthor.first_name.trim() || !newAuthor.last_name.trim()) return
+    const optional = (value: string) => (value.trim() ? value.trim() : undefined)
+    if (
+      !newAuthor.email.trim() ||
+      !newAuthor.first_name.trim() ||
+      !newAuthor.last_name.trim() ||
+      !newAuthor.country.trim() ||
+      !newAuthor.affiliation1.trim()
+    ) {
+      return
+    }
     try {
       const created = await api.post<Author>('/articles/authors', {
+        email: newAuthor.email.trim(),
+        prefix: optional(newAuthor.prefix),
         first_name: newAuthor.first_name.trim(),
+        patronymic: optional(newAuthor.patronymic),
         last_name: newAuthor.last_name.trim(),
+        phone: optional(newAuthor.phone),
+        address: optional(newAuthor.address),
+        country: newAuthor.country.trim(),
+        affiliation1: newAuthor.affiliation1.trim(),
+        affiliation2: optional(newAuthor.affiliation2),
+        affiliation3: optional(newAuthor.affiliation3),
+        is_corresponding: newAuthor.is_corresponding,
+        orcid: optional(newAuthor.orcid),
+        scopus_author_id: optional(newAuthor.scopus_author_id),
+        researcher_id: optional(newAuthor.researcher_id),
       })
-      setAuthors((prev: Author[]) => [...prev, created])
       setSelectedAuthors((prev: SelectedItem[]) => [...prev, { id: created.id!, name: `${created.last_name} ${created.first_name}` }])
-      setNewAuthor({ first_name: '', last_name: '' })
+      setNewAuthor({
+        email: '',
+        prefix: '',
+        first_name: '',
+        patronymic: '',
+        last_name: '',
+        phone: '',
+        address: '',
+        country: 'Kazakhstan',
+        affiliation1: '',
+        affiliation2: '',
+        affiliation3: '',
+        is_corresponding: false,
+        orcid: '',
+        scopus_author_id: '',
+        researcher_id: '',
+      })
       setAuthorModalOpen(false)
     } catch (err) {
       setError('Не удалось создать автора')
@@ -218,12 +266,6 @@ export default function QuickPublishPage() {
       setKeywordModalOpen(false)
     } catch (err) {
       setError('Не удалось создать ключевое слово')
-    }
-  }
-
-  const addAuthorFromList = (author: Author) => {
-    if (!selectedAuthors.find((a: SelectedItem) => a.id === author.id)) {
-      setSelectedAuthors((prev: SelectedItem[]) => [...prev, { id: author.id!, name: `${author.last_name} ${author.first_name}` }])
     }
   }
 
@@ -471,6 +513,130 @@ export default function QuickPublishPage() {
                   <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Закрыть">×</button>
                 </div>
                 <div className="modal__body">
+                  <div className="modal-form-grid">
+                    <div className="form-field">
+                      <label className="form-label">Email*</label>
+                      <input
+                        type="email"
+                        className="text-input"
+                        placeholder="example@domain.com"
+                        value={newAuthor.email}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Prefix</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        placeholder="Dr., Prof."
+                        value={newAuthor.prefix}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, prefix: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Patronymic</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        value={newAuthor.patronymic}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, patronymic: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Country*</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        placeholder="Kazakhstan"
+                        value={newAuthor.country}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, country: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Affiliation 1*</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        placeholder="University / Organization"
+                        value={newAuthor.affiliation1}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, affiliation1: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Affiliation 2</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        value={newAuthor.affiliation2}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, affiliation2: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Affiliation 3</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        value={newAuthor.affiliation3}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, affiliation3: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Phone</label>
+                      <input
+                        type="tel"
+                        className="text-input"
+                        value={newAuthor.phone}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, phone: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Address</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        value={newAuthor.address}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, address: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">ORCID</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        placeholder="0000-0000-0000-0000"
+                        value={newAuthor.orcid}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, orcid: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Scopus Author ID</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        value={newAuthor.scopus_author_id}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, scopus_author_id: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Researcher ID</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        value={newAuthor.researcher_id}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, researcher_id: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="list-item" style={{ padding: 0, borderBottom: 'none' }}>
+                        <input
+                          type="checkbox"
+                          checked={newAuthor.is_corresponding}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, is_corresponding: e.target.checked })}
+                        />
+                        <span>Corresponding author</span>
+                      </label>
+                    </div>
                   <div className="form-field">
                     <label className="form-label">Имя автора*</label>
                     <input
@@ -491,13 +657,14 @@ export default function QuickPublishPage() {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, last_name: e.target.value })}
                     />
                   </div>
+                  {false && (
                   <div className="form-field">
                     <label className="form-label">Выбрать из списка</label>
-                    {authors.length === 0 ? (
+                    {false ? (
                       <p className="form-hint">Нет доступных авторов</p>
                     ) : (
                       <div className="modal-authors-list">
-                        {authors.map((author) => (
+                        {([] as Author[]).map((author) => (
                           <label key={author.id} className="list-item">
                             <input
                               type="checkbox"
@@ -506,7 +673,7 @@ export default function QuickPublishPage() {
                                 if (selectedAuthors.some(a => a.id === author.id)) {
                                   removeAuthor(author.id!)
                                 } else {
-                                  addAuthorFromList(author)
+                                  setSelectedAuthors((prev: SelectedItem[]) => [...prev, { id: author.id!, name: `${author.last_name} ${author.first_name}` }])
                                 }
                               }}
                             />
@@ -515,6 +682,8 @@ export default function QuickPublishPage() {
                         ))}
                       </div>
                     )}
+                  </div>
+                  )}
                   </div>
                 </div>
                 <div className="modal__footer">
@@ -529,7 +698,13 @@ export default function QuickPublishPage() {
                     type="button"
                     className="button button--primary"
                     onClick={saveNewAuthor}
-                    disabled={!newAuthor.first_name.trim() || !newAuthor.last_name.trim()}
+                    disabled={
+                      !newAuthor.email.trim() ||
+                      !newAuthor.first_name.trim() ||
+                      !newAuthor.last_name.trim() ||
+                      !newAuthor.country.trim() ||
+                      !newAuthor.affiliation1.trim()
+                    }
                   >
                     Создать и добавить
                   </button>

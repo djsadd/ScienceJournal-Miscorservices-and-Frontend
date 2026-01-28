@@ -129,6 +129,22 @@
   padding: 2rem;
 }
 
+.modal-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.modal-form-grid .form-field {
+  margin-bottom: 0;
+}
+
+@media (min-width: 640px) {
+  .modal-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .modal__footer {
   display: flex;
   gap: 1rem;
