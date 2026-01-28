@@ -35,6 +35,12 @@ class KeywordOut(KeywordCreate):
         orm_mode = True
 
 
+class AuthorQuickCreate(BaseModel):
+    """Simplified author creation for quick publish (editors only)"""
+    first_name: str
+    last_name: str
+
+
 class AuthorCreate(BaseModel):
     email: str
     prefix: Optional[str] = None

@@ -604,7 +604,10 @@ def create_keyword(
     during manuscript creation (frontend can call this first, then the article
     create without needing an extra click).
     """
-    ensure_author(current_user)
+    # Allow both authors and editors to create keywords
+    roles = current_user.get("roles", [])
+    if "author" not in roles and "editor" not in roles:
+        raise HTTPException(status_code=403, detail="Author or editor role required")
     # Try to reuse if identical keyword exists
     existing = (
         db.query(models.Keyword)
@@ -657,17 +660,44 @@ def list_authors(
 
 @router.post("/authors", response_model=schemas.AuthorOut)
 def create_author(
-    author: schemas.AuthorCreate,
+    author: schemas.AuthorCreate | schemas.AuthorQuickCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    ensure_author(current_user)
+    # Allow both authors and editors to create authors
+    roles = current_user.get("roles", [])
+    if "author" not in roles and "editor" not in roles:
+        raise HTTPException(status_code=403, detail="Author or editor role required")
 
-    existing = db.query(models.Author).filter(models.Author.email == author.email).first()
+    # For quick create (editors), generate email and set defaults
+    if isinstance(author, schemas.AuthorQuickCreate):
+        # Generate a temporary email from name
+        email = f"{author.first_name.lower()}.{author.last_name.lower()}@temp.local"
+        author_dict = {
+            'email': email,
+            'first_name': author.first_name,
+            'last_name': author.last_name,
+            'country': 'Kazakhstan',
+            'affiliation1': 'Unknown',
+            'prefix': None,
+            'patronymic': None,
+            'phone': None,
+            'address': None,
+            'affiliation2': None,
+            'affiliation3': None,
+            'is_corresponding': False,
+            'orcid': None,
+            'scopus_author_id': None,
+            'researcher_id': None,
+        }
+    else:
+        author_dict = author.dict()
+
+    existing = db.query(models.Author).filter(models.Author.email == author_dict['email']).first()
     if existing:
         raise HTTPException(status_code=400, detail="Author with this email already exists")
 
-    new_author = models.Author(**author.dict())
+    new_author = models.Author(**author_dict)
     db.add(new_author)
     db.commit()
     db.refresh(new_author)
