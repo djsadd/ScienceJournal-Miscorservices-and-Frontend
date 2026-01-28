@@ -1,7 +1,7 @@
 """add_full_article_snapshot_to_versions
 
 Revision ID: f02b17fc7620
-Revises: 20251126_02
+Revises: 20251201_add_layout
 Create Date: 2025-11-27 12:41:42.385191
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'f02b17fc7620'
-down_revision = '20251126_02'
+down_revision = '20251201_add_layout'
 branch_labels = None
 depends_on = None
 

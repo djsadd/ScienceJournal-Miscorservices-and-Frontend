@@ -1,7 +1,7 @@
 """change volume number to string
 
 Revision ID: 20260128_change_volume_number
-Revises: 20251201_add_layout
+Revises: f02b17fc7620
 Create Date: 2026-01-28
 """
 from alembic import op
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '20260128_change_volume_number'
-down_revision = '20251201_add_layout'
+down_revision = 'f02b17fc7620'
 branch_labels = None
 depends_on = None
 
