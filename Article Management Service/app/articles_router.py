@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 from typing import List
 from jose import jwt, JWTError
 import httpx
+import logging
 from app import models, schemas, database, config
 import httpx
 
 router = APIRouter(prefix="/articles", tags=["articles"])
+logger = logging.getLogger("articles.articles_router")
 
 
 def _file_id_to_url(file_id: str | None):
@@ -804,60 +806,80 @@ def quick_publish_article(
     """
     ensure_editor(current_user)
 
-    # Create article directly with published status
-    new_article = models.Article(
-        title_kz=article.title_kz,
-        title_en=article.title_en,
-        title_ru=article.title_ru,
-        abstract_kz=article.abstract_kz,
-        abstract_en=article.abstract_en,
-        abstract_ru=article.abstract_ru,
-        doi=article.doi,
-        status=models.ArticleStatus.published,  # Direct to published
-        article_type=article.article_type,
-        responsible_user_id=int(current_user["user_id"]),
-        manuscript_file_url=_file_id_to_url(article.manuscript_file_id),
-        author_info_file_url=_file_id_to_url(article.author_info_file_id),
-        layout_file_url=_file_id_to_url(article.layout_file_id),  # Pre-formatted file
-        generative_ai_info=article.generative_ai_info,
-        # Pre-filled with editor-provided values
-        not_published_elsewhere=True,
-        plagiarism_free=True,
-        authors_agree=True,
+    logger.info(
+        "quick_publish start user_id=%s author_ids=%s keyword_ids=%s layout_file_id=%s manuscript_file_id=%s author_info_file_id=%s",
+        current_user.get("user_id"),
+        getattr(article, "author_ids", None),
+        getattr(article, "keyword_ids", None),
+        getattr(article, "layout_file_id", None),
+        getattr(article, "manuscript_file_id", None),
+        getattr(article, "author_info_file_id", None),
     )
-    db.add(new_article)
-    db.flush()
 
-    # Link authors
-    if article.author_ids:
-        authors = db.query(models.Author).filter(models.Author.id.in_(article.author_ids)).all()
-        if len(authors) != len(set(article.author_ids)):
-            raise HTTPException(status_code=400, detail="One or more authors not found")
-        for author in authors:
-            db.execute(models.article_authors.insert().values(article_id=new_article.id, author_id=author.id))
+    try:
+        # Create article directly with published status
+        new_article = models.Article(
+            title_kz=article.title_kz,
+            title_en=article.title_en,
+            title_ru=article.title_ru,
+            abstract_kz=article.abstract_kz,
+            abstract_en=article.abstract_en,
+            abstract_ru=article.abstract_ru,
+            doi=article.doi,
+            status=models.ArticleStatus.published,  # Direct to published
+            article_type=article.article_type,
+            responsible_user_id=int(current_user["user_id"]),
+            manuscript_file_url=_file_id_to_url(article.manuscript_file_id),
+            author_info_file_url=_file_id_to_url(article.author_info_file_id),
+            layout_file_url=_file_id_to_url(article.layout_file_id),  # Pre-formatted file
+            generative_ai_info=article.generative_ai_info,
+            # Pre-filled with editor-provided values
+            not_published_elsewhere=True,
+            plagiarism_free=True,
+            authors_agree=True,
+        )
+        db.add(new_article)
+        db.flush()
 
-    # Link keywords by IDs
-    attached_keyword_ids: set[int] = set()
-    if article.keyword_ids:
-        keywords = db.query(models.Keyword).filter(models.Keyword.id.in_(article.keyword_ids)).all()
-        if len(keywords) != len(set(article.keyword_ids)):
-            raise HTTPException(status_code=400, detail="One or more keywords not found")
-        for keyword in keywords:
-            if keyword.id not in attached_keyword_ids:
-                db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=keyword.id))
-                attached_keyword_ids.add(keyword.id)
+        # Link authors
+        if article.author_ids:
+            authors = db.query(models.Author).filter(models.Author.id.in_(article.author_ids)).all()
+            if len(authors) != len(set(article.author_ids)):
+                raise HTTPException(status_code=400, detail="One or more authors not found")
+            for author in authors:
+                db.execute(models.article_authors.insert().values(article_id=new_article.id, author_id=author.id))
 
-    # Create/link keywords by names
-    if getattr(article, "keywords", None):
-        for kw_payload in article.keywords:
-            kw = _get_or_create_keyword(db, kw_payload)
-            if kw.id not in attached_keyword_ids:
-                db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=kw.id))
-                attached_keyword_ids.add(kw.id)
+        # Link keywords by IDs
+        attached_keyword_ids: set[int] = set()
+        if article.keyword_ids:
+            keywords = db.query(models.Keyword).filter(models.Keyword.id.in_(article.keyword_ids)).all()
+            if len(keywords) != len(set(article.keyword_ids)):
+                raise HTTPException(status_code=400, detail="One or more keywords not found")
+            for keyword in keywords:
+                if keyword.id not in attached_keyword_ids:
+                    db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=keyword.id))
+                    attached_keyword_ids.add(keyword.id)
 
-    db.commit()
-    db.refresh(new_article)
-    return new_article
+        # Create/link keywords by names
+        if getattr(article, "keywords", None):
+            for kw_payload in article.keywords:
+                kw = _get_or_create_keyword(db, kw_payload)
+                if kw.id not in attached_keyword_ids:
+                    db.execute(models.article_keywords.insert().values(article_id=new_article.id, keyword_id=kw.id))
+                    attached_keyword_ids.add(kw.id)
+
+        db.commit()
+        db.refresh(new_article)
+        logger.info("quick_publish success article_id=%s", new_article.id)
+        return new_article
+    except HTTPException:
+        db.rollback()
+        logger.exception("quick_publish http_error")
+        raise
+    except Exception:
+        db.rollback()
+        logger.exception("quick_publish failed")
+        raise HTTPException(status_code=500, detail="Quick publish failed. See Articles service logs for details.")
 
 
 @router.patch("/internal/{article_id}/assigned-editor")

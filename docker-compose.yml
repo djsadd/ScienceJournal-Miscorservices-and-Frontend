@@ -52,6 +52,7 @@ services:
       - DATABASE_URL=postgresql://articles:pass@db/articles
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
       - API_GATEWAY_URL=http://localhost:8000
+      - LOG_LEVEL=${ARTICLES_LOG_LEVEL:-info}
     ports:
       - "8003:8000"
     depends_on:
