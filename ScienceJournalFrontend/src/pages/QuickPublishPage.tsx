@@ -464,65 +464,60 @@ export default function QuickPublishPage() {
           </div>
 
           {authorModalOpen && (
-            <div className="modal-overlay" onClick={() => setAuthorModalOpen(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
-                <h2 className="modal-title">Добавить автора</h2>
-                
-                <div className="modal-section">
-                  <h3 className="modal-subtitle">Создать нового автора</h3>
-                  <div className="form-grid form-grid--cols-2">
+            <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
+              <div className="modal" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                <div className="modal__header">
+                  <h3>Добавить автора</h3>
+                  <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Закрыть">×</button>
+                </div>
+                <div className="modal__body">
+                  <div className="form-field">
+                    <label className="form-label">Имя автора*</label>
                     <input
                       type="text"
-                      placeholder="Имя"
+                      className="text-input"
+                      placeholder="Например: Иван"
                       value={newAuthor.first_name}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, first_name: e.target.value })}
                     />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Фамилия автора*</label>
                     <input
                       type="text"
-                      placeholder="Фамилия"
+                      className="text-input"
+                      placeholder="Например: Петров"
                       value={newAuthor.last_name}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, last_name: e.target.value })}
                     />
                   </div>
-                  <button
-                    type="button"
-                    className="button"
-                    onClick={saveNewAuthor}
-                    disabled={!newAuthor.first_name.trim() || !newAuthor.last_name.trim()}
-                  >
-                    Создать автора
-                  </button>
+                  <div className="form-field">
+                    <label className="form-label">Выбрать из списка</label>
+                    {authors.length === 0 ? (
+                      <p className="form-hint">Нет доступных авторов</p>
+                    ) : (
+                      <div className="modal-authors-list">
+                        {authors.map((author) => (
+                          <label key={author.id} className="list-item">
+                            <input
+                              type="checkbox"
+                              checked={selectedAuthors.some(a => a.id === author.id)}
+                              onChange={() => {
+                                if (selectedAuthors.some(a => a.id === author.id)) {
+                                  removeAuthor(author.id!)
+                                } else {
+                                  addAuthorFromList(author)
+                                }
+                              }}
+                            />
+                            <span>{author.last_name} {author.first_name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                <hr className="modal-divider" />
-
-                <div className="modal-section">
-                  <h3 className="modal-subtitle">Или выбрать из списка</h3>
-                  {authors.length === 0 ? (
-                    <p className="meta-label">Нет доступных авторов</p>
-                  ) : (
-                    <div className="authors-list">
-                      {authors.map((author) => (
-                        <label key={author.id} className="list-item">
-                          <input
-                            type="checkbox"
-                            checked={selectedAuthors.some(a => a.id === author.id)}
-                            onChange={() => {
-                              if (selectedAuthors.some(a => a.id === author.id)) {
-                                removeAuthor(author.id!)
-                              } else {
-                                addAuthorFromList(author)
-                              }
-                            }}
-                          />
-                          <span>{author.last_name} {author.first_name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="modal-actions">
+                <div className="modal__footer">
                   <button
                     type="button"
                     className="button button--ghost"
@@ -530,83 +525,98 @@ export default function QuickPublishPage() {
                   >
                     Закрыть
                   </button>
+                  <button
+                    type="button"
+                    className="button button--primary"
+                    onClick={saveNewAuthor}
+                    disabled={!newAuthor.first_name.trim() || !newAuthor.last_name.trim()}
+                  >
+                    Создать и добавить
+                  </button>
                 </div>
               </div>
             </div>
           )}
 
           {keywordModalOpen && (
-            <div className="modal-overlay" onClick={() => setKeywordModalOpen(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
-                <h2 className="modal-title">Добавить ключевое слово</h2>
-                
-                <div className="modal-section">
-                  <h3 className="modal-subtitle">Создать новое ключевое слово</h3>
-                  <div className="form-grid form-grid--cols-3">
+            <div className="modal-backdrop" onClick={() => setKeywordModalOpen(false)}>
+              <div className="modal" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                <div className="modal__header">
+                  <h3>Добавить ключевое слово</h3>
+                  <button className="modal__close" onClick={() => setKeywordModalOpen(false)} aria-label="Закрыть">×</button>
+                </div>
+                <div className="modal__body">
+                  <div className="form-field">
+                    <label className="form-label">На русском*</label>
                     <input
                       type="text"
-                      placeholder="Русский"
+                      className="text-input"
+                      placeholder="Например: Искусственный интеллект"
                       value={newKeyword.ru}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKeyword({ ...newKeyword, ru: e.target.value })}
                     />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">На казахском</label>
                     <input
                       type="text"
-                      placeholder="English"
-                      value={newKeyword.en}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKeyword({ ...newKeyword, en: e.target.value })}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Қазақша"
+                      className="text-input"
+                      placeholder="Например: Жасанды интеллект"
                       value={newKeyword.kz}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKeyword({ ...newKeyword, kz: e.target.value })}
                     />
                   </div>
-                  <button
-                    type="button"
-                    className="button"
-                    onClick={saveNewKeyword}
-                    disabled={!newKeyword.ru.trim()}
-                  >
-                    Создать ключевое слово
-                  </button>
+                  <div className="form-field">
+                    <label className="form-label">На английском</label>
+                    <input
+                      type="text"
+                      className="text-input"
+                      placeholder="Например: Artificial Intelligence"
+                      value={newKeyword.en}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKeyword({ ...newKeyword, en: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Выбрать из списка</label>
+                    {keywords.length === 0 ? (
+                      <p className="form-hint">Нет доступных ключевых слов</p>
+                    ) : (
+                      <div className="modal-keywords-list">
+                        {keywords.map((kw) => (
+                          <label key={kw.id} className="list-item">
+                            <input
+                              type="checkbox"
+                              checked={selectedKeywords.some(k => k.id === kw.id)}
+                              onChange={() => {
+                                if (selectedKeywords.some(k => k.id === kw.id)) {
+                                  removeKeyword(kw.id!)
+                                } else {
+                                  addKeywordFromList(kw)
+                                }
+                              }}
+                            />
+                            <span>{kw.title_ru || kw.title_en || kw.title_kz}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                <hr className="modal-divider" />
-
-                <div className="modal-section">
-                  <h3 className="modal-subtitle">Или выбрать из списка</h3>
-                  {keywords.length === 0 ? (
-                    <p className="meta-label">Нет доступных ключевых слов</p>
-                  ) : (
-                    <div className="keywords-list">
-                      {keywords.map((kw) => (
-                        <label key={kw.id} className="list-item">
-                          <input
-                            type="checkbox"
-                            checked={selectedKeywords.some(k => k.id === kw.id)}
-                            onChange={() => {
-                              if (selectedKeywords.some(k => k.id === kw.id)) {
-                                removeKeyword(kw.id!)
-                              } else {
-                                addKeywordFromList(kw)
-                              }
-                            }}
-                          />
-                          <span>{kw.title_ru || kw.title_en || kw.title_kz}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="modal-actions">
+                <div className="modal__footer">
                   <button
                     type="button"
                     className="button button--ghost"
                     onClick={() => setKeywordModalOpen(false)}
                   >
                     Закрыть
+                  </button>
+                  <button
+                    type="button"
+                    className="button button--primary"
+                    onClick={saveNewKeyword}
+                    disabled={!newKeyword.ru.trim()}
+                  >
+                    Создать и добавить
                   </button>
                 </div>
               </div>
