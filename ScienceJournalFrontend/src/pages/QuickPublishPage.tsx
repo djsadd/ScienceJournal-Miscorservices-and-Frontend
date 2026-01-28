@@ -213,7 +213,7 @@ export default function QuickPublishPage() {
         title_en: newKeyword.en.trim(),
       })
       setKeywords((prev: Keyword[]) => [...prev, created])
-      setSelectedKeywords((prev: SelectedItem[]) => [...prev, { id: created.id!, name: created.title_ru }])
+      setSelectedKeywords((prev: SelectedItem[]) => [...prev, { id: created.id!, name: created.title_ru || created.title_en || created.title_kz || 'Unnamed' }])
       setNewKeyword({ ru: '', en: '', kz: '' })
       setKeywordModalOpen(false)
     } catch (err) {
@@ -233,7 +233,7 @@ export default function QuickPublishPage() {
 
   const addKeywordFromList = (keyword: Keyword) => {
     if (!selectedKeywords.find((k: SelectedItem) => k.id === keyword.id)) {
-      setSelectedKeywords((prev: SelectedItem[]) => [...prev, { id: keyword.id!, name: keyword.title_ru }])
+      setSelectedKeywords((prev: SelectedItem[]) => [...prev, { id: keyword.id!, name: keyword.title_ru || keyword.title_en || keyword.title_kz || 'Unnamed' }])
     }
   }
 
