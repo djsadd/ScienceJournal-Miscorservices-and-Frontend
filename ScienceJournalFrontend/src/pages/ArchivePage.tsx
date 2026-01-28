@@ -24,7 +24,7 @@ export function ArchivePage() {
       year: 'Год',
       issuesCount: (n: number) => `${n} выпуск(а)`,
       volumesOfYear: (y: number) => `Тома ${y}`,
-      volumeTitle: (n: number, m?: number | null) => `Том ${n}${m ? ` (${m} мес.)` : ''}`,
+      volumeTitle: (n: string, m?: number | null) => `Том ${n}${m ? ` (${m} мес.)` : ''}`,
     },
     en: {
       eyebrow: 'archive of issues',
@@ -42,7 +42,7 @@ export function ArchivePage() {
       year: 'Year',
       issuesCount: (n: number) => `${n} issue(s)`,
       volumesOfYear: (y: number) => `Volumes of ${y}`,
-      volumeTitle: (n: number, m?: number | null) => `Volume ${n}${m ? ` (${m} mo.)` : ''}`,
+      volumeTitle: (n: string, m?: number | null) => `Volume ${n}${m ? ` (${m} mo.)` : ''}`,
     },
     kz: {
       eyebrow: 'шығарылымдар мұрағаты',
@@ -60,7 +60,7 @@ export function ArchivePage() {
       year: 'Жыл',
       issuesCount: (n: number) => `${n} шығарылым`,
       volumesOfYear: (y: number) => `${y} жылғы томдар`,
-      volumeTitle: (n: number, m?: number | null) => `Том ${n}${m ? ` (${m} ай)` : ''}`,
+      volumeTitle: (n: string, m?: number | null) => `Том ${n}${m ? ` (${m} ай)` : ''}`,
     },
   }[lang]
   const [openYears, setOpenYears] = useState<Record<number, boolean>>({})
