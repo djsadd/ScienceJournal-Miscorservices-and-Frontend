@@ -1,7 +1,9 @@
-import { useEffect, useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 import { api } from '../api/client'
-import type { Author, Keyword, Article } from '../shared/types'
+import type { Article, Author, Keyword } from '../shared/types'
 import './QuickPublishPage.css'
+
+type Lang = 'ru' | 'kz' | 'en'
 
 interface FormData {
   title_ru: string
@@ -16,8 +18,6 @@ interface FormData {
   manuscriptFileId: string
   authorInfoFileId: string
   generativeAiInfo: string
-  authorIds: number[]
-  keywordIds: number[]
 }
 
 interface SelectedItem {
@@ -29,11 +29,15 @@ export default function QuickPublishPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [keywords, setKeywords] = useState<Keyword[]>([])
+
+  const [activeLang, setActiveLang] = useState<Lang>('ru')
+  const langLabels: Record<Lang, string> = { ru: 'Русский', kz: 'Казахский', en: 'Английский' }
+
   const [selectedAuthors, setSelectedAuthors] = useState<SelectedItem[]>([])
   const [selectedKeywords, setSelectedKeywords] = useState<SelectedItem[]>([])
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [keywordModalOpen, setKeywordModalOpen] = useState(false)
+
   const [newAuthor, setNewAuthor] = useState({
     email: '',
     prefix: '',
@@ -51,10 +55,13 @@ export default function QuickPublishPage() {
     scopus_author_id: '',
     researcher_id: '',
   })
+
   const [newKeyword, setNewKeyword] = useState({ ru: '', en: '', kz: '' })
+
   const [fileLayoutName, setFileLayoutName] = useState<string | null>(null)
   const [fileManuscriptName, setFileManuscriptName] = useState<string | null>(null)
   const [fileAuthorInfoName, setFileAuthorInfoName] = useState<string | null>(null)
+
   const layoutFileRef = useRef<HTMLInputElement>(null)
   const manuscriptFileRef = useRef<HTMLInputElement>(null)
   const authorInfoFileRef = useRef<HTMLInputElement>(null)
@@ -72,22 +79,151 @@ export default function QuickPublishPage() {
     manuscriptFileId: '',
     authorInfoFileId: '',
     generativeAiInfo: '',
-    authorIds: [],
-    keywordIds: [],
   })
 
-  // Load keywords
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const keywordsData = await api.getKeywords<Keyword[]>()
-        setKeywords(keywordsData)
-      } catch (e: any) {
-        setError(e?.message || 'Failed to load data')
-      }
+  const getTitleForLang = (lang: Lang) =>
+    lang === 'ru' ? form.title_ru : lang === 'kz' ? form.title_kz : form.title_en
+
+  const setTitleForLang = (lang: Lang, value: string) =>
+    setForm({
+      ...form,
+      ...(lang === 'ru' ? { title_ru: value } : lang === 'kz' ? { title_kz: value } : { title_en: value }),
+    })
+
+  const getAbstractForLang = (lang: Lang) =>
+    lang === 'ru' ? form.abstract_ru : lang === 'kz' ? form.abstract_kz : form.abstract_en
+
+  const setAbstractForLang = (lang: Lang, value: string) =>
+    setForm({
+      ...form,
+      ...(lang === 'ru' ? { abstract_ru: value } : lang === 'kz' ? { abstract_kz: value } : { abstract_en: value }),
+    })
+
+  const uploadFile = async (file: File) => {
+    const fd = new FormData()
+    fd.append('upload', file)
+    return api.request<{ id: string }>('/files', 'POST', { body: fd })
+  }
+
+  const handleLayoutFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0]
+    if (!file) return
+    try {
+      setLoading(true)
+      const result = await uploadFile(file)
+      setForm({ ...form, layoutFileId: result.id })
+      setFileLayoutName(file.name)
+    } catch {
+      setError('Ошибка при загрузке файла')
+    } finally {
+      setLoading(false)
     }
-    load()
-  }, [])
+  }
+
+  const handleManuscriptFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0]
+    if (!file) return
+    try {
+      setLoading(true)
+      const result = await uploadFile(file)
+      setForm({ ...form, manuscriptFileId: result.id })
+      setFileManuscriptName(file.name)
+    } catch {
+      setError('Ошибка при загрузке файла')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAuthorInfoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0]
+    if (!file) return
+    try {
+      setLoading(true)
+      const result = await uploadFile(file)
+      setForm({ ...form, authorInfoFileId: result.id })
+      setFileAuthorInfoName(file.name)
+    } catch {
+      setError('Ошибка при загрузке файла')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const saveNewAuthor = async () => {
+    const optional = (value: string) => (value.trim() ? value.trim() : undefined)
+
+    if (
+      !newAuthor.email.trim() ||
+      !newAuthor.first_name.trim() ||
+      !newAuthor.last_name.trim() ||
+      !newAuthor.country.trim() ||
+      !newAuthor.affiliation1.trim()
+    ) {
+      return
+    }
+
+    try {
+      const created = await api.post<Author>('/articles/authors', {
+        email: newAuthor.email.trim(),
+        prefix: optional(newAuthor.prefix),
+        first_name: newAuthor.first_name.trim(),
+        patronymic: optional(newAuthor.patronymic),
+        last_name: newAuthor.last_name.trim(),
+        phone: optional(newAuthor.phone),
+        address: optional(newAuthor.address),
+        country: newAuthor.country.trim(),
+        affiliation1: newAuthor.affiliation1.trim(),
+        affiliation2: optional(newAuthor.affiliation2),
+        affiliation3: optional(newAuthor.affiliation3),
+        is_corresponding: newAuthor.is_corresponding,
+        orcid: optional(newAuthor.orcid),
+        scopus_author_id: optional(newAuthor.scopus_author_id),
+        researcher_id: optional(newAuthor.researcher_id),
+      })
+
+      setSelectedAuthors((prev) => [...prev, { id: created.id!, name: `${created.last_name} ${created.first_name}` }])
+      setNewAuthor({
+        email: '',
+        prefix: '',
+        first_name: '',
+        patronymic: '',
+        last_name: '',
+        phone: '',
+        address: '',
+        country: 'Kazakhstan',
+        affiliation1: '',
+        affiliation2: '',
+        affiliation3: '',
+        is_corresponding: false,
+        orcid: '',
+        scopus_author_id: '',
+        researcher_id: '',
+      })
+      setAuthorModalOpen(false)
+    } catch {
+      setError('Не удалось создать автора')
+    }
+  }
+
+  const saveNewKeyword = async () => {
+    if (!newKeyword.ru.trim()) return
+    try {
+      const created = await api.post<Keyword>('/articles/keywords', {
+        title_ru: newKeyword.ru.trim(),
+        title_kz: newKeyword.kz.trim(),
+        title_en: newKeyword.en.trim(),
+      })
+      setSelectedKeywords((prev) => [
+        ...prev,
+        { id: created.id!, name: created.title_ru || created.title_en || created.title_kz || 'Unnamed' },
+      ])
+      setNewKeyword({ ru: '', en: '', kz: '' })
+      setKeywordModalOpen(false)
+    } catch {
+      setError('Не удалось создать ключевое слово')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -109,11 +245,11 @@ export default function QuickPublishPage() {
         manuscript_file_id: form.manuscriptFileId || undefined,
         author_info_file_id: form.authorInfoFileId || undefined,
         generative_ai_info: form.generativeAiInfo || undefined,
-        author_ids: selectedAuthors.map((a: SelectedItem) => a.id),
-        keyword_ids: selectedKeywords.map((k: SelectedItem) => k.id),
+        author_ids: selectedAuthors.map((a) => a.id),
+        keyword_ids: selectedKeywords.map((k) => k.id),
       })
+
       setSuccess(true)
-      // Reset form
       setForm({
         title_ru: '',
         title_en: '',
@@ -127,8 +263,6 @@ export default function QuickPublishPage() {
         manuscriptFileId: '',
         authorInfoFileId: '',
         generativeAiInfo: '',
-        authorIds: [],
-        keywordIds: [],
       })
       setSelectedAuthors([])
       setSelectedKeywords([])
@@ -138,250 +272,94 @@ export default function QuickPublishPage() {
       setTimeout(() => {
         window.location.href = `/articles/${result.id}`
       }, 1000)
-    } catch (e: any) {
-      setError(e?.bodyJson?.detail || e?.message || 'Failed to publish article')
+    } catch (err: any) {
+      setError(err?.bodyJson?.detail || err?.message || 'Не удалось опубликовать статью')
     } finally {
       setLoading(false)
     }
   }
 
-  const uploadFile = async (file: File) => {
-    const formData = new FormData()
-    formData.append('upload', file)
-    return api.request<{ id: string }>('/files', 'POST', { body: formData })
-  }
-
-  const handleLayoutFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0]
-    if (file) {
-      try {
-        setLoading(true)
-        const result = await uploadFile(file)
-        setForm({ ...form, layoutFileId: result.id })
-        setFileLayoutName(file.name)
-      } catch (err) {
-        setError('Ошибка при загрузке файла')
-      } finally {
-        setLoading(false)
-      }
-    }
-  }
-
-  const handleManuscriptFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0]
-    if (file) {
-      try {
-        setLoading(true)
-        const result = await uploadFile(file)
-        setForm({ ...form, manuscriptFileId: result.id })
-        setFileManuscriptName(file.name)
-      } catch (err) {
-        setError('Ошибка при загрузке файла')
-      } finally {
-        setLoading(false)
-      }
-    }
-  }
-
-  const handleAuthorInfoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0]
-    if (file) {
-      try {
-        setLoading(true)
-        const result = await uploadFile(file)
-        setForm({ ...form, authorInfoFileId: result.id })
-        setFileAuthorInfoName(file.name)
-      } catch (err) {
-        setError('Ошибка при загрузке файла')
-      } finally {
-        setLoading(false)
-      }
-    }
-  }
-
-  const saveNewAuthor = async () => {
-    const optional = (value: string) => (value.trim() ? value.trim() : undefined)
-    if (
-      !newAuthor.email.trim() ||
-      !newAuthor.first_name.trim() ||
-      !newAuthor.last_name.trim() ||
-      !newAuthor.country.trim() ||
-      !newAuthor.affiliation1.trim()
-    ) {
-      return
-    }
-    try {
-      const created = await api.post<Author>('/articles/authors', {
-        email: newAuthor.email.trim(),
-        prefix: optional(newAuthor.prefix),
-        first_name: newAuthor.first_name.trim(),
-        patronymic: optional(newAuthor.patronymic),
-        last_name: newAuthor.last_name.trim(),
-        phone: optional(newAuthor.phone),
-        address: optional(newAuthor.address),
-        country: newAuthor.country.trim(),
-        affiliation1: newAuthor.affiliation1.trim(),
-        affiliation2: optional(newAuthor.affiliation2),
-        affiliation3: optional(newAuthor.affiliation3),
-        is_corresponding: newAuthor.is_corresponding,
-        orcid: optional(newAuthor.orcid),
-        scopus_author_id: optional(newAuthor.scopus_author_id),
-        researcher_id: optional(newAuthor.researcher_id),
-      })
-      setSelectedAuthors((prev: SelectedItem[]) => [...prev, { id: created.id!, name: `${created.last_name} ${created.first_name}` }])
-      setNewAuthor({
-        email: '',
-        prefix: '',
-        first_name: '',
-        patronymic: '',
-        last_name: '',
-        phone: '',
-        address: '',
-        country: 'Kazakhstan',
-        affiliation1: '',
-        affiliation2: '',
-        affiliation3: '',
-        is_corresponding: false,
-        orcid: '',
-        scopus_author_id: '',
-        researcher_id: '',
-      })
-      setAuthorModalOpen(false)
-    } catch (err) {
-      setError('Не удалось создать автора')
-    }
-  }
-
-  const saveNewKeyword = async () => {
-    if (!newKeyword.ru.trim()) return
-    try {
-      const created = await api.post<Keyword>('/articles/keywords', {
-        title_ru: newKeyword.ru.trim(),
-        title_kz: newKeyword.kz.trim(),
-        title_en: newKeyword.en.trim(),
-      })
-      setKeywords((prev: Keyword[]) => [...prev, created])
-      setSelectedKeywords((prev: SelectedItem[]) => [...prev, { id: created.id!, name: created.title_ru || created.title_en || created.title_kz || 'Unnamed' }])
-      setNewKeyword({ ru: '', en: '', kz: '' })
-      setKeywordModalOpen(false)
-    } catch (err) {
-      setError('Не удалось создать ключевое слово')
-    }
-  }
-
-  const removeAuthor = (id: number) => {
-    setSelectedAuthors((prev: SelectedItem[]) => prev.filter((a: SelectedItem) => a.id !== id))
-  }
-
-  const addKeywordFromList = (keyword: Keyword) => {
-    if (!selectedKeywords.find((k: SelectedItem) => k.id === keyword.id)) {
-      setSelectedKeywords((prev: SelectedItem[]) => [...prev, { id: keyword.id!, name: keyword.title_ru || keyword.title_en || keyword.title_kz || 'Unnamed' }])
-    }
-  }
-
-  const removeKeyword = (id: number) => {
-    setSelectedKeywords((prev: SelectedItem[]) => prev.filter((k: SelectedItem) => k.id !== id))
-  }
-
   return (
     <div className="app-container">
-      <section className="section-header">
+      <section className="section public-section">
         <div>
           <p className="eyebrow">Редактор</p>
-          <h1 className="page-title">Быстрая публикация статьи</h1>
+          <h1 className="hero__title">Быстрая публикация статьи</h1>
           <p className="subtitle">Загрузите готовую статью и опубликуйте её напрямую</p>
         </div>
-      </section>
 
-      <section className="section section--narrow">
         {error && <div className="alert error">{error}</div>}
-        {success && (
-          <div className="alert success">Статья успешно опубликована! Перенаправление...</div>
-        )}
+        {success && <div className="alert success">Статья успешно опубликована! Перенаправление...</div>}
 
-        <form onSubmit={handleSubmit} className="form-grid">
-          <div className="form-grid form-grid--cols-3">
-            <label>
-              <span>Заголовок (RU)*</span>
-              <input
-                type="text"
-                required
-                value={form.title_ru}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, title_ru: e.target.value })}
-              />
-            </label>
-            <label>
-              <span>Title (EN)*</span>
-              <input
-                type="text"
-                required
-                value={form.title_en}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, title_en: e.target.value })}
-              />
-            </label>
-            <label>
-              <span>Тақырып (KZ)*</span>
-              <input
-                type="text"
-                required
-                value={form.title_kz}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, title_kz: e.target.value })}
-              />
-            </label>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="form-field">
+            <label className="form-label">Язык формы</label>
+            <div className="lang-switch">
+              {(['ru', 'kz', 'en'] as const).map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`lang-chip ${activeLang === code ? 'lang-chip--active' : ''}`}
+                  onClick={() => setActiveLang(code)}
+                >
+                  {langLabels[code]}
+                </button>
+              ))}
+            </div>
+            <p className="form-hint">Заполните сначала на русском, затем на казахском и английском.</p>
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Название статьи ({langLabels[activeLang]})*</label>
+            <input
+              className="text-input"
+              type="text"
+              value={getTitleForLang(activeLang)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitleForLang(activeLang, e.target.value)}
+            />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Аннотация ({langLabels[activeLang]})</label>
+            <textarea
+              className="text-input"
+              rows={4}
+              value={getAbstractForLang(activeLang)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAbstractForLang(activeLang, e.target.value)}
+            />
           </div>
 
           <div className="form-grid form-grid--cols-3">
-            <label>
-              <span>Аннотация (RU)</span>
-              <textarea
-                value={form.abstract_ru}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, abstract_ru: e.target.value })}
-              />
-            </label>
-            <label>
-              <span>Abstract (EN)</span>
-              <textarea
-                value={form.abstract_en}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, abstract_en: e.target.value })}
-              />
-            </label>
-            <label>
-              <span>Аннотация (KZ)</span>
-              <textarea
-                value={form.abstract_kz}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm({ ...form, abstract_kz: e.target.value })}
-              />
-            </label>
-          </div>
-
-          <div className="form-grid form-grid--cols-3">
-            <label>
-              <span>DOI</span>
+            <div className="form-field">
+              <label className="form-label">DOI</label>
               <input
+                className="text-input"
                 type="text"
                 value={form.doi}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, doi: e.target.value })}
                 placeholder="10.1234/example"
               />
-            </label>
-            <label>
-              <span>Тип статьи</span>
+            </div>
+            <div className="form-field">
+              <label className="form-label">Тип статьи</label>
               <select
+                className="chip-select"
                 value={form.articleType}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, articleType: e.target.value as any })}
               >
                 <option value="original">Original</option>
                 <option value="review">Review</option>
               </select>
-            </label>
-            <label>
-              <span>Информация об ИИ</span>
+            </div>
+            <div className="form-field">
+              <label className="form-label">Информация об ИИ</label>
               <input
+                className="text-input"
                 type="text"
                 value={form.generativeAiInfo}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, generativeAiInfo: e.target.value })}
               />
-            </label>
+            </div>
           </div>
 
           <div className="form-grid form-grid--cols-3">
@@ -400,7 +378,7 @@ export default function QuickPublishPage() {
                 onClick={() => layoutFileRef.current?.click()}
                 disabled={loading}
               >
-                {fileLayoutName ? `✓ ${fileLayoutName}` : '📎 Выбрать файл'}
+                {fileLayoutName ? `✓ ${fileLayoutName}` : 'Выбрать файл'}
               </button>
             </div>
 
@@ -419,7 +397,7 @@ export default function QuickPublishPage() {
                 onClick={() => manuscriptFileRef.current?.click()}
                 disabled={loading}
               >
-                {fileManuscriptName ? `✓ ${fileManuscriptName}` : '📎 Выбрать файл'}
+                {fileManuscriptName ? `✓ ${fileManuscriptName}` : 'Выбрать файл'}
               </button>
             </div>
 
@@ -438,7 +416,7 @@ export default function QuickPublishPage() {
                 onClick={() => authorInfoFileRef.current?.click()}
                 disabled={loading}
               >
-                {fileAuthorInfoName ? `✓ ${fileAuthorInfoName}` : '📎 Выбрать файл'}
+                {fileAuthorInfoName ? `✓ ${fileAuthorInfoName}` : 'Выбрать файл'}
               </button>
             </div>
           </div>
@@ -454,24 +432,7 @@ export default function QuickPublishPage() {
                 + Добавить
               </button>
             </div>
-            {selectedAuthors.length === 0 ? (
-              <p className="meta-label">Авторы не добавлены</p>
-            ) : (
-              <div className="tags-list">
-                {selectedAuthors.map((author) => (
-                  <div key={author.id} className="tag">
-                    <span>{author.name}</span>
-                    <button
-                      type="button"
-                      className="tag-remove"
-                      onClick={() => removeAuthor(author.id)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <p className="meta-label">Добавлено: {selectedAuthors.length}</p>
           </div>
 
           <div className="panel panel--elevated">
@@ -485,24 +446,7 @@ export default function QuickPublishPage() {
                 + Добавить
               </button>
             </div>
-            {selectedKeywords.length === 0 ? (
-              <p className="meta-label">Ключевые слова не добавлены</p>
-            ) : (
-              <div className="tags-list">
-                {selectedKeywords.map((keyword) => (
-                  <div key={keyword.id} className="tag">
-                    <span>{keyword.name}</span>
-                    <button
-                      type="button"
-                      className="tag-remove"
-                      onClick={() => removeKeyword(keyword.id)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <p className="meta-label">Добавлено: {selectedKeywords.length}</p>
           </div>
 
           {authorModalOpen && (
@@ -535,7 +479,27 @@ export default function QuickPublishPage() {
                       />
                     </div>
                     <div className="form-field">
-                      <label className="form-label">Patronymic</label>
+                      <label className="form-label">Имя*</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        placeholder="Например: Иван"
+                        value={newAuthor.first_name}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, first_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Фамилия*</label>
+                      <input
+                        type="text"
+                        className="text-input"
+                        placeholder="Например: Петров"
+                        value={newAuthor.last_name}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, last_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <label className="form-label">Отчество</label>
                       <input
                         type="text"
                         className="text-input"
@@ -637,61 +601,10 @@ export default function QuickPublishPage() {
                         <span>Corresponding author</span>
                       </label>
                     </div>
-                  <div className="form-field">
-                    <label className="form-label">Имя автора*</label>
-                    <input
-                      type="text"
-                      className="text-input"
-                      placeholder="Например: Иван"
-                      value={newAuthor.first_name}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, first_name: e.target.value })}
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Фамилия автора*</label>
-                    <input
-                      type="text"
-                      className="text-input"
-                      placeholder="Например: Петров"
-                      value={newAuthor.last_name}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAuthor({ ...newAuthor, last_name: e.target.value })}
-                    />
-                  </div>
-                  {false && (
-                  <div className="form-field">
-                    <label className="form-label">Выбрать из списка</label>
-                    {false ? (
-                      <p className="form-hint">Нет доступных авторов</p>
-                    ) : (
-                      <div className="modal-authors-list">
-                        {([] as Author[]).map((author) => (
-                          <label key={author.id} className="list-item">
-                            <input
-                              type="checkbox"
-                              checked={selectedAuthors.some(a => a.id === author.id)}
-                              onChange={() => {
-                                if (selectedAuthors.some(a => a.id === author.id)) {
-                                  removeAuthor(author.id!)
-                                } else {
-                                  setSelectedAuthors((prev: SelectedItem[]) => [...prev, { id: author.id!, name: `${author.last_name} ${author.first_name}` }])
-                                }
-                              }}
-                            />
-                            <span>{author.last_name} {author.first_name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  )}
                   </div>
                 </div>
                 <div className="modal__footer">
-                  <button
-                    type="button"
-                    className="button button--ghost"
-                    onClick={() => setAuthorModalOpen(false)}
-                  >
+                  <button type="button" className="button button--ghost" onClick={() => setAuthorModalOpen(false)}>
                     Закрыть
                   </button>
                   <button
@@ -751,38 +664,9 @@ export default function QuickPublishPage() {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKeyword({ ...newKeyword, en: e.target.value })}
                     />
                   </div>
-                  <div className="form-field">
-                    <label className="form-label">Выбрать из списка</label>
-                    {keywords.length === 0 ? (
-                      <p className="form-hint">Нет доступных ключевых слов</p>
-                    ) : (
-                      <div className="modal-keywords-list">
-                        {keywords.map((kw) => (
-                          <label key={kw.id} className="list-item">
-                            <input
-                              type="checkbox"
-                              checked={selectedKeywords.some(k => k.id === kw.id)}
-                              onChange={() => {
-                                if (selectedKeywords.some(k => k.id === kw.id)) {
-                                  removeKeyword(kw.id!)
-                                } else {
-                                  addKeywordFromList(kw)
-                                }
-                              }}
-                            />
-                            <span>{kw.title_ru || kw.title_en || kw.title_kz}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
                 <div className="modal__footer">
-                  <button
-                    type="button"
-                    className="button button--ghost"
-                    onClick={() => setKeywordModalOpen(false)}
-                  >
+                  <button type="button" className="button button--ghost" onClick={() => setKeywordModalOpen(false)}>
                     Закрыть
                   </button>
                   <button
@@ -802,7 +686,7 @@ export default function QuickPublishPage() {
             <button
               type="submit"
               className="button"
-              disabled={loading || !form.title_ru || !form.title_en || !form.title_kz}
+              disabled={loading || !form.title_ru.trim() || !form.title_en.trim() || !form.title_kz.trim()}
             >
               {loading ? 'Публикация...' : 'Опубликовать статью'}
             </button>
