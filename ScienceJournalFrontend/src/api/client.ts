@@ -271,16 +271,16 @@ export const api = {
       : request<T>(path, 'PATCH')
   },
   // Volumes (editor section "Мои тома")
-  getVolumes: <T>(params?: { year?: number; number?: number; month?: number; active_only?: boolean }) =>
+  getVolumes: <T>(params?: { year?: number; number?: string; month?: number; active_only?: boolean }) =>
     request<T>('/volumes', 'GET', { params }),
   getVolumeById: <T>(id: number | string) => request<T>(`/volumes/${id}`, 'GET'),
   // Public volumes (guest archive)
-  getPublicVolumes: <T>(params?: { year?: number; number?: number; month?: number }) =>
+  getPublicVolumes: <T>(params?: { year?: number; number?: string; month?: number }) =>
     request<T>('/volumes/public', 'GET', { params }),
   getPublicVolumeById: <T>(id: number | string) => request<T>(`/volumes/public/${id}`, 'GET'),
   createVolume: <T>(body: {
     year: number
-    number: number
+    number: string
     month?: number | null
     title_kz?: string | null
     title_en?: string | null
@@ -291,7 +291,7 @@ export const api = {
   }) => request<T>('/volumes', 'POST', { json: body }),
   updateVolume: <T>(id: number | string, body: Partial<{
     year: number
-    number: number
+    number: string
     month: number | null
     title_kz: string | null
     title_en: string | null

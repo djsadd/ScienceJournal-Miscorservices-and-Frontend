@@ -89,7 +89,7 @@ export function ArchivePage() {
       byYear[v.year].push(v)
     })
     return Object.entries(byYear)
-      .map(([year, vols]) => ({ year: Number(year), volumes: vols.sort((a, b) => (b.number - a.number)) }))
+      .map(([year, vols]) => ({ year: Number(year), volumes: vols.sort((a, b) => b.number.localeCompare(a.number)) }))
       .sort((a, b) => b.year - a.year)
   }, [volumes])
 
