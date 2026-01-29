@@ -1,6 +1,6 @@
 """remove unique constraint from authors.email
 
-Revision ID: 20260128_remove_author_email_unique
+Revision ID: 20260128_rm_auth_email_uq
 Revises: 20260128_change_volume_number
 Create Date: 2026-01-28
 """
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = "20260128_remove_author_email_unique"
+revision = "20260128_rm_auth_email_uq"
 down_revision = "20260128_change_volume_number"
 branch_labels = None
 depends_on = None
