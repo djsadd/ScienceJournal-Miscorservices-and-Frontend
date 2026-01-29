@@ -695,10 +695,6 @@ def create_author(
     else:
         author_dict = author.dict()
 
-    existing = db.query(models.Author).filter(models.Author.email == author_dict['email']).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Author with this email already exists")
-
     new_author = models.Author(**author_dict)
     db.add(new_author)
     db.commit()
