@@ -124,6 +124,7 @@ class Article(Base):
     generative_ai_info = Column(String, nullable=True)
     manuscript_file_url = Column(String, nullable=True)
     author_info_file_url = Column(String, nullable=True)
+    layout_file_url = Column(String, nullable=True)
     cover_letter_file_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
