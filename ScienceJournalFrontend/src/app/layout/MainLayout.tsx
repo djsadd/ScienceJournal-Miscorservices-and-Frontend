@@ -74,7 +74,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Редакция',
           items: [
             { label: 'Назначения', path: '/cabinet/editorial2' },
-            { label: '⚡ Быстрая публикация', path: '/cabinet/quick-publish' },
+            { label: 'Быстрая публикация', path: '/cabinet/quick-publish' },
           ],
         },
         {
@@ -164,7 +164,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Editorial',
           items: [
             { label: 'Assignments', path: '/cabinet/editorial2' },
-            { label: '⚡ Quick publish', path: '/cabinet/quick-publish' },
+            { label: 'Quick publish', path: '/cabinet/quick-publish' },
           ],
         },
         {
@@ -254,7 +254,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Редакция',
           items: [
             { label: 'Тапсырмалар', path: '/cabinet/editorial2' },
-            { label: '⚡ Жылдам жариялау', path: '/cabinet/quick-publish' },
+            { label: 'Жылдам жариялау', path: '/cabinet/quick-publish' },
           ],
         },
         {
@@ -466,7 +466,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 })
               }}
             >
-              👁️
+              Aa
             </button>
           </div>
         </div>
@@ -563,7 +563,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               })
             }}
           >
-            👁️
+            Aa
           </button>
         </div>
         <main className="app-main">{children}</main>
