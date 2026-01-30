@@ -228,7 +228,7 @@ export const api = {
     const fd = new FormData()
     // Endpoint expects field name "upload"
     fd.append('upload', file)
-    return request<T>('/files', 'POST', { body: fd })
+    return request<T>('/files/', 'POST', { body: fd })
   },
   // Layout records helper (optional, used by editor UI)
   createLayoutRecord: <T>(body: { article_id: number; volume_id?: number | null; file_id: string; file_url?: string }) =>

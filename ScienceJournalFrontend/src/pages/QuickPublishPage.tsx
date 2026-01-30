@@ -107,7 +107,7 @@ export default function QuickPublishPage() {
   const uploadFile = async (file: File) => {
     const fd = new FormData()
     fd.append('upload', file)
-    return api.request<{ id: string }>('/files', 'POST', { body: fd })
+    return api.request<{ id: string }>('/files/', 'POST', { body: fd })
   }
 
   const handleLayoutFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {

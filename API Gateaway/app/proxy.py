@@ -58,7 +58,12 @@ async def proxy_request(service_url: str, request: Request) -> Response:
 
     upstream_path = _strip_api_prefix(request.url.path)
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    upstream_timeout = httpx.Timeout(10.0)
+    if upstream_path.startswith("/files"):
+        # File uploads/downloads may take longer than typical JSON API calls.
+        upstream_timeout = httpx.Timeout(connect=10.0, read=120.0, write=120.0, pool=10.0)
+
+    async with httpx.AsyncClient(timeout=upstream_timeout) as client:
         resp = await client.request(
             method=request.method,
             url=service_url + upstream_path,
