@@ -112,7 +112,7 @@ export default function EditorialPortfolioPage() {
   }
 
   return (
-    <div className="app-container">
+    <div className="app-container app-container--wide editorial-portfolio">
       <section className="section-header">
         <div>
           <p className="eyebrow">Редактор</p>
@@ -157,7 +157,7 @@ export default function EditorialPortfolioPage() {
                 ))}
               </select>
             </div>
-            <div className="filter-group">
+            <div className="filter-group filter-group--actions">
               <button className="button button--ghost button--compact" onClick={clearFilters}>Сбросить</button>
             </div>
           </div>

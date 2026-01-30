@@ -1782,6 +1782,10 @@
   margin: 0 auto;
 }
 
+.app-container--wide {
+  max-width: 1600px;
+}
+
 .section-header {
   display: flex;
   align-items: flex-start;
@@ -2222,10 +2226,23 @@
   align-items: end;
 }
 
+.editorial-portfolio .filters {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  padding: 1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ffffff, #f7f8fb);
+  border: 1px solid #edf0f6;
+  margin-bottom: 1.1rem;
+}
+
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+
+.filter-group--actions {
+  justify-content: flex-end;
 }
 
 .filter-group--wide {
@@ -2235,6 +2252,18 @@
 .filter-label {
   font-weight: 600;
   color: #2b2f3c;
+}
+
+.editorial-portfolio .filter-label {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7c8292;
+}
+
+.editorial-portfolio .search,
+.editorial-portfolio .chip-select {
+  height: 40px;
 }
 
 .table {
@@ -2458,6 +2487,13 @@
   border-bottom: 1px solid #edf0f6;
 }
 
+.editorial-portfolio .filters--sticky {
+  top: 16px;
+  background: transparent;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 .table--editor .table__head {
   grid-template-columns: 1.5fr 1fr 0.9fr 1fr 0.7fr 1fr;
 }
@@ -2468,7 +2504,7 @@
 
 /* Portfolio table: 5 columns (title, type, status, authors, files) */
 .table--portfolio .table__head {
-  grid-template-columns: 1.6fr 0.6fr 0.8fr 1.1fr 1.2fr; /* more room for actions */
+  grid-template-columns: 2.2fr 0.7fr 0.9fr 1.2fr minmax(160px, 200px);
 }
 
 .table--portfolio .table__head > * {
@@ -2476,7 +2512,7 @@
 }
 
 .table--portfolio .table__row {
-  grid-template-columns: 1.6fr 0.6fr 0.8fr 1.1fr 1.2fr;
+  grid-template-columns: 2.2fr 0.7fr 0.9fr 1.2fr minmax(160px, 200px);
 }
 
 .table__row--align {
