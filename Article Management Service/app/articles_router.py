@@ -318,6 +318,35 @@ def list_unassigned_articles(
     }
 
 
+@router.get("/statuses")
+def list_article_statuses(
+    current_user: dict = Depends(get_current_user),
+    scope: str | None = None,
+):
+    """
+    Return a list of article statuses for UI filters.
+
+    Optional `scope` can limit the list to a subset relevant for a specific UI.
+    """
+    # Require auth; editors will be the primary consumers but other authed pages may re-use it.
+    if scope == "unassigned":
+        # Keep only statuses that are actually used in the editorial workflow UI.
+        # `under_review` exists in enum but isn't used by current workflow screens.
+        return [
+            models.ArticleStatus.draft.value,
+            models.ArticleStatus.submitted.value,
+            models.ArticleStatus.editor_check.value,
+            models.ArticleStatus.reviewer_check.value,
+            models.ArticleStatus.sent_for_revision.value,
+            models.ArticleStatus.accepted.value,
+            models.ArticleStatus.rejected.value,
+            models.ArticleStatus.published.value,
+            models.ArticleStatus.withdrawn.value,
+        ]
+
+    return [s.value for s in models.ArticleStatus]
+
+
 @router.get("/editor/{article_id}", response_model=schemas.ArticleOut)
 def get_article_detail_for_editor(
     article_id: int,

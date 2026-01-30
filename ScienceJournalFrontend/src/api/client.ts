@@ -238,6 +238,7 @@ export const api = {
   // Domain-specific helpers
   getAuthors: <T>() => request<T>('/articles/authors', 'GET'),
   getKeywords: <T>() => request<T>('/articles/keywords', 'GET'),
+  getArticleStatuses: <T>(params?: { scope?: 'unassigned' }) => request<T>('/articles/statuses', 'GET', { params }),
   getUnassignedArticles: <T>(params?: {
     status?: ArticleStatus | 'all'
     author_name?: string

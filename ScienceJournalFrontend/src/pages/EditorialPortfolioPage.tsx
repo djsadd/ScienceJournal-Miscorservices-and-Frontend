@@ -24,10 +24,9 @@ const keyOf = (params: Record<string, unknown>) =>
 
 const memoryCache = new Map<string, { at: number; data: PagedResponse<Article> }>()
 
-const STATUS_OPTIONS = [
+const FALLBACK_STATUS_OPTIONS: ArticleStatus[] = [
   'draft',
   'submitted',
-  'under_review',
   'editor_check',
   'reviewer_check',
   'sent_for_revision',
@@ -35,7 +34,7 @@ const STATUS_OPTIONS = [
   'rejected',
   'published',
   'withdrawn',
-] as const
+]
 
 export default function EditorialPortfolioPage() {
   const [filters, setFilters] = useState<Filters>({ status: undefined })
@@ -44,6 +43,22 @@ export default function EditorialPortfolioPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<PagedResponse<Article> | null>(null)
+  const [statusOptions, setStatusOptions] = useState<ArticleStatus[]>(FALLBACK_STATUS_OPTIONS)
+
+  useEffect(() => {
+    let mounted = true
+    api
+      .getArticleStatuses<string[]>({ scope: 'unassigned' })
+      .then((statuses) => {
+        if (!mounted) return
+        const next = (Array.isArray(statuses) ? statuses : []).filter((s): s is ArticleStatus => typeof s === 'string')
+        if (next.length > 0) setStatusOptions(next)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const params = useMemo(
     () => {
@@ -156,7 +171,7 @@ export default function EditorialPortfolioPage() {
               <label className="filter-label">Статус</label>
               <select className="chip-select" name="status" value={filters.status ?? ''} onChange={onInput}>
                 <option value="">Все статусы</option>
-                {STATUS_OPTIONS.map((s) => (
+                {statusOptions.map((s) => (
                   <option key={s} value={s}>{formatArticleStatus(s, 'ru')}</option>
                 ))}
               </select>
