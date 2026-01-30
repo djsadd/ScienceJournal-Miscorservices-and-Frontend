@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Article, ReviewAssignment, User } from '../../shared/types'
+import { formatArticleStatus } from '../../shared/labels'
 import { reviewFields } from '../../pages/ReviewFormPage'
 
 interface EditorialQueueProps {
@@ -33,7 +34,7 @@ const statusLabel: Record<Exclude<StatusFilter, 'all'>, string> = {
   ready: 'Готовы к выпуску',
 }
 
-const articleStatusLabel: Record<Article['status'], string> = {
+const articleStatusLabel: Partial<Record<Article['status'], string>> = {
   draft: 'Черновик',
   submitted: 'Новая',
   under_review: 'В рецензировании',
@@ -321,7 +322,9 @@ export function EditorialQueue({ articles, users, assignments }: EditorialQueueP
                       <div className="table__meta">{article.specialty}</div>
                     </div>
                     <div className="table__cell">
-                      <span className={`status-chip status-chip--${article.status}`}>{articleStatusLabel[article.status]}</span>
+                      <span className={`status-chip status-chip--${article.status}`}>
+                        {articleStatusLabel[article.status] ?? formatArticleStatus(article.status, 'ru')}
+                      </span>
                     </div>
                     <div className="table__cell">
                       <span className="reviewer-chip">{reviewerState}</span>
@@ -386,7 +389,9 @@ export function EditorialQueue({ articles, users, assignments }: EditorialQueueP
                         <div className="submission-card__meta">Автор: {firstAuthor?.name ?? '—'}</div>
                         <div className="submission-card__meta">Тип: {article.specialty}</div>
                       </div>
-                      <span className={`status-chip status-chip--${article.status}`}>{articleStatusLabel[article.status]}</span>
+                      <span className={`status-chip status-chip--${article.status}`}>
+                        {articleStatusLabel[article.status] ?? formatArticleStatus(article.status, 'ru')}
+                      </span>
                     </div>
                     <div className="submission-card__body">
                       <div>

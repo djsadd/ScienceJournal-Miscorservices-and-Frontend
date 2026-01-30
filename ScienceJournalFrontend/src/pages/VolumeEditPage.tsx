@@ -81,7 +81,7 @@ export default function VolumeEditPage() {
     try {
       const targetPage = opts.resetPage ? 1 : (opts.page ?? page)
       const params = {
-        status: 'published',
+        status: 'published' as const,
         search: search || undefined,
         author_name: authorName || undefined,
         page: targetPage,

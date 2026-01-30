@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client'
 import { toApiFilesUrl } from '../shared/url'
-import type { Article, PagedResponse } from '../shared/types'
+import type { Article, ArticleStatus, PagedResponse } from '../shared/types'
 import './EditorialUnassignedPage.css'
 import { formatArticleStatus } from '../shared/labels'
 
@@ -9,10 +9,9 @@ const STATUS_OPTIONS = [
   'draft',
   'submitted',
   'under_review',
-  'in_review',
   'editor_check',
   'reviewer_check',
-  'revisions',
+  'sent_for_revision',
   'accepted',
   'rejected',
   'published',
@@ -49,15 +48,20 @@ export default function EditorialUnassignedPage() {
   const [data, setData] = useState<PagedResponse<Article> | null>(null)
 
   const params = useMemo(
-    () => ({
-      ...filters,
+    () => {
+      const statusParam: ArticleStatus | 'all' = !filters.status ? 'all' : (filters.status as ArticleStatus)
+      return {
+      author_name: filters.author_name,
+      keywords: filters.keywords,
+      search: filters.search,
       year: filters.year === '' ? undefined : filters.year,
       article_type: filters.article_type === '' ? undefined : filters.article_type,
       // When "Все статусы" selected (empty string), send explicit status=all
-      status: !filters.status ? 'all' : filters.status,
+      status: statusParam,
       page,
       page_size: pageSize,
-    }),
+      }
+    },
     [filters, page, pageSize]
   )
 

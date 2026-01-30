@@ -160,10 +160,12 @@ const dashboardCopy: Record<Lang, DashboardCopy> = {
 
 function getLastAction(article: Article, copy: DashboardCopy) {
   const date = new Date(article.submittedAt).toLocaleDateString(copy.locale)
+  const isOnReview = ['under_review', 'in_review', 'editor_check', 'reviewer_check'].includes(article.status)
+  const isNeedsRevisions = ['revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)
   const base =
-    article.status === 'in_review'
+    isOnReview
       ? copy.lastAction.in_review
-      : article.status === 'revisions'
+      : isNeedsRevisions
         ? copy.lastAction.revisions
         : article.status === 'accepted'
           ? copy.lastAction.accepted
@@ -274,8 +276,8 @@ export function Dashboard() {
   )
 
   const authorStats = useMemo(() => {
-    const inReview = authorArticles.filter((a) => a.status === 'in_review' || a.status === 'under_review').length
-    const revisions = authorArticles.filter((a) => a.status === 'revisions').length
+    const inReview = authorArticles.filter((a) => ['in_review', 'under_review', 'editor_check', 'reviewer_check'].includes(a.status)).length
+    const revisions = authorArticles.filter((a) => ['revisions', 'send_for_revision', 'sent_for_revision'].includes(a.status)).length
     const accepted = authorArticles.filter((a) => a.status === 'accepted').length
     return [
       { label: t.author.stats.inReview, value: inReview },
@@ -286,8 +288,8 @@ export function Dashboard() {
 
   const editorStats = useMemo(() => {
     const incoming = editorArticles.filter((a) => a.status === 'submitted').length
-    const onReview = editorArticles.filter((a) => a.status === 'in_review' || a.status === 'under_review').length
-    const needDecision = editorArticles.filter((a) => a.status === 'revisions').length
+    const onReview = editorArticles.filter((a) => ['in_review', 'under_review', 'editor_check', 'reviewer_check'].includes(a.status)).length
+    const needDecision = editorArticles.filter((a) => ['revisions', 'send_for_revision', 'sent_for_revision'].includes(a.status)).length
     const toLayout = editorArticles.filter((a) => a.status === 'accepted').length
     return [
       { label: t.editor.stats.incoming, value: incoming },

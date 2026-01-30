@@ -2194,7 +2194,22 @@
   border-color: #f5dd9c;
 }
 
+.status-chip--under_review,
+.status-chip--editor_check,
+.status-chip--reviewer_check {
+  background: #fff6e8;
+  color: #8c5b00;
+  border-color: #f5dd9c;
+}
+
 .status-chip--revisions {
+  background: #fff0e5;
+  color: #9b4600;
+  border-color: #ffc7a4;
+}
+
+.status-chip--sent_for_revision,
+.status-chip--send_for_revision {
   background: #fff0e5;
   color: #9b4600;
   border-color: #ffc7a4;
@@ -2206,7 +2221,19 @@
   border-color: #b9e3c8;
 }
 
+.status-chip--published {
+  background: #e6f6ec;
+  color: #0f5c32;
+  border-color: #b9e3c8;
+}
+
 .status-chip--rejected {
+  background: #fde8ef;
+  color: #6b1027;
+  border-color: #f3c6d5;
+}
+
+.status-chip--withdrawn {
   background: #fde8ef;
   color: #6b1027;
   border-color: #f3c6d5;

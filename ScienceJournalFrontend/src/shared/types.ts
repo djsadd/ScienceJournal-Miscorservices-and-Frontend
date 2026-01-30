@@ -36,6 +36,22 @@ export interface Keyword {
   title_ru?: string | null
 }
 
+export type ArticleStatus =
+  | 'draft'
+  | 'submitted'
+  | 'under_review'
+  | 'editor_check'
+  | 'reviewer_check'
+  | 'sent_for_revision'
+  | 'accepted'
+  | 'rejected'
+  | 'published'
+  | 'withdrawn'
+  // Legacy values kept for backward compatibility in UI
+  | 'in_review'
+  | 'revisions'
+  | 'send_for_revision'
+
 export interface Article {
   id: string
   // Legacy fields used across UI
@@ -53,7 +69,7 @@ export interface Article {
   abstract_en?: string | null
   abstract_ru?: string | null
   doi?: string | null
-  status: 'submitted' | 'under_review' | 'accepted' | 'published' | 'withdrawn' | 'draft' | 'in_review' | 'revisions' | 'rejected'
+  status: ArticleStatus
   article_type?: 'original' | 'review'
   responsible_user_id?: number | null
   manuscript_file_url?: string | null

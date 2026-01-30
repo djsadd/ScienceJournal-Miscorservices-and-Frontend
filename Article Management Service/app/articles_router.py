@@ -220,8 +220,14 @@ def list_unassigned_articles(
         if status.lower() == "all":
             pass
         else:
+            status_aliases = {
+                "in_review": "under_review",
+                "revisions": "sent_for_revision",
+                "send_for_revision": "sent_for_revision",
+            }
             try:
-                status_enum = models.ArticleStatus(status)
+                normalized_status = status_aliases.get(status, status)
+                status_enum = models.ArticleStatus(normalized_status)
                 query = query.filter(models.Article.status == status_enum)
             except ValueError:
                 raise HTTPException(status_code=400, detail=f"Invalid status: {status}")

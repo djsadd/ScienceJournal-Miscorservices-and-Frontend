@@ -1,5 +1,7 @@
 // Prefer env-configurable API base but fall back to the current host when the
 // environment was built against localhost so remote clients talk to the server.
+import type { ArticleStatus } from '../shared/types'
+
 const envApiBase = (import.meta as any)?.env?.VITE_API_BASE as string | undefined
 
 const runtimeOrigin = typeof window !== 'undefined' ? window.location.origin : undefined
@@ -237,7 +239,7 @@ export const api = {
   getAuthors: <T>() => request<T>('/articles/authors', 'GET'),
   getKeywords: <T>() => request<T>('/articles/keywords', 'GET'),
   getUnassignedArticles: <T>(params?: {
-    status?: string
+    status?: ArticleStatus | 'all'
     author_name?: string
     year?: number
     article_type?: 'original' | 'review'
