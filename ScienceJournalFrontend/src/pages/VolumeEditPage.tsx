@@ -10,7 +10,17 @@ interface ArticleSearchResult {
   pagination: { total_count: number; page: number; page_size: number; total_pages: number; has_next: boolean; has_prev: boolean }
 }
 
-type FormState = { year?: number; number?: string; month?: number | null; title_kz?: string | null; title_en?: string | null; title_ru?: string | null; description?: string | null; is_active?: boolean; article_ids?: number[] }
+type FormState = {
+  year?: number
+  number?: string
+  month?: number | null
+  title_kz?: string | null
+  title_en?: string | null
+  title_ru?: string | null
+  description?: string | null
+  is_active?: boolean
+  article_ids?: number[]
+}
 
 export default function VolumeEditPage() {
   const { id } = useParams()
@@ -20,10 +30,8 @@ export default function VolumeEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  // Editable fields
   const [form, setForm] = useState<FormState>({})
 
-  // Article search
   const [search, setSearch] = useState('')
   const [authorName, setAuthorName] = useState('')
   const [page, setPage] = useState(1)
@@ -56,39 +64,41 @@ export default function VolumeEditPage() {
           })
         }
       } catch (e: any) {
-        if (!cancelled) setError(e?.bodyJson?.detail || e?.message || 'Не удалось загрузить том')
+        if (!cancelled) setError(e?.bodyJson?.detail || e?.message || 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С‚РѕРј')
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
-    run()
-    return () => { cancelled = true }
+    void run()
+    return () => {
+      cancelled = true
+    }
   }, [id])
 
-  const doSearch = async (resetPage = false) => {
+  const doSearch = async (opts: { resetPage?: boolean; page?: number } = {}) => {
     setSearching(true)
     setError(null)
     try {
+      const targetPage = opts.resetPage ? 1 : (opts.page ?? page)
       const params = {
         status: 'published',
         search: search || undefined,
         author_name: authorName || undefined,
-        page: resetPage ? 1 : page,
+        page: targetPage,
         page_size: pageSize,
       }
       const data = await api.getUnassignedArticles<ArticleSearchResult>(params)
       setResults(data)
-      if (resetPage) setPage(1)
+      setPage(data.pagination?.page ?? targetPage)
     } catch (e: any) {
-      setError(e?.bodyJson?.detail || e?.message || 'Ошибка поиска статей')
+      setError(e?.bodyJson?.detail || e?.message || 'РћС€РёР±РєР° РїРѕРёСЃРєР° СЃС‚Р°С‚РµР№')
     } finally {
       setSearching(false)
     }
   }
 
   useEffect(() => {
-    // initial search
-    doSearch(true)
+    void doSearch({ resetPage: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -111,7 +121,6 @@ export default function VolumeEditPage() {
     setError(null)
     try {
       const body: any = {}
-      // Only send fields the user edited (simplified: send all current form values)
       body.year = form.year
       body.number = form.number
       body.month = form.month ?? null
@@ -124,14 +133,15 @@ export default function VolumeEditPage() {
 
       const updated = await api.updateVolume<Volume>(id, body)
       setVolume(updated)
-      // Navigate back to detail
       navigate(`/cabinet/volumes/${id}`)
     } catch (e: any) {
-      setError(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить изменения')
+      setError(e?.bodyJson?.detail || e?.message || 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РёР·РјРµРЅРµРЅРёСЏ')
     } finally {
       setSaving(false)
     }
   }
+
+  const selectedCount = form.article_ids?.length ?? 0
 
   return (
     <div className="app-container">
@@ -139,11 +149,14 @@ export default function VolumeEditPage() {
         <div>
           <p className="eyebrow">Редактор</p>
           <h1 className="page-title">Редактирование тома</h1>
-          {volume && <p className="subtitle">Том {volume.number} / {volume.year}</p>}
+          {volume && <p className="subtitle">РўРѕРј {volume.number} / {volume.year}</p>}
         </div>
-        <div className="section-actions">
+        <div className="section-actions volume-edit__actions">
+          <span className="badge badge--info volume-edit__badge">Выбрано: {selectedCount}</span>
           <Link className="button button--ghost" to={`/cabinet/volumes/${id}`}>← Назад к деталям</Link>
-          <button className="button" onClick={save} disabled={saving || loading}>{saving ? 'Сохранение…' : 'Сохранить изменения'}</button>
+          <button className="button button--primary" onClick={save} disabled={saving || loading}>
+            {saving ? 'Сохранение…' : 'Сохранить изменения'}
+          </button>
         </div>
       </section>
 
@@ -151,74 +164,114 @@ export default function VolumeEditPage() {
         {error && <div className="alert error">{error}</div>}
         {loading && <div className="loading">Загрузка...</div>}
 
-        <div className="panel panel--elevated">
-          <div className="panel-title">Основные сведения</div>
-          <div className="form-grid form-grid--cols-4">
-            <label>
-              <span>Год</span>
-              <input type="number" value={form.year ?? ''} onChange={e => updateField('year', Number(e.target.value))} />
+        <div className="volume-edit__grid">
+          <div className="volume-edit__col">
+            <div className="panel volume-edit__panel">
+          <div className="volume-edit__panelHeader">
+            <div className="panel-title">Основные сведения</div>
+            <div className="volume-edit__panelHint meta-label">ID: {id || '—'}</div>
+          </div>
+
+          <div className="volume-edit__fields volume-edit__fields--basic">
+            <label className="form-field">
+              <span className="form-label">Год</span>
+                <input
+                  className="text-input"
+                  type="number"
+                  min={1900}
+                  max={2100}
+                  value={form.year ?? ''}
+                  onChange={e => updateField('year', e.target.value ? Number(e.target.value) : undefined)}
+                />
             </label>
-            <label>
-              <span>Номер журнала</span>
-              <input type="text" value={form.number ?? ''} onChange={e => updateField('number', e.target.value || undefined)} placeholder="Например: 1, 1-2, 2-3" />
+            <label className="form-field">
+              <span className="form-label">Номер журнала</span>
+              <input
+                className="text-input"
+                type="text"
+                value={form.number ?? ''}
+                onChange={e => updateField('number', e.target.value || undefined)}
+                placeholder="Например: 1, 1-2, 2-3"
+              />
             </label>
-            <label>
-              <span>Месяц</span>
-              <input type="number" value={form.month ?? ''} onChange={e => updateField('month', e.target.value ? Number(e.target.value) : null)} />
+            <label className="form-field">
+              <span className="form-label">Месяц</span>
+                <input
+                  className="text-input"
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={form.month ?? ''}
+                  onChange={e => updateField('month', e.target.value ? Number(e.target.value) : null)}
+                  placeholder="1-12"
+                />
             </label>
-            <label>
-              <span>Активен</span>
-              <input type="checkbox" checked={!!form.is_active} onChange={e => updateField('is_active', e.target.checked)} />
+            <div className="form-field">
+              <span className="form-label">Статус</span>
+              <label className="checkbox volume-edit__checkbox">
+                <input type="checkbox" checked={!!form.is_active} onChange={e => updateField('is_active', e.target.checked)} />
+                <span>Активен</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="volume-edit__fields volume-edit__fields--titles">
+            <label className="form-field">
+              <span className="form-label">Заголовок (RU)</span>
+              <input className="text-input" type="text" value={form.title_ru ?? ''} onChange={e => updateField('title_ru', e.target.value || null)} />
+            </label>
+            <label className="form-field">
+              <span className="form-label">Заголовок (EN)</span>
+              <input className="text-input" type="text" value={form.title_en ?? ''} onChange={e => updateField('title_en', e.target.value || null)} />
+            </label>
+            <label className="form-field">
+              <span className="form-label">Заголовок (KZ)</span>
+              <input className="text-input" type="text" value={form.title_kz ?? ''} onChange={e => updateField('title_kz', e.target.value || null)} />
             </label>
           </div>
 
-          <div className="form-grid form-grid--cols-3">
-            <label>
-              <span>Заголовок (RU)</span>
-              <input type="text" value={form.title_ru ?? ''} onChange={e => updateField('title_ru', e.target.value || null)} />
-            </label>
-            <label>
-              <span>Заголовок (EN)</span>
-              <input type="text" value={form.title_en ?? ''} onChange={e => updateField('title_en', e.target.value || null)} />
-            </label>
-            <label>
-              <span>Заголовок (KZ)</span>
-              <input type="text" value={form.title_kz ?? ''} onChange={e => updateField('title_kz', e.target.value || null)} />
-            </label>
-          </div>
-
-          <label className="form-block">
-            <span>Описание</span>
-            <textarea rows={4} value={form.description ?? ''} onChange={e => updateField('description', e.target.value || null)} />
+          <label className="form-field volume-edit__description">
+            <span className="form-label">Описание</span>
+            <textarea className="text-input volume-edit__textarea" rows={4} value={form.description ?? ''} onChange={e => updateField('description', e.target.value || null)} />
           </label>
-        </div>
+            </div>
+          </div>
 
-        <div className="panel panel--elevated">
-          <div className="panel-title">Статьи в томе</div>
-          <div className="article-footer">
-            <span className="meta-label">Выбрано: {form.article_ids?.length || 0}</span>
+          <div className="volume-edit__col">
+            <div className="panel volume-edit__panel">
+          <div className="volume-edit__panelHeader volume-edit__panelHeader--tight">
+            <div>
+              <div className="panel-title">Статьи в томе</div>
+              <div className="meta-label">Выбрано: {selectedCount}</div>
+            </div>
           </div>
 
           {volume?.articles && volume.articles.length > 0 && (
-            <div className="card-list">
+            <div className="latest-table volume-edit__table volume-edit__table--articles">
               <div className="latest-table__title">Текущие статьи</div>
+              <div className="latest-table__head volume-edit__head">
+                <div>Статья</div>
+                <div>Авторы</div>
+                <div>PDF</div>
+                <div>Действие</div>
+              </div>
               <div className="latest-table__body">
                 {volume.articles.map(a => (
-                  <div className="latest-table__row card" key={String(a.id)}>
+                  <div className={`latest-table__row volume-edit__row ${currentArticleIds.has(Number(a.id!)) ? 'volume-edit__row--selected' : ''}`} key={String(a.id)}>
                     <div className="latest-table__cell latest-table__cell--title">
                       <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
                       <div className="latest-table__meta">DOI: {a.doi || '—'}</div>
                     </div>
-                    <div className="latest-table__cell">{Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}</div>
-                    <div className="latest-table__cell">
+                    <div className="latest-table__cell volume-edit__authors">{Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}</div>
+                    <div className="latest-table__cell volume-edit__cell--file">
                       {a.manuscript_file_url ? (
                         <a className="button button--ghost button--compact" href={toApiFilesUrl(a.manuscript_file_url)} target="_blank" rel="noreferrer">PDF</a>
                       ) : (
                         <span className="meta-label">Нет файла</span>
                       )}
                     </div>
-                    <div className="latest-table__cell">
-                      <button className="button button--secondary" onClick={() => toggleArticle(Number(a.id!))}>
+                    <div className="latest-table__cell volume-edit__cell--actions">
+                      <button className="button button--secondary button--compact" type="button" onClick={() => toggleArticle(Number(a.id!))}>
                         {currentArticleIds.has(Number(a.id!)) ? 'Убрать из тома' : 'Добавить в том'}
                       </button>
                     </div>
@@ -227,58 +280,93 @@ export default function VolumeEditPage() {
               </div>
             </div>
           )}
+            </div>
+          </div>
         </div>
 
-        <div className="panel panel--elevated">
-          <div className="panel-title">Добавление статей</div>
-          <div className="form-grid form-grid--cols-3">
-            <label>
-              <span>Поиск по названию/аннотации</span>
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Например: нейросети" />
+        <div className="panel volume-edit__panel">
+          <div className="volume-edit__panelHeader">
+            <div>
+              <div className="panel-title">Добавление статей</div>
+              {results ? (
+                <div className="meta-label">Найдено: {results.pagination.total_count} · Стр. {results.pagination.page} / {results.pagination.total_pages}</div>
+              ) : (
+                <div className="meta-label">Фильтры для поиска опубликованных статей</div>
+              )}
+            </div>
+          </div>
+
+          <div className="volume-edit__fields volume-edit__fields--search">
+            <label className="form-field">
+              <span className="form-label">Поиск по названию/аннотации</span>
+              <input className="text-input" type="text" value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void doSearch({ resetPage: true }) }} placeholder="Например: нейросети" />
             </label>
-            <label>
-              <span>Автор</span>
-              <input type="text" value={authorName} onChange={e => setAuthorName(e.target.value)} placeholder="Фамилия или имя" />
+            <label className="form-field">
+              <span className="form-label">Автор</span>
+              <input className="text-input" type="text" value={authorName} onChange={e => setAuthorName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void doSearch({ resetPage: true }) }} placeholder="Фамилия или имя" />
             </label>
-            <label>
-              <span>Размер страницы</span>
-              <input type="number" value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} />
+            <label className="form-field">
+              <span className="form-label">Размер страницы</span>
+              <input className="text-input" type="number" min={5} max={100} value={pageSize} onChange={e => setPageSize(Number(e.target.value) || 10)} onKeyDown={e => { if (e.key === 'Enter') void doSearch({ resetPage: true }) }} />
             </label>
           </div>
-          <div className="toolbar">
-            <button className="button" onClick={() => doSearch(true)} disabled={searching}>{searching ? 'Поиск…' : 'Искать опубликованные'}</button>
+
+          <div className="volume-edit__toolbar">
+            <button className="button" onClick={() => doSearch({ resetPage: true })} disabled={searching}>
+              {searching ? 'Поиск…' : 'Искать опубликованные'}
+            </button>
             {results && (
-              <>
-                <button className="button button--ghost" onClick={() => { if (results.pagination.has_prev) { setPage(p => Math.max(1, p - 1)); doSearch(false) } }} disabled={!results.pagination.has_prev}>Назад</button>
-                <button className="button button--ghost" onClick={() => { if (results.pagination.has_next) { setPage(p => p + 1); doSearch(false) } }} disabled={!results.pagination.has_next}>Далее</button>
-              </>
+              <div className="volume-edit__pager">
+                <button
+                  className="button button--ghost button--compact"
+                  onClick={() => { if (results.pagination.has_prev) void doSearch({ page: Math.max(1, results.pagination.page - 1) }) }}
+                  disabled={!results.pagination.has_prev || searching}
+                >
+                  Назад
+                </button>
+                <button
+                  className="button button--ghost button--compact"
+                  onClick={() => { if (results.pagination.has_next) void doSearch({ page: results.pagination.page + 1 }) }}
+                  disabled={!results.pagination.has_next || searching}
+                >
+                  Далее
+                </button>
+              </div>
             )}
           </div>
 
           {results && (
-            <div className="latest-table__body card-list" style={{ marginTop: '1rem' }}>
-              {results.items.length === 0 && <div className="meta-label">Ничего не найдено</div>}
-              {results.items.map(a => (
-                <div className="latest-table__row card" key={String(a.id)}>
-                  <div className="latest-table__cell latest-table__cell--title">
-                    <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
-                    <div className="latest-table__meta">Тип: {a.article_type || '—'} · DOI: {a.doi || '—'}</div>
+            <div className="latest-table volume-edit__table volume-edit__table--search">
+              <div className="latest-table__head volume-edit__head">
+                <div>Статья</div>
+                <div>Авторы</div>
+                <div>PDF</div>
+                <div>Действие</div>
+              </div>
+              <div className="latest-table__body">
+                {results.items.length === 0 && <div className="meta-label">Ничего не найдено</div>}
+                {results.items.map(a => (
+                  <div className={`latest-table__row volume-edit__row ${currentArticleIds.has(Number(a.id!)) ? 'volume-edit__row--selected' : ''}`} key={String(a.id)}>
+                    <div className="latest-table__cell latest-table__cell--title">
+                      <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
+                      <div className="latest-table__meta">Тип: {a.article_type || '—'} · DOI: {a.doi || '—'}</div>
+                    </div>
+                    <div className="latest-table__cell volume-edit__authors">{Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}</div>
+                    <div className="latest-table__cell volume-edit__cell--file">
+                      {a.manuscript_file_url ? (
+                        <a className="button button--ghost button--compact" href={toApiFilesUrl(a.manuscript_file_url)} target="_blank" rel="noreferrer">PDF</a>
+                      ) : (
+                        <span className="meta-label">Нет файла</span>
+                      )}
+                    </div>
+                    <div className="latest-table__cell volume-edit__cell--actions">
+                      <button className="button button--secondary button--compact" type="button" onClick={() => toggleArticle(Number(a.id!))}>
+                        {currentArticleIds.has(Number(a.id!)) ? 'Убрать' : 'Добавить'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="latest-table__cell">{Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}</div>
-                  <div className="latest-table__cell">
-                    {a.manuscript_file_url ? (
-                      <a className="button button--ghost button--compact" href={toApiFilesUrl(a.manuscript_file_url)} target="_blank" rel="noreferrer">PDF</a>
-                    ) : (
-                      <span className="meta-label">Нет файла</span>
-                    )}
-                  </div>
-                  <div className="latest-table__cell">
-                    <button className="button button--secondary" onClick={() => toggleArticle(Number(a.id!))}>
-                      {currentArticleIds.has(Number(a.id!)) ? 'Убрать' : 'Добавить'}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>

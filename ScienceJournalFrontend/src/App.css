@@ -2771,3 +2771,32 @@
   gap: 0.6rem;
   color: #8f96a3;
 }
+
+/* Shared: section actions & alerts */
+.section-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.alert {
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+  border: 1px solid #edf0f6;
+  background: #ffffff;
+  color: #2b2f3c;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.05);
+}
+
+.alert.error {
+  border-color: #ffb7b7;
+  background: #fff1f1;
+  color: #8b0000;
+}
+
+.loading {
+  margin: 0.25rem 0;
+  color: #697185;
+}
