@@ -392,11 +392,6 @@ export function Dashboard() {
               </div>
             ))}
           </div>
-          <div className="toolbar" style={{ marginTop: '1rem' }}>
-            <a href="/cabinet/quick-publish" className="button button--compact">
-              ⚡ Быстрая публикация
-            </a>
-          </div>
         </div>
 
         <div className="panel role-panel">

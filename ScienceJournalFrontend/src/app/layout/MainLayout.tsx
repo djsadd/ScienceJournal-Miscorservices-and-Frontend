@@ -72,7 +72,10 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         },
         {
           title: 'Редакция',
-          items: [{ label: 'Назначения', path: '/cabinet/editorial2' }],
+          items: [
+            { label: 'Назначения', path: '/cabinet/editorial2' },
+            { label: '⚡ Быстрая публикация', path: '/cabinet/quick-publish' },
+          ],
         },
         {
           title: 'Выпуски',
@@ -159,7 +162,10 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         },
         {
           title: 'Editorial',
-          items: [{ label: 'Assignments', path: '/cabinet/editorial2' }],
+          items: [
+            { label: 'Assignments', path: '/cabinet/editorial2' },
+            { label: '⚡ Quick publish', path: '/cabinet/quick-publish' },
+          ],
         },
         {
           title: 'Volumes',
@@ -246,7 +252,10 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         },
         {
           title: 'Редакция',
-          items: [{ label: 'Тапсырмалар', path: '/cabinet/editorial2' }],
+          items: [
+            { label: 'Тапсырмалар', path: '/cabinet/editorial2' },
+            { label: '⚡ Жылдам жариялау', path: '/cabinet/quick-publish' },
+          ],
         },
         {
           title: 'Сандар',
@@ -359,7 +368,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         const data = await api.get<Array<{ id: number }>>('/notifications', { params: { status: 'unread', limit: 50, offset: 0 } })
         if (!active) return
         setUnreadCount(Array.isArray(data) ? data.length : 0)
-      } catch (e) {
+      } catch {
         if (!active) return
         setUnreadCount(0)
       }
@@ -479,11 +488,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                       }
                       onClick={closeSidebar}
                     >
-                      <span>{item.label}</span>
-                      {item.path === '/cabinet/notifications' && unreadCount > 0 ? (
-                        <span className="sidebar__tag">{unreadCount}</span>
-                      ) : null}
-                      {item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}
+                      <span className="sidebar__link-label">{item.label}</span>
+                      <span className="sidebar__link-meta">
+                        {item.path === '/cabinet/notifications' && unreadCount > 0 ? (
+                          <span className="sidebar__tag">{unreadCount}</span>
+                        ) : null}
+                        {item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}
+                      </span>
                     </NavLink>
                   ) : (
                     <div
@@ -491,8 +502,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                       className="sidebar__link sidebar__link--static"
                       onClick={closeSidebar}
                     >
-                      <span>{item.label}</span>
-                      {item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}
+                      <span className="sidebar__link-label">{item.label}</span>
+                      <span className="sidebar__link-meta">{item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}</span>
                     </div>
                   ),
                 )}
