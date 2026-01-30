@@ -28,6 +28,14 @@ interface SelectedItem {
 
 export default function QuickPublishPage() {
   type ErrorLike = { bodyJson?: unknown; message?: unknown }
+  type FileOut = {
+    id: string
+    original_name?: string
+    content_type?: string | null
+    size_bytes?: number
+    url?: string
+    created_at?: string
+  }
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +72,7 @@ export default function QuickPublishPage() {
   const [fileLayoutName, setFileLayoutName] = useState<string | null>(null)
   const [fileManuscriptName, setFileManuscriptName] = useState<string | null>(null)
   const [fileAuthorInfoName, setFileAuthorInfoName] = useState<string | null>(null)
+  const [layoutFileOut, setLayoutFileOut] = useState<FileOut | null>(null)
 
   const layoutFileRef = useRef<HTMLInputElement>(null)
   const manuscriptFileRef = useRef<HTMLInputElement>(null)
@@ -105,9 +114,7 @@ export default function QuickPublishPage() {
     })
 
   const uploadFile = async (file: File) => {
-    const fd = new FormData()
-    fd.append('upload', file)
-    return api.request<{ id: string }>('/files/', 'POST', { body: fd })
+    return api.uploadFile<FileOut>(file)
   }
 
   const handleLayoutFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,8 +123,9 @@ export default function QuickPublishPage() {
     try {
       setLoading(true)
       const result = await uploadFile(file)
-      setForm({ ...form, layoutFileId: result.id })
-      setFileLayoutName(file.name)
+      setLayoutFileOut(result)
+      setForm((prev) => ({ ...prev, layoutFileId: result.id }))
+      setFileLayoutName(result.original_name || file.name)
     } catch {
       setError('Ошибка при загрузке файла')
     } finally {
@@ -131,7 +139,7 @@ export default function QuickPublishPage() {
     try {
       setLoading(true)
       const result = await uploadFile(file)
-      setForm({ ...form, manuscriptFileId: result.id })
+      setForm((prev) => ({ ...prev, manuscriptFileId: result.id }))
       setFileManuscriptName(file.name)
     } catch {
       setError('Ошибка при загрузке файла')
@@ -146,7 +154,7 @@ export default function QuickPublishPage() {
     try {
       setLoading(true)
       const result = await uploadFile(file)
-      setForm({ ...form, authorInfoFileId: result.id })
+      setForm((prev) => ({ ...prev, authorInfoFileId: result.id }))
       setFileAuthorInfoName(file.name)
     } catch {
       setError('Ошибка при загрузке файла')
@@ -237,6 +245,7 @@ export default function QuickPublishPage() {
     setSuccess(false)
 
     try {
+      const layoutFileId = layoutFileOut?.id || form.layoutFileId || undefined
       const result = await api.quickPublishArticle<Article>({
         title_kz: form.title_kz,
         title_en: form.title_en,
@@ -246,13 +255,25 @@ export default function QuickPublishPage() {
         abstract_ru: form.abstract_ru || undefined,
         doi: form.doi || undefined,
         article_type: form.articleType,
-        layout_file_id: form.layoutFileId || undefined,
+        layout_file_id: layoutFileId,
         manuscript_file_id: form.manuscriptFileId || undefined,
         author_info_file_id: form.authorInfoFileId || undefined,
         generative_ai_info: form.generativeAiInfo || undefined,
         author_ids: selectedAuthors.map((a) => a.id),
         keyword_ids: selectedKeywords.map((k) => k.id),
       })
+
+      const articleIdNum = Number(result.id)
+      if (layoutFileId && Number.isFinite(articleIdNum)) {
+        try {
+          const fileUrl = layoutFileOut?.url || `/files/${layoutFileId}/download`
+          await api.createLayoutRecord({
+            article_id: articleIdNum,
+            file_id: layoutFileId,
+            file_url: fileUrl,
+          })
+        } catch {}
+      }
 
       setSuccess(true)
       setForm({
@@ -274,6 +295,7 @@ export default function QuickPublishPage() {
       setFileLayoutName(null)
       setFileManuscriptName(null)
       setFileAuthorInfoName(null)
+      setLayoutFileOut(null)
       setTimeout(() => {
         window.location.href = `/articles/${result.id}`
       }, 1000)
@@ -342,6 +364,7 @@ export default function QuickPublishPage() {
   const clearLayoutFile = () => {
     setForm((prev) => ({ ...prev, layoutFileId: '' }))
     setFileLayoutName(null)
+    setLayoutFileOut(null)
     if (layoutFileRef.current) layoutFileRef.current.value = ''
   }
   const clearManuscriptFile = () => {
