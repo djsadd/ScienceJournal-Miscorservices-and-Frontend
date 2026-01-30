@@ -72,11 +72,7 @@ class Author(Base):
     __tablename__ = "authors"
 
     id = Column(Integer, primary_key=True, index=True)
-<<<<<<< HEAD
-    email = Column(String, nullable=False)
-=======
     email = Column(String, nullable=False, index=True)
->>>>>>> eaf9a38 (t)
     prefix = Column(String, nullable=True)
     first_name = Column(String, nullable=False)
     patronymic = Column(String, nullable=True)
