@@ -166,7 +166,7 @@ export default function EditorPublishedArticleEditPage() {
       api.get<ApiKeyword[]>(`/articles/keywords`).catch(() => []),
     ])
       .then(([articleData, keywordsData]) => {
-        console.log('Р”РµС‚Р°Р»СЊРЅР°СЏ СЃС‚Р°С‚СЊСЏ /articles/my/{id}:', articleData)
+        console.log('Детальная статья /articles/my/{id}:', articleData)
         setArticle(articleData)
         setMyFiles([])
         const mappedAll = Array.isArray(keywordsData)
@@ -197,8 +197,8 @@ export default function EditorPublishedArticleEditPage() {
         setAuthorList(initAuthors)
       })
       .catch((err: Error) => {
-        console.error('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃС‚Р°С‚СЊРё', err)
-        setError('РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃС‚Р°С‚СЊСЋ')
+        console.error('Ошибка загрузки статьи', err)
+        setError('Не удалось загрузить статью')
       })
       .finally(() => setLoading(false))
   }, [id])
@@ -212,7 +212,7 @@ export default function EditorPublishedArticleEditPage() {
         if (!mounted || !Array.isArray(data)) return
         setAllAuthors(data)
       })
-      .catch((e) => console.error('РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р°РІС‚РѕСЂРѕРІ', e))
+      .catch((e) => console.error('Не удалось загрузить авторов', e))
     return () => {
       mounted = false
     }
@@ -222,7 +222,7 @@ export default function EditorPublishedArticleEditPage() {
     return (
       <div className="app-container">
         <div className="panel">
-          <p className="panel-title">Р—Р°РіСЂСѓР·РєР° СЃС‚Р°С‚СЊРё...</p>
+          <p className="panel-title">Загрузка статьи...</p>
         </div>
       </div>
     )
@@ -232,9 +232,9 @@ export default function EditorPublishedArticleEditPage() {
     return (
       <div className="app-container">
         <div className="panel">
-          <p className="panel-title">{error ?? 'РЎС‚Р°С‚СЊСЏ РЅРµ РЅР°Р№РґРµРЅР°'}</p>
+          <p className="panel-title">{error ?? 'Статья не найдена'}</p>
           <button className="button button--ghost" onClick={() => navigate(-1)}>
-            РќР°Р·Р°Рґ
+            Назад
           </button>
         </div>
       </div>
@@ -248,13 +248,13 @@ export default function EditorPublishedArticleEditPage() {
       setRevokeMessage(null)
       const res = await api.post<WithdrawResponse>(`/articles/${article.id}/withdrawn`)
       setArticle({ ...article, status: res.status })
-      setRevokeMessage(res.message || 'РЎС‚Р°С‚СЊСЏ Р±С‹Р»Р° СѓСЃРїРµС€РЅРѕ РѕС‚РѕР·РІР°РЅР°.')
+      setRevokeMessage(res.message || 'Статья была успешно отозвана.')
       setTimeout(() => {
         setShowRevokeConfirm(false)
       }, 1500)
     } catch (e) {
-      console.error('РћС€РёР±РєР° РїСЂРё РѕС‚Р·С‹РІРµ СЃС‚Р°С‚СЊРё', e)
-      setRevokeMessage('РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РѕР·РІР°С‚СЊ СЃС‚Р°С‚СЊСЋ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.')
+      console.error('Ошибка при отзыве статьи', e)
+      setRevokeMessage('Не удалось отозвать статью. Попробуйте позже.')
     } finally {
       setRevokeLoading(false)
     }
@@ -301,10 +301,10 @@ export default function EditorPublishedArticleEditPage() {
       if (antiplagiarism_file_id !== undefined) extended.antiplagiarism_file_id = antiplagiarism_file_id
       const updated = await api.updateEditorPublishedArticle<ApiArticle>(article.id, extended)
       setArticle(updated)
-      alert(`РЎС‚Р°С‚СЊСЏ "${updated.title_ru || updated.title_en || updated.title_kz}" СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅР°.`)
+      alert(`Статья "${updated.title_ru || updated.title_en || updated.title_kz}" успешно обновлена.`)
     } catch (e) {
-      console.error('РћС€РёР±РєР° РїСЂРё РѕР±РЅРѕРІР»РµРЅРёРё СЃС‚Р°С‚СЊРё', e)
-      alert('РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ СЃС‚Р°С‚СЊСЋ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.')
+      console.error('Ошибка при обновлении статьи', e)
+      alert('Не удалось обновить статью. Попробуйте позже.')
     }
   }
 
@@ -344,7 +344,7 @@ export default function EditorPublishedArticleEditPage() {
       setKwModalOpen(false)
       setKeywordInput('')
     } catch (err) {
-      console.error('РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РєР»СЋС‡РµРІРѕРµ СЃР»РѕРІРѕ', err)
+      console.error('Не удалось создать ключевое слово', err)
     }
   }
 
@@ -352,11 +352,11 @@ export default function EditorPublishedArticleEditPage() {
     <div className="app-container">
       <section className="section-header">
         <div>
-          <p className="eyebrow">РњРѕСЏ СЃС‚Р°С‚СЊСЏ</p>
+          <p className="eyebrow">Моя статья</p>
           <h1 className="page-title">
             {lang === 'ru' ? article.title_ru : lang === 'en' ? article.title_en : article.title_kz}
           </h1>
-          <p className="subtitle">Р”РµС‚Р°Р»СЊРЅР°СЏ СЃС‚СЂР°РЅРёС†Р° СЂСѓРєРѕРїРёСЃРё. РћС‚РѕР±СЂР°Р¶Р°РµС‚СЃСЏ С‚РѕР»СЊРєРѕ РІС‹Р±СЂР°РЅРЅС‹Р№ СЏР·С‹Рє.</p>
+          <p className="subtitle">Детальная страница рукописи. Отображается только выбранный язык.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div className="pill">#{article.id}</div>
@@ -367,7 +367,7 @@ export default function EditorPublishedArticleEditPage() {
               style={{ fontWeight: 600 }}
               onClick={() => setShowRevokeConfirm(true)}
             >
-              РћС‚РѕР·РІР°С‚СЊ СЃС‚Р°С‚СЊСЋ
+              Отозвать статью
             </button>
           )}
         </div>
@@ -375,44 +375,44 @@ export default function EditorPublishedArticleEditPage() {
 
       <div className="panel panel--compact">
         <div className="lang-toggle-row">
-          <span className="lang-toggle-row__label">РЇР·С‹Рє СЂСѓРєРѕРїРёСЃРё</span>
+          <span className="lang-toggle-row__label">Язык рукописи</span>
           <div className="lang-toggle">
             <button
               type="button"
               className={`lang-toggle__item ${lang === 'ru' ? 'lang-toggle__item--active' : ''}`}
               onClick={() => setLang('ru')}
             >
-              Р СѓСЃСЃРєРёР№
+              Русский
             </button>
             <button
               type="button"
               className={`lang-toggle__item ${lang === 'kz' ? 'lang-toggle__item--active' : ''}`}
               onClick={() => setLang('kz')}
             >
-              РљР°Р·Р°С…СЃРєРёР№
+              Казахский
             </button>
             <button
               type="button"
               className={`lang-toggle__item ${lang === 'en' ? 'lang-toggle__item--active' : ''}`}
               onClick={() => setLang('en')}
             >
-              РђРЅРіР»РёР№СЃРєРёР№
+              Английский
             </button>
           </div>
         </div>
       </div>
 
       <div className="panel">
-        <p className="eyebrow">Р—Р°РіРѕР»РѕРІРѕРє</p>
+        <p className="eyebrow">Заголовок</p>
         {canEdit ? (
           <>
             <div className="form-field">
-              <label className="form-label">Р—Р°РіРѕР»РѕРІРѕРє (RU)</label>
+              <label className="form-label">Заголовок (RU)</label>
               <input
                 className="text-input"
                 value={article.title_ru}
                 onChange={(e) => setArticle({ ...article, title_ru: e.target.value })}
-                placeholder="Р—Р°РіРѕР»РѕРІРѕРє РЅР° СЂСѓСЃСЃРєРѕРј"
+                placeholder="Заголовок на русском"
               />
             </div>
             <div className="form-field">
@@ -425,18 +425,18 @@ export default function EditorPublishedArticleEditPage() {
               />
             </div>
             <div className="form-field">
-              <label className="form-label">РўР°Т›С‹СЂС‹Рї (KZ)</label>
+              <label className="form-label">Тақырып (KZ)</label>
               <input
                 className="text-input"
                 value={article.title_kz}
                 onChange={(e) => setArticle({ ...article, title_kz: e.target.value })}
-                placeholder="РўР°Т›С‹СЂС‹Рї Т›Р°Р·Р°Т› С‚С–Р»С–РЅРґРµ"
+                placeholder="Тақырып қазақ тілінде"
               />
             </div>
           </>
         ) : (
           <div className="form-field">
-            <div className="form-label">{lang === 'ru' ? 'Р—Р°РіРѕР»РѕРІРѕРє (RU)' : lang === 'en' ? 'Title (EN)' : 'РўР°Т›С‹СЂС‹Рї (KZ)'}</div>
+            <div className="form-label">{lang === 'ru' ? 'Заголовок (RU)' : lang === 'en' ? 'Title (EN)' : 'Тақырып (KZ)'}</div>
             <div className="form-hint">
               {lang === 'ru' && article.title_ru}
               {lang === 'en' && article.title_en}
@@ -447,10 +447,10 @@ export default function EditorPublishedArticleEditPage() {
       </div>
 
       <div className="panel">
-        <p className="eyebrow">РћСЃРЅРѕРІРЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ</p>
+        <p className="eyebrow">Основная информация</p>
         <div className="grid grid-2">
           <div className="form-field">
-            <div className="form-label">РЎС‚Р°С‚СѓСЃ</div>
+            <div className="form-label">Статус</div>
             <div className="form-hint">
               {article.status === 'published'
                 ? 'Опубликовано'
@@ -464,13 +464,13 @@ export default function EditorPublishedArticleEditPage() {
             </div>
           </div>
           <div className="form-field">
-            <div className="form-label">РўРёРї СЃС‚Р°С‚СЊРё</div>
+            <div className="form-label">Тип статьи</div>
             <div className="form-hint">
-              {article.article_type === 'original' ? 'РћСЂРёРіРёРЅР°Р»СЊРЅР°СЏ СЃС‚Р°С‚СЊСЏ' : article.article_type}
+              {article.article_type === 'original' ? 'Оригинальная статья' : article.article_type}
             </div>
           </div>
           <div className="form-field">
-            <div className="form-label">Р”Р°С‚Р° СЃРѕР·РґР°РЅРёСЏ</div>
+            <div className="form-label">Дата создания</div>
             <div className="form-hint">{new Date(article.created_at).toLocaleDateString('ru-RU')}</div>
           </div>
           <div className="form-field">
@@ -480,28 +480,28 @@ export default function EditorPublishedArticleEditPage() {
                 className="text-input"
                 value={article.doi ?? ''}
                 onChange={(e) => setArticle({ ...article, doi: e.target.value || null })}
-                placeholder="РќР°РїСЂРёРјРµСЂ: 10.1234/abcd.2025.01"
+                placeholder="Например: 10.1234/abcd.2025.01"
               />
             ) : (
-              <div className="form-hint">{article.doi ?? 'РќРµ РїСЂРёСЃРІРѕРµРЅ'}</div>
+              <div className="form-hint">{article.doi ?? 'Не присвоен'}</div>
             )}
           </div>
         </div>
-        {/* РљРЅРѕРїРєСѓ РѕС‚Р·С‹РІР° РїРµСЂРµРЅРµСЃР»Рё РІ РІРµСЂС…РЅРёР№ Р·Р°РіРѕР»РѕРІРѕРє РґР»СЏ Р»СѓС‡С€РµР№ РІРёРґРёРјРѕСЃС‚Рё */}
+        {/* Кнопку отзыва перенесли в верхний заголовок для лучшей видимости */}
       </div>
 
       <div className="panel">
-        <p className="eyebrow">РђРЅРЅРѕС‚Р°С†РёСЏ</p>
+        <p className="eyebrow">Аннотация</p>
         {canEdit ? (
           <>
             <div className="form-field">
-              <label className="form-label">РђРЅРЅРѕС‚Р°С†РёСЏ (RU)</label>
+              <label className="form-label">Аннотация (RU)</label>
               <textarea
                 className="text-input"
                 rows={4}
                 value={article.abstract_ru}
                 onChange={(e) => setArticle({ ...article, abstract_ru: e.target.value })}
-                placeholder="РђРЅРЅРѕС‚Р°С†РёСЏ РЅР° СЂСѓСЃСЃРєРѕРј"
+                placeholder="Аннотация на русском"
               />
             </div>
             <div className="form-field">
@@ -515,32 +515,32 @@ export default function EditorPublishedArticleEditPage() {
               />
             </div>
             <div className="form-field">
-              <label className="form-label">РђРЅРЅРѕС‚Р°С†РёСЏ (KZ)</label>
+              <label className="form-label">Аңдатпа (KZ)</label>
               <textarea
                 className="text-input"
                 rows={4}
                 value={article.abstract_kz}
                 onChange={(e) => setArticle({ ...article, abstract_kz: e.target.value })}
-                placeholder="РђРЅРЅРѕС‚Р°С†РёСЏ РЅР° РєР°Р·Р°С…СЃРєРѕРј"
+                placeholder="Аңдатпа қазақ тілінде"
               />
             </div>
           </>
         ) : (
           <div className="form-field">
             <div className="form-label">
-              {lang === 'ru' ? 'РђРЅРЅРѕС‚Р°С†РёСЏ (RU)' : lang === 'en' ? 'Abstract (EN)' : 'РђРЅРЅРѕС‚Р°С†РёСЏ (KZ)'}
+              {lang === 'ru' ? 'Аннотация (RU)' : lang === 'en' ? 'Abstract (EN)' : 'Аңдатпа (KZ)'}
             </div>
             <p className="article-abstract">
-              {lang === 'ru' && (article.abstract_ru || 'РђРЅРЅРѕС‚Р°С†РёСЏ РЅРµ Р·Р°РїРѕР»РЅРµРЅР°.')}
-              {lang === 'en' && (article.abstract_en || 'РђРЅРЅРѕС‚Р°С†РёСЏ РЅРµ Р·Р°РїРѕР»РЅРµРЅР°.')}
-              {lang === 'kz' && (article.abstract_kz || 'РђРЅРЅРѕС‚Р°С†РёСЏ РЅРµ Р·Р°РїРѕР»РЅРµРЅР°.')}
+              {lang === 'ru' && (article.abstract_ru || 'Аннотация не заполнена.')}
+              {lang === 'en' && (article.abstract_en || 'Аннотация не заполнена.')}
+              {lang === 'kz' && (article.abstract_kz || 'Аннотация не заполнена.')}
             </p>
           </div>
         )}
       </div>
 
       <div className="panel">
-        <p className="eyebrow">РљР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР°</p>
+        <p className="eyebrow">Ключевые слова</p>
         {canEdit ? (
           <>
             {selectedKeywords.length > 0 ? (
@@ -550,7 +550,7 @@ export default function EditorPublishedArticleEditPage() {
                     {lang === 'ru' ? kw.ru : lang === 'en' ? kw.en : kw.kz}
                     <button
                       type="button"
-                      aria-label="РЈРґР°Р»РёС‚СЊ"
+                      aria-label="Удалить"
                       className="pill__close"
                       onClick={() => removeKeyword(kw)}
                       style={{ marginLeft: 8 }}
@@ -561,12 +561,12 @@ export default function EditorPublishedArticleEditPage() {
                 ))}
               </div>
             ) : (
-              <div className="table__empty">РљР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР° РЅРµ РІС‹Р±СЂР°РЅС‹.</div>
+              <div className="table__empty">Ключевые слова не выбраны.</div>
             )}
             <div className="form-field">
               <input
                 className="text-input"
-                placeholder="Р’РІРµРґРёС‚Рµ РєР»СЋС‡РµРІРѕРµ СЃР»РѕРІРѕ"
+                placeholder="Введите ключевое слово"
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
               />
@@ -585,20 +585,20 @@ export default function EditorPublishedArticleEditPage() {
                     </button>
                   ))
                 ) : (
-                  <span className="table__empty">РЎРѕРІРїР°РґРµРЅРёР№ РЅРµ РЅР°Р№РґРµРЅРѕ.</span>
+                  <span className="table__empty">Совпадений не найдено.</span>
                 )}
               </div>
             ) : null}
             {keywordInput.trim() && computeKeywordMatches().length === 0 ? (
               <button type="button" className="button button--ghost" onClick={() => setKwModalOpen(true)}>
-                Р”РѕР±Р°РІРёС‚СЊ РЅРѕРІРѕРµ РєР»СЋС‡РµРІРѕРµ СЃР»РѕРІРѕ
+                Добавить новое ключевое слово
               </button>
             ) : null}
           </>
         ) : (
           <>
             {article.keywords.length === 0 ? (
-              <div className="table__empty">РљР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР° РЅРµ СѓРєР°Р·Р°РЅС‹.</div>
+              <div className="table__empty">Ключевые слова не указаны.</div>
             ) : (
               <div className="pill-list">
                 {article.keywords.map((kw) => (
@@ -615,33 +615,33 @@ export default function EditorPublishedArticleEditPage() {
       </div>
 
       <div className="panel">
-        <p className="eyebrow">РЎРѕРіР»Р°СЃРёСЏ Рё РїСЂРѕРІРµСЂРєРё</p>
+        <p className="eyebrow">Согласия и проверки</p>
         <div className="grid grid-3">
           <div className="form-field">
-            <div className="form-label">РќРµ РїСѓР±Р»РёРєРѕРІР°Р»Р°СЃСЊ СЂР°РЅРµРµ</div>
-            <div className="form-hint">{article.not_published_elsewhere ? 'Р”Р°' : 'РќРµС‚'}</div>
+            <div className="form-label">Не публиковалась ранее</div>
+            <div className="form-hint">{article.not_published_elsewhere ? 'Да' : 'Нет'}</div>
           </div>
           <div className="form-field">
-            <div className="form-label">Р‘РµР· РїР»Р°РіРёР°С‚Р°</div>
-            <div className="form-hint">{article.plagiarism_free ? 'Р”Р°' : 'РќРµС‚'}</div>
+            <div className="form-label">Без плагиата</div>
+            <div className="form-hint">{article.plagiarism_free ? 'Да' : 'Нет'}</div>
           </div>
           <div className="form-field">
-            <div className="form-label">Р’СЃРµ Р°РІС‚РѕСЂС‹ СЃРѕРіР»Р°СЃРЅС‹</div>
-            <div className="form-hint">{article.authors_agree ? 'Р”Р°' : 'РќРµС‚'}</div>
+            <div className="form-label">Все авторы согласны</div>
+            <div className="form-hint">{article.authors_agree ? 'Да' : 'Нет'}</div>
           </div>
           <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-            <div className="form-label">РСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ РіРµРЅРµСЂР°С‚РёРІРЅРѕРіРѕ РР</div>
-            <div className="form-hint">{article.generative_ai_info || 'РќРµ СѓРєР°Р·Р°РЅРѕ'}</div>
+            <div className="form-label">Использование генеративного ИИ</div>
+            <div className="form-hint">{article.generative_ai_info || 'Не указано'}</div>
           </div>
         </div>
       </div>
 
       <div className="panel">
-        <p className="eyebrow">РђРІС‚РѕСЂС‹</p>
+        <p className="eyebrow">Авторы</p>
         {(!canEdit) ? (
           <>
             {article.authors.length === 0 ? (
-              <div className="table__empty">РЎРїРёСЃРѕРє Р°РІС‚РѕСЂРѕРІ РЅРµ Р·Р°РїРѕР»РЅРµРЅ.</div>
+              <div className="table__empty">Список авторов не заполнен.</div>
             ) : (
               <div className="assignment-list">
                 {article.authors.map((a) => (
@@ -652,17 +652,17 @@ export default function EditorPublishedArticleEditPage() {
                       </div>
                       <div className="article-meta">
                         <span>{a.affiliation1}</span>
-                        {a.affiliation2 ? <span className="dot">В·</span> : null}
+                        {a.affiliation2 ? <span className="dot">·</span> : null}
                         {a.affiliation2 ? <span>{a.affiliation2}</span> : null}
                         {a.country ? (
                           <>
-                            <span className="dot">В·</span>
+                            <span className="dot">·</span>
                             <span>{a.country}</span>
                           </>
                         ) : null}
                       </div>
                     </div>
-                    {a.is_corresponding ? <span className="pill">РћС‚РІРµС‚СЃС‚РІРµРЅРЅС‹Р№ Р°РІС‚РѕСЂ</span> : null}
+                    {a.is_corresponding ? <span className="pill">Ответственный автор</span> : null}
                   </div>
                 ))}
               </div>
@@ -672,19 +672,19 @@ export default function EditorPublishedArticleEditPage() {
           <>
             <div className="section-heading">
               <div>
-                <h3 className="panel-title">Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ СЃРѕСЃС‚Р°РІР° Р°РІС‚РѕСЂРѕРІ</h3>
+                <h3 className="panel-title">Редактирование состава авторов</h3>
               </div>
               <button className="button button--primary button--compact" type="button" onClick={() => setAuthorModalOpen(true)}>
-                Р”РѕР±Р°РІРёС‚СЊ Р°РІС‚РѕСЂР°
+                Добавить автора
               </button>
             </div>
             <div className="form-field">
-              <label className="form-label">РџРѕРёСЃРє Р°РІС‚РѕСЂР° РІ Р±Р°Р·Рµ</label>
+              <label className="form-label">Поиск автора в базе</label>
               <input
                 className="text-input"
                 value={authorQuery}
                 onChange={(e) => setAuthorQuery(e.target.value)}
-                placeholder="РќР°С‡РЅРёС‚Рµ РІРІРѕРґРёС‚СЊ Р¤РРћ РёР»Рё email Р°РІС‚РѕСЂР°"
+                placeholder="Начните вводить ФИО или email автора"
               />
               {authorQuery.trim() ? (
                 <div className="pill-list">
@@ -733,14 +733,14 @@ export default function EditorPublishedArticleEditPage() {
               ) : null}
             </div>
             {authorList.length === 0 ? (
-              <div className="table__empty">РђРІС‚РѕСЂС‹ РїРѕРєР° РЅРµ РґРѕР±Р°РІР»РµРЅС‹.</div>
+              <div className="table__empty">Авторы пока не добавлены.</div>
             ) : (
               <div className="table">
                 <div className="table__head">
-                  <span>РРјСЏ</span>
+                  <span>Имя</span>
                   <span>Email</span>
-                  <span>РђС„С„РёР»РёР°С†РёРё</span>
-                  <span>РљРѕСЂСЂ. Р°РІС‚РѕСЂ</span>
+                  <span>Аффилиации</span>
+                  <span>Корр. автор</span>
                 </div>
                 <div className="table__body">
                   {authorList.map((a, idx) => (
@@ -753,8 +753,8 @@ export default function EditorPublishedArticleEditPage() {
                         <div className="table__meta">{a.phone}</div>
                       </div>
                       <div className="table__cell">{a.email}</div>
-                      <div className="table__cell">{[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || 'вЂ”'}</div>
-                      <div className="table__cell">{a.isCorresponding ? 'Р”Р°' : 'РќРµС‚'}</div>
+                      <div className="table__cell">{[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '—'}</div>
+                      <div className="table__cell">{a.isCorresponding ? 'Да' : 'Нет'}</div>
                     </div>
                   ))}
                 </div>
@@ -765,10 +765,10 @@ export default function EditorPublishedArticleEditPage() {
       </div>
 
       <div className="panel">
-        <p className="eyebrow">Р¤Р°Р№Р»С‹</p>
+        <p className="eyebrow">Файлы</p>
         <div className="grid grid-3">
           <div className="form-field">
-            <div className="form-label">Р СѓРєРѕРїРёСЃСЊ</div>
+            <div className="form-label">Рукопись</div>
             {myFiles.find((f) => f.kind === 'manuscript') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'manuscript') as ApiMyFile
@@ -776,7 +776,7 @@ export default function EditorPublishedArticleEditPage() {
                 return (
                   <div className="form-hint">
                     <a className="link" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'РЎРєР°С‡Р°С‚СЊ СЂСѓРєРѕРїРёСЃСЊ'}
+                      {f.filename || 'Скачать рукопись'}
                     </a>
                   </div>
                 )
@@ -788,20 +788,20 @@ export default function EditorPublishedArticleEditPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                РЎРєР°С‡Р°С‚СЊ
+                Скачать
               </a>
             ) : (
-              <div className="form-hint">РќРµ Р·Р°РіСЂСѓР¶РµРЅРѕ</div>
+              <div className="form-hint">Не загружено</div>
             )}
             {canEdit ? (
               <div style={{ marginTop: '0.5rem' }}>
                 <input type="file" className="file-input" onChange={(e) => setFileManuscript(e.target.files?.[0] ?? null)} />
-                {fileManuscript ? <div className="form-hint">РќРѕРІС‹Р№ С„Р°Р№Р»: {fileManuscript.name}</div> : null}
+                {fileManuscript ? <div className="form-hint">Новый файл: {fileManuscript.name}</div> : null}
               </div>
             ) : null}
           </div>
           <div className="form-field">
-            <div className="form-label">РђРЅС‚РёРїР»Р°РіРёР°С‚</div>
+            <div className="form-label">Антиплагиат</div>
             {myFiles.find((f) => f.kind === 'antiplagiarism') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'antiplagiarism') as ApiMyFile
@@ -809,7 +809,7 @@ export default function EditorPublishedArticleEditPage() {
                 return (
                   <div className="form-hint">
                     <a className="link" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'РЎРєР°С‡Р°С‚СЊ С„Р°Р№Р»'}
+                      {f.filename || 'Скачать файл'}
                     </a>
                   </div>
                 )
@@ -821,20 +821,20 @@ export default function EditorPublishedArticleEditPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                РЎРєР°С‡Р°С‚СЊ
+                Скачать
               </a>
             ) : (
-              <div className="form-hint">РќРµ Р·Р°РіСЂСѓР¶РµРЅРѕ</div>
+              <div className="form-hint">Не загружено</div>
             )}
             {canEdit ? (
               <div style={{ marginTop: '0.5rem' }}>
                 <input type="file" className="file-input" onChange={(e) => setFileAntiplagiarism(e.target.files?.[0] ?? null)} />
-                {fileAntiplagiarism ? <div className="form-hint">РќРѕРІС‹Р№ С„Р°Р№Р»: {fileAntiplagiarism.name}</div> : null}
+                {fileAntiplagiarism ? <div className="form-hint">Новый файл: {fileAntiplagiarism.name}</div> : null}
               </div>
             ) : null}
           </div>
           <div className="form-field">
-            <div className="form-label">Р”Р°РЅРЅС‹Рµ Р°РІС‚РѕСЂР°</div>
+            <div className="form-label">Данные автора</div>
             {myFiles.find((f) => f.kind === 'author_info') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'author_info') as ApiMyFile
@@ -842,7 +842,7 @@ export default function EditorPublishedArticleEditPage() {
                 return (
                   <div className="form-hint">
                     <a className="link" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'РЎРєР°С‡Р°С‚СЊ С„Р°Р№Р»'}
+                      {f.filename || 'Скачать файл'}
                     </a>
                   </div>
                 )
@@ -854,20 +854,20 @@ export default function EditorPublishedArticleEditPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                РЎРєР°С‡Р°С‚СЊ
+                Скачать
               </a>
             ) : (
-              <div className="form-hint">РќРµ Р·Р°РіСЂСѓР¶РµРЅРѕ</div>
+              <div className="form-hint">Не загружено</div>
             )}
             {canEdit ? (
               <div style={{ marginTop: '0.5rem' }}>
                 <input type="file" className="file-input" onChange={(e) => setFileAuthorInfo(e.target.files?.[0] ?? null)} />
-                {fileAuthorInfo ? <div className="form-hint">РќРѕРІС‹Р№ С„Р°Р№Р»: {fileAuthorInfo.name}</div> : null}
+                {fileAuthorInfo ? <div className="form-hint">Новый файл: {fileAuthorInfo.name}</div> : null}
               </div>
             ) : null}
           </div>
           <div className="form-field">
-            <div className="form-label">РЎРѕРїСЂРѕРІРѕРґРёС‚РµР»СЊРЅРѕРµ РїРёСЃСЊРјРѕ</div>
+            <div className="form-label">Сопроводительное письмо</div>
             {myFiles.find((f) => f.kind === 'cover_letter') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'cover_letter') as ApiMyFile
@@ -875,7 +875,7 @@ export default function EditorPublishedArticleEditPage() {
                 return (
                   <div className="form-hint">
                     <a className="link" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'РЎРєР°С‡Р°С‚СЊ С„Р°Р№Р»'}
+                      {f.filename || 'Скачать файл'}
                     </a>
                   </div>
                 )
@@ -887,15 +887,15 @@ export default function EditorPublishedArticleEditPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                РЎРєР°С‡Р°С‚СЊ
+                Скачать
               </a>
             ) : (
-              <div className="form-hint">РќРµ Р·Р°РіСЂСѓР¶РµРЅРѕ</div>
+              <div className="form-hint">Не загружено</div>
             )}
             {article.status === 'withdrawn' ? (
               <div style={{ marginTop: '0.5rem' }}>
                 <input type="file" className="file-input" onChange={(e) => setFileCoverLetter(e.target.files?.[0] ?? null)} />
-                {fileCoverLetter ? <div className="form-hint">РќРѕРІС‹Р№ С„Р°Р№Р»: {fileCoverLetter.name}</div> : null}
+                {fileCoverLetter ? <div className="form-hint">Новый файл: {fileCoverLetter.name}</div> : null}
               </div>
             ) : null}
           </div>
@@ -925,14 +925,14 @@ export default function EditorPublishedArticleEditPage() {
       <div className="panel">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Р‘С‹СЃС‚СЂС‹Рµ РґРµР№СЃС‚РІРёСЏ</p>
-            <h3 className="panel-title">РќР°РІРёРіР°С†РёСЏ</h3>
+            <p className="eyebrow">Быстрые действия</p>
+            <h3 className="panel-title">Навигация</h3>
           </div>
-          <div className="pill pill--ghost">РњРѕРё СЃС‚Р°С‚СЊРё</div>
+          <div className="pill pill--ghost">Мои статьи</div>
         </div>
         <div className="pill-list">
           <Link className="button button--ghost button--compact" to="/cabinet/editorial2">
-            Рљ СЃРїРёСЃРєСѓ СЃС‚Р°С‚РµР№
+            К списку статей
           </Link>
         </div>
       </div>
@@ -941,14 +941,13 @@ export default function EditorPublishedArticleEditPage() {
         <div className="modal-backdrop" onClick={() => setShowRevokeConfirm(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <p className="eyebrow">РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РґРµР№СЃС‚РІРёСЏ</p>
-              <button className="modal__close" onClick={() => setShowRevokeConfirm(false)} aria-label="Р—Р°РєСЂС‹С‚СЊ">Г—</button>
+              <p className="eyebrow">Подтверждение действия</p>
+              <button className="modal__close" onClick={() => setShowRevokeConfirm(false)} aria-label="Закрыть">Г—</button>
             </div>
             <div className="modal__body">
-              <h3 className="panel-title" style={{ marginTop: 0 }}>РћС‚РѕР·РІР°С‚СЊ СЃС‚Р°С‚СЊСЋ?</h3>
+              <h3 className="panel-title" style={{ marginTop: 0 }}>Отозвать статью?</h3>
               <p className="subtitle">
-                Р’С‹ СѓРІРµСЂРµРЅС‹, С‡С‚Рѕ С…РѕС‚РёС‚Рµ РѕС‚РѕР·РІР°С‚СЊ СЌС‚Сѓ СЃС‚Р°С‚СЊСЋ? РџРѕСЃР»Рµ РѕС‚Р·С‹РІР° СЂРµРґР°РєС†РёСЏ РїСЂРёРѕСЃС‚Р°РЅРѕРІРёС‚ СЂР°СЃСЃРјРѕС‚СЂРµРЅРёРµ
-                СЂСѓРєРѕРїРёСЃРё.
+                Вы уверены, что хотите отозвать эту статью? После отзыва редакция приостановит рассмотрение рукописи.
               </p>
               {revokeMessage && <div className="alert alert--success">{revokeMessage}</div>}
             </div>
@@ -958,7 +957,7 @@ export default function EditorPublishedArticleEditPage() {
                 className="button button--ghost"
                 onClick={() => setShowRevokeConfirm(false)}
               >
-                РћС‚РјРµРЅР°
+                Отмена
               </button>
               <button
                 type="button"
@@ -966,7 +965,7 @@ export default function EditorPublishedArticleEditPage() {
                 disabled={revokeLoading}
                 onClick={handleWithdraw}
               >
-                {revokeLoading ? 'РћС‚Р·С‹РІР°РµРјвЂ¦' : 'РћС‚РѕР·РІР°С‚СЊ СЃС‚Р°С‚СЊСЋ'}
+                {revokeLoading ? 'Отзываем…' : 'Отозвать статью'}
               </button>
             </div>
           </div>
@@ -977,30 +976,30 @@ export default function EditorPublishedArticleEditPage() {
         <div className="modal-backdrop" onClick={() => setKwModalOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>РќРѕРІРѕРµ РєР»СЋС‡РµРІРѕРµ СЃР»РѕРІРѕ</h3>
-              <button className="modal__close" onClick={() => setKwModalOpen(false)} aria-label="Р—Р°РєСЂС‹С‚СЊ">Г—</button>
+              <h3>Новое ключевое слово</h3>
+              <button className="modal__close" onClick={() => setKwModalOpen(false)} aria-label="Закрыть">Г—</button>
             </div>
             <div className="modal__body">
               <div className="form-field">
-                <label className="form-label">РќР° СЂСѓСЃСЃРєРѕРј</label>
+                <label className="form-label">На русском</label>
                 <input
                   className="text-input"
                   value={newKeyword.ru}
                   onChange={(e) => setNewKeyword((p) => ({ ...p, ru: e.target.value }))}
-                  placeholder="РќР°РїСЂРёРјРµСЂ: РСЃРєСѓСЃСЃС‚РІРµРЅРЅС‹Р№ РёРЅС‚РµР»Р»РµРєС‚"
+                  placeholder="Например: Искусственный интеллект"
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РќР° РєР°Р·Р°С…СЃРєРѕРј</label>
+                <label className="form-label">На казахском</label>
                 <input
                   className="text-input"
                   value={newKeyword.kz}
                   onChange={(e) => setNewKeyword((p) => ({ ...p, kz: e.target.value }))}
-                  placeholder="РђРЅР°Р»РёС‚РёРєР° РґРµСЂРµРєС‚РµСЂС–"
+                  placeholder="Аналитика деректері"
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РќР° Р°РЅРіР»РёР№СЃРєРѕРј</label>
+                <label className="form-label">На английском</label>
                 <input
                   className="text-input"
                   value={newKeyword.en}
@@ -1011,10 +1010,10 @@ export default function EditorPublishedArticleEditPage() {
             </div>
             <div className="modal__footer">
               <button className="button button--ghost" type="button" onClick={() => setKwModalOpen(false)}>
-                РћС‚РјРµРЅР°
+                Отмена
               </button>
               <button className="button button--primary" type="button" onClick={saveNewKeyword} disabled={!newKeyword.ru.trim()}>
-                Р”РѕР±Р°РІРёС‚СЊ
+                Добавить
               </button>
             </div>
           </div>
@@ -1025,8 +1024,8 @@ export default function EditorPublishedArticleEditPage() {
         <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
           <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Р”РѕР±Р°РІРёС‚СЊ Р°РІС‚РѕСЂР°</h3>
-              <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Р—Р°РєСЂС‹С‚СЊ">
+              <h3>Добавить автора</h3>
+              <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Закрыть">
                 Г—
               </button>
             </div>
@@ -1040,7 +1039,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РџСЂРµС„РёРєСЃ</label>
+                <label className="form-label">Префикс</label>
                 <input
                   className="text-input"
                   value={authorForm.prefix}
@@ -1048,7 +1047,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РРјСЏ *</label>
+                <label className="form-label">Имя *</label>
                 <input
                   className="text-input"
                   value={authorForm.firstName}
@@ -1056,7 +1055,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РћС‚С‡РµСЃС‚РІРѕ</label>
+                <label className="form-label">Отчество</label>
                 <input
                   className="text-input"
                   value={authorForm.middleName}
@@ -1064,7 +1063,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">Р¤Р°РјРёР»РёСЏ *</label>
+                <label className="form-label">Фамилия *</label>
                 <input
                   className="text-input"
                   value={authorForm.lastName}
@@ -1072,7 +1071,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РўРµР»РµС„РѕРЅ</label>
+                <label className="form-label">Телефон</label>
                 <input
                   className="text-input"
                   value={authorForm.phone}
@@ -1080,7 +1079,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field form-field--span-2">
-                <label className="form-label">РђРґСЂРµСЃ</label>
+                <label className="form-label">Адрес</label>
                 <input
                   className="text-input"
                   value={authorForm.address}
@@ -1088,7 +1087,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РЎС‚СЂР°РЅР° *</label>
+                <label className="form-label">Страна *</label>
                 <input
                   className="text-input"
                   value={authorForm.country}
@@ -1097,7 +1096,7 @@ export default function EditorPublishedArticleEditPage() {
               </div>
 
               <div className="form-field">
-                <label className="form-label">РђС„С„РёР»РёР°С†РёСЏ 1 *</label>
+                <label className="form-label">Аффилиация 1 *</label>
                 <textarea
                   className="text-input"
                   rows={3}
@@ -1106,7 +1105,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РђС„С„РёР»РёР°С†РёСЏ 2</label>
+                <label className="form-label">Аффилиация 2</label>
                 <textarea
                   className="text-input"
                   rows={3}
@@ -1115,7 +1114,7 @@ export default function EditorPublishedArticleEditPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">РђС„С„РёР»РёР°С†РёСЏ 3</label>
+                <label className="form-label">Аффилиация 3</label>
                 <textarea
                   className="text-input"
                   rows={3}
@@ -1125,21 +1124,21 @@ export default function EditorPublishedArticleEditPage() {
               </div>
 
               <div className="form-field">
-                <label className="form-label">РЎРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёР№ Р°РІС‚РѕСЂ</label>
+                <label className="form-label">Соответствующий автор</label>
                 <div className="pill-list">
                   <button
                     type="button"
                     className={`button button--ghost button--compact ${authorForm.isCorresponding ? 'button--active' : ''}`}
                     onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: true }))}
                   >
-                    Р”Р°
+                    Да
                   </button>
                   <button
                     type="button"
                     className={`button button--ghost button--compact ${!authorForm.isCorresponding ? 'button--active' : ''}`}
                     onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: false }))}
                   >
-                    РќРµС‚
+                    Нет
                   </button>
                 </div>
               </div>
@@ -1171,7 +1170,7 @@ export default function EditorPublishedArticleEditPage() {
             </div>
             <div className="modal__footer">
               <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>
-                РћС‚РјРµРЅР°
+                Отмена
               </button>
               <button
                 className="button button--primary"
@@ -1226,7 +1225,7 @@ export default function EditorPublishedArticleEditPage() {
                 }}
                 disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}
               >
-                РЎРѕС…СЂР°РЅРёС‚СЊ Р°РІС‚РѕСЂР°
+                Сохранить автора
               </button>
             </div>
           </div>
