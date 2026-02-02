@@ -101,9 +101,7 @@ export default function EditorPublishedArticleEditPage() {
   const [revokeMessage, setRevokeMessage] = useState<string | null>(null)
   const [revokeLoading, setRevokeLoading] = useState(false)
   // keywords state similar to submission form
-  const [allKeywords, setAllKeywords] = useState<Keyword[]>([])
   const [selectedKeywords, setSelectedKeywords] = useState<Keyword[]>([])
-  const [keywordInput, setKeywordInput] = useState('')
   const [kwModalOpen, setKwModalOpen] = useState(false)
   const [newKeyword, setNewKeyword] = useState<Keyword>({ ru: '', kz: '', en: '' })
   // authors edit state (reused from submission page)
@@ -161,18 +159,12 @@ export default function EditorPublishedArticleEditPage() {
     if (!id) return
     setLoading(true)
     setError(null)
-    Promise.all([
-      api.getEditorArticleDetail<ApiArticle>(id),
-      api.get<ApiKeyword[]>(`/articles/keywords`).catch(() => []),
-    ])
-      .then(([articleData, keywordsData]) => {
+    api
+      .getEditorArticleDetail<ApiArticle>(id)
+      .then((articleData) => {
         console.log('Детальная статья /articles/my/{id}:', articleData)
         setArticle(articleData)
         setMyFiles([])
-        const mappedAll = Array.isArray(keywordsData)
-          ? (keywordsData as ApiKeyword[]).map((k) => ({ id: k.id, ru: k.title_ru, kz: k.title_kz, en: k.title_en }))
-          : []
-        setAllKeywords(mappedAll)
         const mappedSelected = (articleData.keywords ?? []).map((k) => ({ id: k.id, ru: k.title_ru, kz: k.title_kz, en: k.title_en }))
         setSelectedKeywords(mappedSelected)
         // initialize authors list for editing
@@ -308,21 +300,10 @@ export default function EditorPublishedArticleEditPage() {
     }
   }
 
-  const computeKeywordMatches = (): Keyword[] => {
-    const q = keywordInput.trim().toLowerCase()
-    if (!q) return []
-    return allKeywords.filter((kw) => {
-      const title = kw.ru.toLowerCase()
-      const exists = selectedKeywords.some((s) => (s.id ?? s.ru) === (kw.id ?? kw.ru))
-      return !exists && title.includes(q)
-    })
-  }
-
   const addKeyword = (kw: Keyword) => {
     const exists = selectedKeywords.some((s) => (s.id ?? s.ru) === (kw.id ?? kw.ru))
     if (exists) return
     setSelectedKeywords((prev) => [...prev, kw])
-    setKeywordInput('')
   }
 
   const removeKeyword = (kw: Keyword) => {
@@ -338,11 +319,9 @@ export default function EditorPublishedArticleEditPage() {
         title_en: newKeyword.en.trim(),
       })
       const mapped: Keyword = { id: created.id, ru: created.title_ru, kz: created.title_kz, en: created.title_en }
-      setAllKeywords((prev) => [...prev, mapped])
-      setSelectedKeywords((prev) => [...prev, mapped])
+      addKeyword(mapped)
       setNewKeyword({ ru: '', kz: '', en: '' })
       setKwModalOpen(false)
-      setKeywordInput('')
     } catch (err) {
       console.error('Не удалось создать ключевое слово', err)
     }
@@ -555,7 +534,7 @@ export default function EditorPublishedArticleEditPage() {
                       onClick={() => removeKeyword(kw)}
                       style={{ marginLeft: 8 }}
                     >
-                      Г—
+                      ×
                     </button>
                   </span>
                 ))}
@@ -563,37 +542,9 @@ export default function EditorPublishedArticleEditPage() {
             ) : (
               <div className="table__empty">Ключевые слова не выбраны.</div>
             )}
-            <div className="form-field">
-              <input
-                className="text-input"
-                placeholder="Введите ключевое слово"
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
-              />
-            </div>
-            {keywordInput.trim() ? (
-              <div className="pill-list">
-                {computeKeywordMatches().length > 0 ? (
-                  computeKeywordMatches().map((kw) => (
-                    <button
-                      key={kw.id ?? kw.ru}
-                      type="button"
-                      className="status-chip status-chip--submitted"
-                      onClick={() => addKeyword(kw)}
-                    >
-                      {kw.ru}
-                    </button>
-                  ))
-                ) : (
-                  <span className="table__empty">Совпадений не найдено.</span>
-                )}
-              </div>
-            ) : null}
-            {keywordInput.trim() && computeKeywordMatches().length === 0 ? (
-              <button type="button" className="button button--ghost" onClick={() => setKwModalOpen(true)}>
-                Добавить новое ключевое слово
-              </button>
-            ) : null}
+            <button type="button" className="button button--ghost" onClick={() => setKwModalOpen(true)}>
+              Добавить ключевое слово
+            </button>
           </>
         ) : (
           <>
@@ -942,7 +893,7 @@ export default function EditorPublishedArticleEditPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
               <p className="eyebrow">Подтверждение действия</p>
-              <button className="modal__close" onClick={() => setShowRevokeConfirm(false)} aria-label="Закрыть">Г—</button>
+              <button className="modal__close" onClick={() => setShowRevokeConfirm(false)} aria-label="Закрыть">×</button>
             </div>
             <div className="modal__body">
               <h3 className="panel-title" style={{ marginTop: 0 }}>Отозвать статью?</h3>
@@ -977,7 +928,7 @@ export default function EditorPublishedArticleEditPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
               <h3>Новое ключевое слово</h3>
-              <button className="modal__close" onClick={() => setKwModalOpen(false)} aria-label="Закрыть">Г—</button>
+              <button className="modal__close" onClick={() => setKwModalOpen(false)} aria-label="Закрыть">×</button>
             </div>
             <div className="modal__body">
               <div className="form-field">
@@ -1026,7 +977,7 @@ export default function EditorPublishedArticleEditPage() {
             <div className="modal__header">
               <h3>Добавить автора</h3>
               <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Закрыть">
-                Г—
+                ×
               </button>
             </div>
             <div className="modal__body author-grid">
