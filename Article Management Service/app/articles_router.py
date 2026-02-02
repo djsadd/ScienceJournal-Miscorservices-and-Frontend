@@ -378,6 +378,100 @@ def get_article_detail_for_editor(
     return article
 
 
+@router.put("/editor/{article_id}", response_model=schemas.ArticleOut)
+def update_published_article_for_editor(
+    article_id: int,
+    article: schemas.ArticleUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Редактирование опубликованной статьи редактором.
+
+    Доступно только пользователям с ролью 'editor' и только для статей со статусом 'published'.
+    При сохранении создаётся новая версия (snapshot), а статус остаётся 'published'.
+    """
+    from sqlalchemy.orm import joinedload
+
+    ensure_editor(current_user)
+
+    existing_article = (
+        db.query(models.Article)
+        .options(
+            joinedload(models.Article.authors),
+            joinedload(models.Article.keywords),
+            joinedload(models.Article.versions),
+        )
+        .filter(models.Article.id == article_id)
+        .first()
+    )
+
+    if not existing_article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    if existing_article.status != models.ArticleStatus.published:
+        raise HTTPException(status_code=409, detail="Only published articles can be edited via this endpoint")
+
+    update_data = article.dict(exclude_unset=True)
+
+    # file_id -> file_url conversion (same behavior as author update)
+    if "antiplagiarism_file_id" in update_data:
+        existing_article.antiplagiarism_file_url = _file_id_to_url(update_data.pop("antiplagiarism_file_id"))
+    if "manuscript_file_id" in update_data:
+        existing_article.manuscript_file_url = _file_id_to_url(update_data.pop("manuscript_file_id"))
+    if "author_info_file_id" in update_data:
+        existing_article.author_info_file_url = _file_id_to_url(update_data.pop("author_info_file_id"))
+    if "cover_letter_file_id" in update_data:
+        existing_article.cover_letter_file_url = _file_id_to_url(update_data.pop("cover_letter_file_id"))
+
+    # Update authors (optional)
+    if "author_ids" in update_data and update_data.get("author_ids") is not None:
+        author_ids = update_data.pop("author_ids")
+        db.execute(models.article_authors.delete().where(models.article_authors.c.article_id == article_id))
+        if author_ids:
+            authors = db.query(models.Author).filter(models.Author.id.in_(author_ids)).all()
+            if len(authors) != len(set(author_ids)):
+                raise HTTPException(status_code=400, detail="One or more authors not found")
+            for author in authors:
+                db.execute(models.article_authors.insert().values(article_id=article_id, author_id=author.id))
+
+    # Update keywords (optional)
+    if "keyword_ids" in update_data and update_data.get("keyword_ids") is not None:
+        keyword_ids = update_data.pop("keyword_ids")
+        db.execute(models.article_keywords.delete().where(models.article_keywords.c.article_id == article_id))
+        if keyword_ids:
+            keywords = db.query(models.Keyword).filter(models.Keyword.id.in_(keyword_ids)).all()
+            if len(keywords) != len(set(keyword_ids)):
+                raise HTTPException(status_code=400, detail="One or more keywords not found")
+            for keyword in keywords:
+                db.execute(models.article_keywords.insert().values(article_id=article_id, keyword_id=keyword.id))
+
+    for field, value in update_data.items():
+        setattr(existing_article, field, value)
+
+    # Create a new version snapshot and keep article status published
+    max_version = (
+        db.query(models.ArticleVersion)
+        .filter(models.ArticleVersion.article_id == article_id)
+        .order_by(models.ArticleVersion.version_number.desc())
+        .first()
+    )
+    version_number = max_version.version_number + 1 if max_version else 1
+    version_code = f"TAU-V{version_number}"
+
+    new_version = _create_article_version_snapshot(
+        db=db,
+        article=existing_article,
+        version_number=version_number,
+        version_code=version_code,
+    )
+    existing_article.current_version_id = new_version.id
+
+    db.commit()
+    db.refresh(existing_article)
+    return existing_article
+
+
 @router.get("/editor/{article_id}/versions/{version_id}", response_model=schemas.ArticleVersionOut)
 def get_article_version_detail_for_editor(
     article_id: int,

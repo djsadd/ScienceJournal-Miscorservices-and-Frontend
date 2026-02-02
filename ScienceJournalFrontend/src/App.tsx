@@ -35,6 +35,7 @@ import EditorialUnassignedPage from './pages/EditorialUnassignedPage'
 import EditorialPortfolioPage from './pages/EditorialPortfolioPage'
 import EditorArticleDetailPage from './pages/EditorArticleDetailPage'
 import EditorArticleVersionPage from './pages/EditorArticleVersionPage'
+import EditorPublishedArticleEditPage from './pages/EditorPublishedArticleEditPage'
 import VolumesPage from './pages/VolumesPage'
 import VolumeDetailPage from './pages/VolumeDetailPage'
 import PublicVolumeDetailPage from './pages/PublicVolumeDetailPage'
@@ -248,6 +249,16 @@ function App() {
           <RequireAuth>
             <MainLayout>
               <EditorArticleDetailPage />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cabinet/editorial2/:id/edit"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <EditorPublishedArticleEditPage />
             </MainLayout>
           </RequireAuth>
         }

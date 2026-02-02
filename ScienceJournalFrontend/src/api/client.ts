@@ -252,6 +252,23 @@ export const api = {
   getEditorArticleDetail: <T>(id: string | number) => request<T>(`/articles/editor/${id}`, 'GET'),
   getEditorArticleVersion: <T>(articleId: string | number, versionId: string | number) =>
     request<T>(`/articles/editor/${articleId}/versions/${versionId}`, 'GET'),
+  // Editor-only update for published articles (keeps status = published, creates a new version snapshot)
+  updateEditorPublishedArticle: <T>(articleId: string | number, body: Partial<{
+    title_kz: string | null
+    title_en: string | null
+    title_ru: string | null
+    abstract_kz: string | null
+    abstract_en: string | null
+    abstract_ru: string | null
+    doi: string | null
+    article_type: 'original' | 'review' | null
+    not_published_elsewhere: boolean | null
+    plagiarism_free: boolean | null
+    authors_agree: boolean | null
+    generative_ai_info: string | null
+    keyword_ids: number[] | null
+    author_ids: number[] | null
+  }>) => request<T>(`/articles/editor/${articleId}`, 'PUT', { json: body }),
   // Fast article publication for editors
   quickPublishArticle: <T>(body: {
     title_kz: string

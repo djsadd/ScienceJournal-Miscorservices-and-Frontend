@@ -450,7 +450,12 @@ export default function EditorArticleDetailPage() {
           <div className="panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', gap: '1rem', flexWrap: 'wrap' }}>
               <h2 className="panel-title" style={{ margin: 0 }}>{title}</h2>
-              {data.status !== 'rejected' && (
+              {data.status === 'published' && isEditor && (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <a className="button button--primary" href={`/cabinet/editorial2/${data.id}/edit`}>Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ</a>
+                </div>
+              )}
+              {data.status !== 'rejected' && data.status !== 'published' && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   {data.status === 'submitted' ? (
                     <>
