@@ -452,7 +452,7 @@ export default function EditorArticleDetailPage() {
               <h2 className="panel-title" style={{ margin: 0 }}>{title}</h2>
               {data.status === 'published' && isEditor && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <a className="button button--primary" href={`/cabinet/editorial2/${data.id}/edit`}>Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ</a>
+                  <a className="button button--primary" href={`/cabinet/editorial2/${data.id}/edit`}>Редактировать</a>
                 </div>
               )}
               {data.status !== 'rejected' && data.status !== 'published' && (
