@@ -198,6 +198,9 @@ class Volume(Base):
     title_en = Column(String, nullable=True)
     title_ru = Column(String, nullable=True)
     description = Column(String, nullable=True)
+    complete_issue_file_url = Column(String, nullable=True)
+    cover_file_url = Column(String, nullable=True)
+    contents_file_url = Column(String, nullable=True)
     published_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
 

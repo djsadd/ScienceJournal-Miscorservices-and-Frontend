@@ -207,6 +207,9 @@ export interface Volume {
   title_en?: string | null
   title_ru?: string | null
   description?: string | null
+  complete_issue_file_url?: string | null
+  cover_file_url?: string | null
+  contents_file_url?: string | null
   is_active: boolean
   // When joined load includes articles with authors & keywords
   articles?: Article[]

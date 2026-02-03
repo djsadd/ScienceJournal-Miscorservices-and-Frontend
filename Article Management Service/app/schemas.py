@@ -268,11 +268,17 @@ class VolumeBase(BaseModel):
     title_en: str | None = None
     title_ru: str | None = None
     description: str | None = None
+    complete_issue_file_url: str | None = None
+    cover_file_url: str | None = None
+    contents_file_url: str | None = None
     is_active: bool = True
 
 
 class VolumeCreate(VolumeBase):
     article_ids: List[int] = Field(default_factory=list, description="IDs of published articles to include")
+    complete_issue_file_id: str | None = None
+    cover_file_id: str | None = None
+    contents_file_id: str | None = None
 
 
 class VolumeUpdate(BaseModel):
@@ -283,6 +289,12 @@ class VolumeUpdate(BaseModel):
     title_en: str | None = None
     title_ru: str | None = None
     description: str | None = None
+    complete_issue_file_url: str | None = None
+    cover_file_url: str | None = None
+    contents_file_url: str | None = None
+    complete_issue_file_id: str | None = None
+    cover_file_id: str | None = None
+    contents_file_id: str | None = None
     is_active: bool | None = None
     article_ids: List[int] | None = Field(default=None, description="Override list of article IDs in volume")
 

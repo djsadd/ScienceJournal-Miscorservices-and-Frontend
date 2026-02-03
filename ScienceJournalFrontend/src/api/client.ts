@@ -328,6 +328,12 @@ export const api = {
     description?: string | null
     is_active?: boolean
     article_ids?: number[]
+    complete_issue_file_id?: string | null
+    cover_file_id?: string | null
+    contents_file_id?: string | null
+    complete_issue_file_url?: string | null
+    cover_file_url?: string | null
+    contents_file_url?: string | null
   }) => request<T>('/volumes', 'POST', { json: body }),
   updateVolume: <T>(id: number | string, body: Partial<{
     year: number
@@ -337,6 +343,12 @@ export const api = {
     title_en: string | null
     title_ru: string | null
     description: string | null
+    complete_issue_file_id: string | null
+    cover_file_id: string | null
+    contents_file_id: string | null
+    complete_issue_file_url: string | null
+    cover_file_url: string | null
+    contents_file_url: string | null
     is_active: boolean
     article_ids: number[]
   }>) => request<T>(`/volumes/${id}`, 'PATCH', { json: body }),

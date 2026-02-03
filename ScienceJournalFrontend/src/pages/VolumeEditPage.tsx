@@ -38,6 +38,9 @@ export default function VolumeEditPage() {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<FormState>({})
+  const [fileCompleteIssue, setFileCompleteIssue] = useState<File | null>(null)
+  const [fileCover, setFileCover] = useState<File | null>(null)
+  const [fileContents, setFileContents] = useState<File | null>(null)
 
   const [search, setSearch] = useState('')
   const [authorName, setAuthorName] = useState('')
@@ -69,6 +72,9 @@ export default function VolumeEditPage() {
             is_active: !!data.is_active,
             article_ids: Array.isArray(data.articles) ? data.articles.map((a) => Number(a.id!)) : [],
           })
+          setFileCompleteIssue(null)
+          setFileCover(null)
+          setFileContents(null)
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.bodyJson?.detail || e?.message || 'Не удалось загрузить том')
@@ -137,6 +143,14 @@ export default function VolumeEditPage() {
       body.description = form.description ?? null
       body.is_active = !!form.is_active
       body.article_ids = form.article_ids || []
+
+      // Optional uploads for issue-level files
+      if (fileCompleteIssue || fileCover || fileContents) {
+        const upload = async (file: File) => api.uploadFile<{ id: string }>(file)
+        if (fileCompleteIssue) body.complete_issue_file_id = (await upload(fileCompleteIssue)).id
+        if (fileCover) body.cover_file_id = (await upload(fileCover)).id
+        if (fileContents) body.contents_file_id = (await upload(fileContents)).id
+      }
 
       const updated = await api.updateVolume<Volume>(id, body)
       setVolume(updated)
@@ -267,72 +281,116 @@ export default function VolumeEditPage() {
                   onChange={(e) => updateField('description', e.target.value || null)}
                 />
               </label>
-            </div>
-          </div>
 
-          <div className="volume-edit__col">
-            <div className="panel volume-edit__panel">
-              <div className="volume-edit__panelHeader volume-edit__panelHeader--tight">
-                <div>
-                  <div className="panel-title">Статьи в томе</div>
-                  <div className="meta-label">Выбрано: {selectedCount}</div>
+              <div className="volume-edit__files">
+                <div className="panel-title" style={{ fontSize: '1.05rem', marginTop: '0.85rem' }}>Файлы выпуска</div>
+                <div className="volume-edit__fields volume-edit__fields--files">
+                  <label className="form-field">
+                    <span className="form-label">Complete Issue</span>
+                    <input
+                      type="file"
+                      className="file-input"
+                      accept=".pdf"
+                      onChange={(e) => setFileCompleteIssue(e.target.files?.[0] || null)}
+                    />
+                    <div className="meta-label">
+                      {volume?.complete_issue_file_url ? (
+                        <a href={toApiFilesUrl(volume.complete_issue_file_url)} target="_blank" rel="noreferrer">Текущий файл</a>
+                      ) : (
+                        'Текущий файл: —'
+                      )}
+                    </div>
+                  </label>
+                  <label className="form-field">
+                    <span className="form-label">Cover File</span>
+                    <input
+                      type="file"
+                      className="file-input"
+                      accept=".pdf,image/*"
+                      onChange={(e) => setFileCover(e.target.files?.[0] || null)}
+                    />
+                    <div className="meta-label">
+                      {volume?.cover_file_url ? (
+                        <a href={toApiFilesUrl(volume.cover_file_url)} target="_blank" rel="noreferrer">Текущий файл</a>
+                      ) : (
+                        'Текущий файл: —'
+                      )}
+                    </div>
+                  </label>
+                  <label className="form-field">
+                    <span className="form-label">Contents File</span>
+                    <input
+                      type="file"
+                      className="file-input"
+                      accept=".pdf"
+                      onChange={(e) => setFileContents(e.target.files?.[0] || null)}
+                    />
+                    <div className="meta-label">
+                      {volume?.contents_file_url ? (
+                        <a href={toApiFilesUrl(volume.contents_file_url)} target="_blank" rel="noreferrer">Текущий файл</a>
+                      ) : (
+                        'Текущий файл: —'
+                      )}
+                    </div>
+                  </label>
                 </div>
               </div>
-
-              {volume?.articles && volume.articles.length > 0 && (
-                <div className="latest-table volume-edit__table volume-edit__table--articles">
-                  <div className="latest-table__title">Текущие статьи</div>
-                  <div className="latest-table__head volume-edit__head">
-                    <div>Статья</div>
-                    <div>Авторы</div>
-                    <div>PDF</div>
-                    <div>Действие</div>
-                  </div>
-                  <div className="latest-table__body">
-                    {volume.articles.map((a) => (
-                      <div
-                        className={`latest-table__row volume-edit__row ${
-                          currentArticleIds.has(Number(a.id!)) ? 'volume-edit__row--selected' : ''
-                        }`}
-                        key={String(a.id)}
-                      >
-                        <div className="latest-table__cell latest-table__cell--title">
-                          <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
-                          <div className="latest-table__meta">DOI: {a.doi || '—'}</div>
-                        </div>
-                        <div className="latest-table__cell volume-edit__authors">
-                          {Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}
-                        </div>
-                        <div className="latest-table__cell volume-edit__cell--file">
-                          {a.manuscript_file_url ? (
-                            <a
-                              className="button button--ghost button--compact"
-                              href={toApiFilesUrl(a.manuscript_file_url)}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              PDF
-                            </a>
-                          ) : (
-                            <span className="meta-label">Нет файла</span>
-                          )}
-                        </div>
-                        <div className="latest-table__cell volume-edit__cell--actions">
-                          <button
-                            className="button button--secondary button--compact"
-                            type="button"
-                            onClick={() => toggleArticle(Number(a.id!))}
-                          >
-                            {currentArticleIds.has(Number(a.id!)) ? 'Убрать из тома' : 'Добавить в том'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
+
+        </div>
+
+        <div className="panel volume-edit__panel" style={{ marginTop: '1rem' }}>
+          <div className="volume-edit__panelHeader volume-edit__panelHeader--tight">
+            <div>
+              <div className="panel-title">Статьи в томе</div>
+              <div className="meta-label">Выбрано: {selectedCount}</div>
+            </div>
+          </div>
+
+          {volume?.articles && volume.articles.length > 0 ? (
+            <div className="latest-table volume-edit__table volume-edit__table--articles">
+              <div className="latest-table__title">Текущие статьи</div>
+              <div className="latest-table__head volume-edit__head">
+                <div>Статья</div>
+                <div>Авторы</div>
+                <div>PDF</div>
+                <div>Действие</div>
+              </div>
+              <div className="latest-table__body">
+                {volume.articles.map((a) => (
+                  <div
+                    className={`latest-table__row volume-edit__row ${currentArticleIds.has(Number(a.id!)) ? 'volume-edit__row--selected' : ''}`}
+                    key={String(a.id)}
+                  >
+                    <div className="latest-table__cell latest-table__cell--title">
+                      <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
+                      <div className="latest-table__meta">DOI: {a.doi || '—'}</div>
+                    </div>
+                    <div className="latest-table__cell volume-edit__authors">
+                      {Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}
+                    </div>
+                    <div className="latest-table__cell volume-edit__cell--file">
+                      {a.manuscript_file_url ? (
+                        <a className="button button--ghost button--compact" href={toApiFilesUrl(a.manuscript_file_url)} target="_blank" rel="noreferrer">
+                          PDF
+                        </a>
+                      ) : (
+                        <span className="meta-label">Нет файла</span>
+                      )}
+                    </div>
+                    <div className="latest-table__cell volume-edit__cell--actions">
+                      <button className="button button--secondary button--compact" type="button" onClick={() => toggleArticle(Number(a.id!))}>
+                        {currentArticleIds.has(Number(a.id!)) ? 'Убрать из тома' : 'Добавить в том'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="meta-label">В этом томе пока нет статей</div>
+          )}
         </div>
 
         <div className="panel volume-edit__panel">

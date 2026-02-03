@@ -8,6 +8,12 @@ import httpx
 router = APIRouter(prefix="/volumes", tags=["volumes"])
 
 
+def _file_id_to_url(file_id: str | None):
+    if not file_id:
+        return None
+    return f"/files/{file_id}/download"
+
+
 def get_db():
     db = database.SessionLocal()
     try:
@@ -167,6 +173,9 @@ def create_volume(
         title_en=payload.title_en,
         title_ru=payload.title_ru,
         description=payload.description,
+        complete_issue_file_url=_file_id_to_url(payload.complete_issue_file_id) or payload.complete_issue_file_url,
+        cover_file_url=_file_id_to_url(payload.cover_file_id) or payload.cover_file_url,
+        contents_file_url=_file_id_to_url(payload.contents_file_id) or payload.contents_file_url,
         is_active=payload.is_active,
     )
     db.add(volume)
@@ -219,9 +228,29 @@ def update_volume(
             raise HTTPException(status_code=400, detail="Another volume with this year and number exists")
 
     # Обновляем простые поля
-    for field in ["year", "number", "month", "title_kz", "title_en", "title_ru", "description", "is_active"]:
+    for field in [
+        "year",
+        "number",
+        "month",
+        "title_kz",
+        "title_en",
+        "title_ru",
+        "description",
+        "is_active",
+        "complete_issue_file_url",
+        "cover_file_url",
+        "contents_file_url",
+    ]:
         if field in update_data:
             setattr(volume, field, update_data[field])
+
+    # file_id -> file_url conversion
+    if "complete_issue_file_id" in update_data:
+        volume.complete_issue_file_url = _file_id_to_url(update_data["complete_issue_file_id"])
+    if "cover_file_id" in update_data:
+        volume.cover_file_url = _file_id_to_url(update_data["cover_file_id"])
+    if "contents_file_id" in update_data:
+        volume.contents_file_url = _file_id_to_url(update_data["contents_file_id"])
 
     # Полная замена списка статей если передан article_ids
     if "article_ids" in update_data and update_data["article_ids"] is not None:
