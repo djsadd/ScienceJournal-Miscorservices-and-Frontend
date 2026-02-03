@@ -76,6 +76,24 @@
   margin-top: 0.55rem;
 }
 
+.volume-edit__coverPreview {
+  margin-top: 0.55rem;
+  border-radius: 14px;
+  border: 1px solid #edf0f6;
+  background: #ffffff;
+  overflow: hidden;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 3 / 4;
+}
+
+.volume-edit__coverPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .volume-edit__textarea {
   min-height: 110px;
   resize: vertical;

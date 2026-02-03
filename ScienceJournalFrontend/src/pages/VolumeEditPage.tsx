@@ -302,20 +302,31 @@ export default function VolumeEditPage() {
                     </div>
                   </label>
                   <label className="form-field">
-                    <span className="form-label">Cover File</span>
+                    <span className="form-label">Обложка (постер)</span>
                     <input
                       type="file"
                       className="file-input"
-                      accept=".pdf,image/*"
+                      accept="image/*"
                       onChange={(e) => setFileCover(e.target.files?.[0] || null)}
                     />
                     <div className="meta-label">
                       {volume?.cover_file_url ? (
-                        <a href={toApiFilesUrl(volume.cover_file_url)} target="_blank" rel="noreferrer">Текущий файл</a>
+                        <a href={toApiFilesUrl(volume.cover_file_url)} target="_blank" rel="noreferrer">Открыть текущую обложку</a>
                       ) : (
                         'Текущий файл: —'
                       )}
                     </div>
+                    {(() => {
+                      const existing = volume?.cover_file_url ? toApiFilesUrl(volume.cover_file_url) : null
+                      const selected = fileCover ? URL.createObjectURL(fileCover) : null
+                      const src = selected || existing
+                      if (!src) return null
+                      return (
+                        <div className="volume-edit__coverPreview">
+                          <img src={src} alt="Обложка выпуска" />
+                        </div>
+                      )
+                    })()}
                   </label>
                   <label className="form-field">
                     <span className="form-label">Contents File</span>
