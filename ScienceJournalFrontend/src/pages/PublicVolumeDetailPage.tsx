@@ -24,10 +24,9 @@ export default function PublicVolumeDetailPage() {
       home: 'Home',
       archive: 'Archive',
       volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
-      filesTitle: 'Файлы выпуска',
-      completeIssue: 'Complete Issue',
-      coverFile: 'Cover File',
-      contentsFile: 'Contents File',
+      completeIssue: 'Полный выпуск',
+      coverFile: 'Обложка',
+      contentsFile: 'Содержание',
       tableTitle: 'Статьи в томе',
       th: { title: 'Название', authors: 'Авторы', layout: 'Верстка' },
       untitled: 'Без заголовка',
@@ -44,10 +43,9 @@ export default function PublicVolumeDetailPage() {
       home: 'Home',
       archive: 'Archive',
       volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
-      filesTitle: 'Issue files',
-      completeIssue: 'Complete Issue',
-      coverFile: 'Cover File',
-      contentsFile: 'Contents File',
+      completeIssue: 'Complete issue',
+      coverFile: 'Cover',
+      contentsFile: 'Contents',
       tableTitle: 'Articles in this volume',
       th: { title: 'Title', authors: 'Authors', layout: 'Layout' },
       untitled: 'Untitled',
@@ -64,10 +62,9 @@ export default function PublicVolumeDetailPage() {
       home: 'Home',
       archive: 'Archive',
       volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
-      filesTitle: 'Том файлдары',
-      completeIssue: 'Complete Issue',
-      coverFile: 'Cover File',
-      contentsFile: 'Contents File',
+      completeIssue: 'Толық нөмір',
+      coverFile: 'Мұқаба',
+      contentsFile: 'Мазмұны',
       tableTitle: 'Бұл томдағы мақалалар',
       th: { title: 'Атауы', authors: 'Авторлар', layout: 'Беттеу' },
       untitled: 'Атаусыз',
@@ -193,7 +190,6 @@ export default function PublicVolumeDetailPage() {
 
         {volume && (
           <div className="panel" style={{ marginBottom: '1rem' }}>
-            <div className="panel-title" style={{ marginBottom: '0.6rem' }}>{t.filesTitle}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
               {completeIssueHref ? (
                 <a className="button button--primary" href={completeIssueHref} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -205,9 +201,7 @@ export default function PublicVolumeDetailPage() {
                   </svg>
                   {t.completeIssue}
                 </a>
-              ) : (
-                <span className="meta-label">{t.completeIssue}: —</span>
-              )}
+              ) : null}
               {coverFileHref ? (
                 <a className="button button--ghost button--compact" href={coverFileHref} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ width: 16, height: 16 }}>
@@ -218,9 +212,7 @@ export default function PublicVolumeDetailPage() {
                   </svg>
                   {t.coverFile}
                 </a>
-              ) : (
-                <span className="meta-label">{t.coverFile}: —</span>
-              )}
+              ) : null}
               {contentsFileHref ? (
                 <a className="button button--ghost button--compact" href={contentsFileHref} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ width: 16, height: 16 }}>
@@ -231,9 +223,7 @@ export default function PublicVolumeDetailPage() {
                   </svg>
                   {t.contentsFile}
                 </a>
-              ) : (
-                <span className="meta-label">{t.contentsFile}: —</span>
-              )}
+              ) : null}
             </div>
             {volume.description ? <p className="article-abstract" style={{ marginTop: '0.75rem', textAlign: 'justify' }}>{volume.description}</p> : null}
           </div>
