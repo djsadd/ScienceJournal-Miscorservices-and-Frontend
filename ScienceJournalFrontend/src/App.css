@@ -1929,6 +1929,32 @@
   margin: 0.3rem 0;
 }
 
+.breadcrumbs {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  color: #8f96a3;
+  font-size: 0.95rem;
+}
+
+.breadcrumbs__sep {
+  color: #c2c7d3;
+}
+
+.breadcrumbs__link {
+  color: #1f3d8f;
+  text-decoration: none;
+}
+
+.breadcrumbs__link:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbs__current {
+  color: #52586a;
+}
+
 .public-article__top {
   display: flex;
   justify-content: space-between;

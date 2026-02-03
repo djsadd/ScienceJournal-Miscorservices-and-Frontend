@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Article, Volume } from '../shared/types'
 import { useLanguage } from '../shared/LanguageContext'
@@ -50,6 +50,9 @@ export default function PublicArticleDetailPage() {
       loading: 'Загрузка...',
       error: 'Ошибка',
       notFound: 'Статья не найдена',
+      home: 'Home',
+      archive: 'Archive',
+      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
       journal: 'Журнал',
       volume: 'Том',
       doi: 'DOI',
@@ -66,6 +69,9 @@ export default function PublicArticleDetailPage() {
       loading: 'Loading...',
       error: 'Error',
       notFound: 'Article not found',
+      home: 'Home',
+      archive: 'Archive',
+      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
       journal: 'Journal',
       volume: 'Volume',
       doi: 'DOI',
@@ -82,6 +88,9 @@ export default function PublicArticleDetailPage() {
       loading: 'Жүктелуде...',
       error: 'Қате',
       notFound: 'Мақала табылмады',
+      home: 'Home',
+      archive: 'Archive',
+      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
       journal: 'Журнал',
       volume: 'Том',
       doi: 'DOI',
@@ -192,10 +201,30 @@ export default function PublicArticleDetailPage() {
       ? `${volume.number} / ${volume.year}${volume.month ? ` (${volume.month})` : ''}`
       : ''
 
+  const volumeCrumbLabel =
+    volume && volume.number && volume.year ? t.volumeCrumb(volume.year, String(volume.number), volume.month) : ''
+
   return (
     <div className="public-container">
       <div className="section public-section">
         <p className="eyebrow">{t.eyebrow}</p>
+        <nav className="breadcrumbs" aria-label="Breadcrumb">
+          <Link className="breadcrumbs__link" to="/">{t.home}</Link>
+          <span className="breadcrumbs__sep">→</span>
+          <Link className="breadcrumbs__link" to="/archive">{t.archive}</Link>
+          {volumeCrumbLabel && volumeId ? (
+            <>
+              <span className="breadcrumbs__sep">→</span>
+              <Link className="breadcrumbs__link" to={`/archive/volumes/${volumeId}`}>{volumeCrumbLabel}</Link>
+            </>
+          ) : null}
+          {localizedTitle ? (
+            <>
+              <span className="breadcrumbs__sep">→</span>
+              <span className="breadcrumbs__current">{localizedTitle}</span>
+            </>
+          ) : null}
+        </nav>
 
         {loading && <div className="loading">{t.loading}</div>}
         {error && <div className="alert error">{t.error}: {error}</div>}
