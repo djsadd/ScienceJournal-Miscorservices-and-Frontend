@@ -19,58 +19,61 @@ export default function PublicVolumeDetailPage() {
   const t = {
     ru: {
       eyebrow: 'архив номеров',
-      back: '← Назад к архиву',
       loading: 'Загрузка...',
       error: 'Ошибка',
-      active: 'Активен',
-      inactive: 'Неактивен',
-      articlesCount: (n: number) => `Статей: ${n}`,
+      home: 'Home',
+      archive: 'Archive',
+      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
+      filesTitle: 'Файлы выпуска',
+      completeIssue: 'Complete Issue',
+      coverFile: 'Cover File',
+      contentsFile: 'Contents File',
       tableTitle: 'Статьи в томе',
       th: { title: 'Название', authors: 'Авторы', layout: 'Верстка' },
       untitled: 'Без заголовка',
       loadingLayout: 'Загрузка…',
       noLayout: 'Нет верстки',
       downloadPdf: 'Скачать PDF',
-      volumeLabel: (v: Volume) => `Том ${v.number} / ${v.year}`,
-      volumePanelTitle: (v: Volume) => `Том ${v.number} / ${v.year}${v.month ? ` (${v.month} мес.)` : ''}`,
       doi: (d?: string | null) => `DOI: ${d || '—'}`,
       loadError: 'Не удалось загрузить том',
     },
     en: {
       eyebrow: 'archive of issues',
-      back: '← Back to archive',
       loading: 'Loading...',
       error: 'Error',
-      active: 'Active',
-      inactive: 'Inactive',
-      articlesCount: (n: number) => `Articles: ${n}`,
+      home: 'Home',
+      archive: 'Archive',
+      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
+      filesTitle: 'Issue files',
+      completeIssue: 'Complete Issue',
+      coverFile: 'Cover File',
+      contentsFile: 'Contents File',
       tableTitle: 'Articles in this volume',
       th: { title: 'Title', authors: 'Authors', layout: 'Layout' },
       untitled: 'Untitled',
       loadingLayout: 'Loading…',
       noLayout: 'No layout',
       downloadPdf: 'Download PDF',
-      volumeLabel: (v: Volume) => `Volume ${v.number} / ${v.year}`,
-      volumePanelTitle: (v: Volume) => `Volume ${v.number} / ${v.year}${v.month ? ` (${v.month} mo.)` : ''}`,
       doi: (d?: string | null) => `DOI: ${d || '—'}`,
       loadError: 'Failed to load volume',
     },
     kz: {
       eyebrow: 'шығарылымдар мұрағаты',
-      back: '← Мұрағатқа қайту',
       loading: 'Жүктелуде...',
       error: 'Қате',
-      active: 'Белсенді',
-      inactive: 'Белсенді емес',
-      articlesCount: (n: number) => `Мақалалар: ${n}`,
+      home: 'Home',
+      archive: 'Archive',
+      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
+      filesTitle: 'Том файлдары',
+      completeIssue: 'Complete Issue',
+      coverFile: 'Cover File',
+      contentsFile: 'Contents File',
       tableTitle: 'Бұл томдағы мақалалар',
       th: { title: 'Атауы', authors: 'Авторлар', layout: 'Беттеу' },
       untitled: 'Атаусыз',
       loadingLayout: 'Жүктелуде…',
       noLayout: 'Беттеу жоқ',
       downloadPdf: 'PDF жүктеу',
-      volumeLabel: (v: Volume) => `Том ${v.number} / ${v.year}`,
-      volumePanelTitle: (v: Volume) => `Том ${v.number} / ${v.year}${v.month ? ` (${v.month} ай)` : ''}`,
       doi: (d?: string | null) => `DOI: ${d || '—'}`,
       loadError: 'Томды жүктеу сәтсіз аяқталды',
     },
@@ -92,6 +95,34 @@ export default function PublicVolumeDetailPage() {
   }
   const [layoutByArticle, setLayoutByArticle] = useState<Record<number, LayoutRecordOut[]>>({})
   const [layoutLoading, setLayoutLoading] = useState(false)
+
+  const fileHref = (raw?: string | null) => toApiFilesUrl(raw) || null
+
+  const volumeCrumbLabel =
+    volume && volume.number && volume.year ? t.volumeCrumb(volume.year, String(volume.number), volume.month) : ''
+
+  const completeIssueHref = fileHref(
+    (volume as any)?.complete_issue_file_url ||
+      (volume as any)?.complete_issue_url ||
+      (volume as any)?.issue_file_url ||
+      (volume as any)?.full_issue_file_url ||
+      (volume as any)?.full_journal_file_url ||
+      null,
+  )
+
+  const coverFileHref = fileHref(
+    (volume as any)?.cover_file_url ||
+      (volume as any)?.cover_url ||
+      (volume as any)?.issue_cover_file_url ||
+      null,
+  )
+
+  const contentsFileHref = fileHref(
+    (volume as any)?.contents_file_url ||
+      (volume as any)?.contents_url ||
+      (volume as any)?.table_of_contents_file_url ||
+      null,
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -145,33 +176,66 @@ export default function PublicVolumeDetailPage() {
     <div className="public-container">
       <div className="section public-section">
         <p className="eyebrow">{t.eyebrow}</p>
-        <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-          <h1 className="hero__title">{volume ? t.volumeLabel(volume) : '—'}</h1>
-          <Link className="button button--ghost" to="/archive">{t.back}</Link>
-        </div>
+        <nav className="breadcrumbs" aria-label="Breadcrumb">
+          <Link className="breadcrumbs__link" to="/">{t.home}</Link>
+          <span className="breadcrumbs__sep">→</span>
+          <Link className="breadcrumbs__link" to="/archive">{t.archive}</Link>
+          {volumeCrumbLabel ? (
+            <>
+              <span className="breadcrumbs__sep">→</span>
+              <span className="breadcrumbs__current">{volumeCrumbLabel}</span>
+            </>
+          ) : null}
+        </nav>
 
         {loading && <div className="loading">{t.loading}</div>}
         {error && <div className="alert error">{t.error}: {error}</div>}
 
         {volume && (
           <div className="panel" style={{ marginBottom: '1rem' }}>
-            <div className="submission-card__top">
-              <div>
-                <div className="panel-title">{t.volumePanelTitle(volume)}</div>
-                {(volume.title_ru || volume.title_en || volume.title_kz) && (
-                  <div className="meta-label">
-                    {volume.title_ru}
-                    {volume.title_en ? ` | ${volume.title_en}` : ''}
-                    {volume.title_kz ? ` | ${volume.title_kz}` : ''}
-                  </div>
-                )}
-              </div>
-              <span className={`badge ${volume.is_active ? 'badge--success' : 'badge--muted'}`}>{volume.is_active ? t.active : t.inactive}</span>
+            <div className="panel-title" style={{ marginBottom: '0.6rem' }}>{t.filesTitle}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+              {completeIssueHref ? (
+                <a className="button button--primary" href={completeIssueHref} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ width: 18, height: 18 }}>
+                    <path
+                      fill="currentColor"
+                      d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1 1v1h14v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z"
+                    />
+                  </svg>
+                  {t.completeIssue}
+                </a>
+              ) : (
+                <span className="meta-label">{t.completeIssue}: —</span>
+              )}
+              {coverFileHref ? (
+                <a className="button button--ghost button--compact" href={coverFileHref} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ width: 16, height: 16 }}>
+                    <path
+                      fill="currentColor"
+                      d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1 1v1h14v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z"
+                    />
+                  </svg>
+                  {t.coverFile}
+                </a>
+              ) : (
+                <span className="meta-label">{t.coverFile}: —</span>
+              )}
+              {contentsFileHref ? (
+                <a className="button button--ghost button--compact" href={contentsFileHref} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ width: 16, height: 16 }}>
+                    <path
+                      fill="currentColor"
+                      d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1 1v1h14v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z"
+                    />
+                  </svg>
+                  {t.contentsFile}
+                </a>
+              ) : (
+                <span className="meta-label">{t.contentsFile}: —</span>
+              )}
             </div>
-            {volume.description && <p className="article-abstract">{volume.description}</p>}
-            <div className="article-footer">
-              <span className="meta-label">{t.articlesCount(volume.articles?.length ?? 0)}</span>
-            </div>
+            {volume.description ? <p className="article-abstract" style={{ marginTop: '0.75rem', textAlign: 'justify' }}>{volume.description}</p> : null}
           </div>
         )}
 
