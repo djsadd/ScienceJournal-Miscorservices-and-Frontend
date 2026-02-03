@@ -5,6 +5,15 @@ import { toApiFilesUrl } from '../shared/url'
 import type { Volume, Article } from '../shared/types'
 import { useLanguage } from '../shared/LanguageContext'
 
+const compact = (value?: string | null) => (value || '').trim()
+
+const toDoiUrl = (doi?: string | null) => {
+  const raw = compact(doi)
+  if (!raw) return null
+  if (/^https?:\/\//i.test(raw)) return raw
+  return `https://doi.org/${raw.replace(/^doi:\s*/i, '')}`
+}
+
 export default function PublicVolumeDetailPage() {
   const { lang } = useLanguage()
   const t = {
@@ -186,7 +195,17 @@ export default function PublicVolumeDetailPage() {
                         {a.title_ru || a.title_en || a.title_kz || t.untitled}
                       </Link>
                     </div>
-                    <div className="latest-table__meta">{t.doi(a.doi)}</div>
+                    <div className="latest-table__meta">
+                      {(() => {
+                        const href = toDoiUrl(a.doi)
+                        if (!href) return <span>{t.doi(null)}</span>
+                        return (
+                          <a className="public-article__doi-link" href={href} target="_blank" rel="noreferrer">
+                            {t.doi(a.doi)}
+                          </a>
+                        )
+                      })()}
+                    </div>
                   </div>
                   <div className="latest-table__cell">
                     {Array.isArray(a.authors)
@@ -207,7 +226,19 @@ export default function PublicVolumeDetailPage() {
                       const first = sorted[0]
                       const href = toApiFilesUrl(first?.file_url || (first?.file_id ? `/files/${first.file_id}/download` : undefined)) || '#'
                       return (
-                        <a className="button button--ghost button--compact" href={href} target="_blank" rel="noreferrer">
+                        <a
+                          className="button button--ghost button--compact"
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={{ width: 16, height: 16 }}>
+                            <path
+                              fill="currentColor"
+                              d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1 1v1h14v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z"
+                            />
+                          </svg>
                           {t.downloadPdf}
                         </a>
                       )
@@ -222,4 +253,3 @@ export default function PublicVolumeDetailPage() {
     </div>
   )
 }
-
