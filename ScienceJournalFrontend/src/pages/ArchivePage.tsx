@@ -25,6 +25,7 @@ export function ArchivePage() {
       issuesCount: (n: number) => `${n} выпуск(а)`,
       volumesOfYear: (y: number) => `Тома ${y}`,
       volumeTitle: (n: string, m?: number | null) => `Том ${n}${m ? ` (${m} мес.)` : ''}`,
+      loadError: 'Не удалось загрузить архив томов',
     },
     en: {
       eyebrow: 'archive of issues',
@@ -43,6 +44,7 @@ export function ArchivePage() {
       issuesCount: (n: number) => `${n} issue(s)`,
       volumesOfYear: (y: number) => `Volumes of ${y}`,
       volumeTitle: (n: string, m?: number | null) => `Volume ${n}${m ? ` (${m} mo.)` : ''}`,
+      loadError: 'Failed to load archive',
     },
     kz: {
       eyebrow: 'шығарылымдар мұрағаты',
@@ -61,8 +63,10 @@ export function ArchivePage() {
       issuesCount: (n: number) => `${n} шығарылым`,
       volumesOfYear: (y: number) => `${y} жылғы томдар`,
       volumeTitle: (n: string, m?: number | null) => `Том ${n}${m ? ` (${m} ай)` : ''}`,
+      loadError: 'Том мұрағатын жүктеу сәтсіз аяқталды',
     },
   }[lang]
+
   const [openYears, setOpenYears] = useState<Record<number, boolean>>({})
   const [volumes, setVolumes] = useState<ApiVolume[] | null>(null)
   const [loading, setLoading] = useState(false)
@@ -77,7 +81,7 @@ export function ArchivePage() {
         const years = Array.from(new Set((data || []).map((v) => v.year))).sort((a, b) => b - a)
         if (years[0]) setOpenYears({ [years[0]]: true })
       })
-      .catch((e: any) => setError(e?.message || 'Не удалось загрузить архив томов'))
+      .catch((e: any) => setError(e?.message || t.loadError))
       .finally(() => setLoading(false))
   }, [])
 
@@ -140,7 +144,10 @@ export function ArchivePage() {
                       <ul className="volume-list">
                         {group.volumes.map((v) => (
                           <li key={String(v.id ?? `${v.year}-${v.number}-${v.month ?? 'm'}`)} className="volume-item">
-                            <a href={v.id != null ? `/archive/volumes/${v.id}` : '#'} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <a
+                              href={v.id != null ? `/archive/volumes/${v.id}` : '#'}
+                              style={{ textDecoration: 'none', color: 'inherit', display: 'flex', justifyContent: 'space-between', width: '100%' }}
+                            >
                               <div>
                                 <div className="volume-title">{t.volumeTitle(v.number, v.month)}</div>
                                 <div className="subtitle">{v.description || v.title_ru || v.title_en || v.title_kz || '—'}</div>
@@ -161,3 +168,4 @@ export function ArchivePage() {
     </div>
   )
 }
+

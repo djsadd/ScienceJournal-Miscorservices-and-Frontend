@@ -38,29 +38,30 @@ export default function PublicArticleDetailPage() {
   const { lang } = useLanguage()
   const t = {
     ru: {
-      eyebrow: 'Р°СЂС…РёРІ РЅРѕРјРµСЂРѕРІ',
-      backToVolume: 'в†ђ РќР°Р·Р°Рґ Рє С‚РѕРјСѓ',
-      loading: 'Р—Р°РіСЂСѓР·РєР°...',
-      error: 'РћС€РёР±РєР°',
-      notFound: 'РЎС‚Р°С‚СЊСЏ РЅРµ РЅР°Р№РґРµРЅР°',
-      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
-      type: 'РўРёРї',
-      authors: 'РђРІС‚РѕСЂС‹',
-      affiliations: 'РђС„С„РёР»СЏС†РёРё',
-      abstract: 'РђРЅРЅРѕС‚Р°С†РёСЏ',
-      keywords: 'РљР»СЋС‡РµРІС‹Рµ СЃР»РѕРІР°',
-      layout: 'Р’С‘СЂС‚РєР°',
-      noLayout: 'РќРµС‚ РІС‘СЂС‚РєРё',
-      downloadPdf: 'РЎРєР°С‡Р°С‚СЊ PDF',
-      corresponding: 'РљРѕСЂСЂРµСЃРїРѕРЅРґРёСЂСѓСЋС‰РёР№',
+      eyebrow: 'архив номеров',
+      backToVolume: '← Назад к тому',
+      loading: 'Загрузка...',
+      error: 'Ошибка',
+      notFound: 'Статья не найдена',
+      doi: (d?: string | null) => `DOI: ${d || '—'}`,
+      type: 'Тип',
+      authors: 'Авторы',
+      affiliations: 'Аффиляции',
+      abstract: 'Аннотация',
+      keywords: 'Ключевые слова',
+      layout: 'Верстка',
+      noLayout: 'Нет верстки',
+      downloadPdf: 'Скачать PDF',
+      corresponding: 'Корреспондирующий',
+      loadError: 'Не удалось загрузить том',
     },
     en: {
       eyebrow: 'archive of issues',
-      backToVolume: 'в†ђ Back to volume',
+      backToVolume: '← Back to volume',
       loading: 'Loading...',
       error: 'Error',
       notFound: 'Article not found',
-      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
+      doi: (d?: string | null) => `DOI: ${d || '—'}`,
       type: 'Type',
       authors: 'Authors',
       affiliations: 'Affiliations',
@@ -70,23 +71,25 @@ export default function PublicArticleDetailPage() {
       noLayout: 'No layout',
       downloadPdf: 'Download PDF',
       corresponding: 'Corresponding',
+      loadError: 'Failed to load volume',
     },
     kz: {
-      eyebrow: 'С€С‹Т“Р°СЂС‹Р»С‹РјРґР°СЂ РјТ±СЂР°Т“Р°С‚С‹',
-      backToVolume: 'в†ђ РўРѕРјТ“Р° Т›Р°Р№С‚Сѓ',
-      loading: 'Р–ТЇРєС‚РµР»СѓРґРµ...',
-      error: 'ТљР°С‚Рµ',
-      notFound: 'РњР°Т›Р°Р»Р° С‚Р°Р±С‹Р»РјР°РґС‹',
-      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
-      type: 'РўТЇСЂС–',
-      authors: 'РђРІС‚РѕСЂР»Р°СЂ',
-      affiliations: 'РђС„С„РёР»РёР°С†РёСЏР»Р°СЂ',
-      abstract: 'РђРЅРЅРѕС‚Р°С†РёСЏ',
-      keywords: 'РљС–Р»С‚ СЃУ©Р·РґРµСЂ',
-      layout: 'Р‘РµС‚С‚РµСѓ',
-      noLayout: 'Р‘РµС‚С‚РµСѓ Р¶РѕТ›',
-      downloadPdf: 'PDF Р¶ТЇРєС‚РµСѓ',
-      corresponding: 'РҐР°С‚-С…Р°Р±Р°СЂР»Р°СЃСѓС€С‹',
+      eyebrow: 'шығарылымдар мұрағаты',
+      backToVolume: '← Томға қайту',
+      loading: 'Жүктелуде...',
+      error: 'Қате',
+      notFound: 'Мақала табылмады',
+      doi: (d?: string | null) => `DOI: ${d || '—'}`,
+      type: 'Түрі',
+      authors: 'Авторлар',
+      affiliations: 'Аффилиациялар',
+      abstract: 'Аннотация',
+      keywords: 'Кілт сөздер',
+      layout: 'Беттеу',
+      noLayout: 'Беттеу жоқ',
+      downloadPdf: 'PDF жүктеу',
+      corresponding: 'Хат-хабарласушы',
+      loadError: 'Томды жүктеу сәтсіз аяқталды',
     },
   }[lang]
 
@@ -107,7 +110,7 @@ export default function PublicArticleDetailPage() {
         const data = (await api.getPublicVolumeById(volumeId)) as Volume
         if (!cancelled) setVolume(data)
       } catch (e: any) {
-        if (!cancelled) setError(e?.bodyJson?.detail || e?.message || 'Failed to load volume')
+        if (!cancelled) setError(e?.bodyJson?.detail || e?.message || t.loadError)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -175,9 +178,7 @@ export default function PublicArticleDetailPage() {
       return rt - lt
     })
     const first = sorted[0]
-    return (
-      toApiFilesUrl(first?.file_url || (first?.file_id ? `/files/${first.file_id}/download` : undefined)) || null
-    )
+    return toApiFilesUrl(first?.file_url || (first?.file_id ? `/files/${first.file_id}/download` : undefined)) || null
   }, [layoutRecords])
 
   return (
