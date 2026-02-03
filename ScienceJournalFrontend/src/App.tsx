@@ -39,6 +39,7 @@ import EditorPublishedArticleEditPage from './pages/EditorPublishedArticleEditPa
 import VolumesPage from './pages/VolumesPage'
 import VolumeDetailPage from './pages/VolumeDetailPage'
 import PublicVolumeDetailPage from './pages/PublicVolumeDetailPage'
+import PublicArticleDetailPage from './pages/PublicArticleDetailPage'
 import VolumeEditPage from './pages/VolumeEditPage'
 import NotificationsPage from './pages/NotificationsPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
@@ -86,6 +87,14 @@ function App() {
         element={
           <PublicLayout>
             <PublicVolumeDetailPage />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/archive/volumes/:volumeId/articles/:articleId"
+        element={
+          <PublicLayout>
+            <PublicArticleDetailPage />
           </PublicLayout>
         }
       />

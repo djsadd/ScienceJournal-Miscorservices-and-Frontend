@@ -9,71 +9,66 @@ export default function PublicVolumeDetailPage() {
   const { lang } = useLanguage()
   const t = {
     ru: {
-      eyebrow: 'архив номеров',
-      back: '← Назад к архиву',
-      loading: 'Загрузка...',
-      error: 'Ошибка',
-      active: 'Активен',
-      inactive: 'Неактивен',
-      articlesCount: (n: number) => `Статей: ${n}`,
-      tableTitle: 'Статьи в томе',
-      th: { title: 'Название', type: 'Тип', authors: 'Авторы', file: 'Файл', layout: 'Вёрстка' },
-      untitled: 'Без заголовка',
-      noFile: 'Нет файла',
-      loadingLayout: 'Загрузка…',
-      noLayout: 'Нет вёрстки',
-      downloadPdf: 'Скачать PDF',
-      monthSuffix: (m?: number | null) => (m ? ` (${m} мес.)` : ''),
-      volumeLabel: (v: Volume) => `Том ${v.number} / ${v.year}`,
-      volumePanelTitle: (v: Volume) => `Том ${v.number} / ${v.year}${v.month ? ` (${v.month} мес.)` : ''}`,
-      doi: (d?: string | null) => `DOI: ${d || '—'}`,
+      eyebrow: 'Р°СЂС…РёРІ РЅРѕРјРµСЂРѕРІ',
+      back: 'в†ђ РќР°Р·Р°Рґ Рє Р°СЂС…РёРІСѓ',
+      loading: 'Р—Р°РіСЂСѓР·РєР°...',
+      error: 'РћС€РёР±РєР°',
+      active: 'РђРєС‚РёРІРµРЅ',
+      inactive: 'РќРµР°РєС‚РёРІРµРЅ',
+      articlesCount: (n: number) => `РЎС‚Р°С‚РµР№: ${n}`,
+      tableTitle: 'РЎС‚Р°С‚СЊРё РІ С‚РѕРјРµ',
+      th: { title: 'РќР°Р·РІР°РЅРёРµ', authors: 'РђРІС‚РѕСЂС‹', layout: 'Р’С‘СЂС‚РєР°' },
+      untitled: 'Р‘РµР· Р·Р°РіРѕР»РѕРІРєР°',
+      loadingLayout: 'Р—Р°РіСЂСѓР·РєР°вЂ¦',
+      noLayout: 'РќРµС‚ РІС‘СЂСЃС‚РєРё',
+      downloadPdf: 'РЎРєР°С‡Р°С‚СЊ PDF',
+      volumeLabel: (v: Volume) => `РўРѕРј ${v.number} / ${v.year}`,
+      volumePanelTitle: (v: Volume) => `РўРѕРј ${v.number} / ${v.year}${v.month ? ` (${v.month} РјРµСЃ.)` : ''}`,
+      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
     },
     en: {
       eyebrow: 'archive of issues',
-      back: '← Back to archive',
+      back: 'в†ђ Back to archive',
       loading: 'Loading...',
       error: 'Error',
       active: 'Active',
       inactive: 'Inactive',
       articlesCount: (n: number) => `Articles: ${n}`,
       tableTitle: 'Articles in this volume',
-      th: { title: 'Title', type: 'Type', authors: 'Authors', file: 'File', layout: 'Layout' },
+      th: { title: 'Title', authors: 'Authors', layout: 'Layout' },
       untitled: 'Untitled',
-      noFile: 'No file',
-      loadingLayout: 'Loading…',
+      loadingLayout: 'LoadingвЂ¦',
       noLayout: 'No layout',
       downloadPdf: 'Download PDF',
-      monthSuffix: (m?: number | null) => (m ? ` (${m} mo.)` : ''),
       volumeLabel: (v: Volume) => `Volume ${v.number} / ${v.year}`,
       volumePanelTitle: (v: Volume) => `Volume ${v.number} / ${v.year}${v.month ? ` (${v.month} mo.)` : ''}`,
-      doi: (d?: string | null) => `DOI: ${d || '—'}`,
+      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
     },
     kz: {
-      eyebrow: 'шығарылымдар мұрағаты',
-      back: '← Мұрағатқа қайту',
-      loading: 'Жүктелуде...',
-      error: 'Қате',
-      active: 'Белсенді',
-      inactive: 'Белсенді емес',
-      articlesCount: (n: number) => `Мақалалар: ${n}`,
-      tableTitle: 'Бұл томдағы мақалалар',
-      th: { title: 'Атауы', type: 'Түрі', authors: 'Авторлар', file: 'Файл', layout: 'Беттеу' },
-      untitled: 'Атаусыз',
-      noFile: 'Файл жоқ',
-      loadingLayout: 'Жүктелуде…',
-      noLayout: 'Беттеу жоқ',
-      downloadPdf: 'PDF жүктеу',
-      monthSuffix: (m?: number | null) => (m ? ` (${m} ай)` : ''),
-      volumeLabel: (v: Volume) => `Том ${v.number} / ${v.year}`,
-      volumePanelTitle: (v: Volume) => `Том ${v.number} / ${v.year}${v.month ? ` (${v.month} ай)` : ''}`,
-      doi: (d?: string | null) => `DOI: ${d || '—'}`,
+      eyebrow: 'С€С‹Т“Р°СЂС‹Р»С‹РјРґР°СЂ РјТ±СЂР°Т“Р°С‚С‹',
+      back: 'в†ђ РњТ±СЂР°Т“Р°С‚Т›Р° Т›Р°Р№С‚Сѓ',
+      loading: 'Р–ТЇРєС‚РµР»СѓРґРµ...',
+      error: 'ТљР°С‚Рµ',
+      active: 'Р‘РµР»СЃРµРЅРґС–',
+      inactive: 'Р‘РµР»СЃРµРЅРґС– РµРјРµСЃ',
+      articlesCount: (n: number) => `РњР°Т›Р°Р»Р°Р»Р°СЂ: ${n}`,
+      tableTitle: 'Р‘Т±Р» С‚РѕРјРґР°Т“С‹ РјР°Т›Р°Р»Р°Р»Р°СЂ',
+      th: { title: 'РђС‚Р°СѓС‹', authors: 'РђРІС‚РѕСЂР»Р°СЂ', layout: 'Р‘РµС‚С‚РµСѓ' },
+      untitled: 'РђС‚Р°СѓСЃС‹Р·',
+      loadingLayout: 'Р–ТЇРєС‚РµР»СѓРґРµвЂ¦',
+      noLayout: 'Р‘РµС‚С‚РµСѓ Р¶РѕТ›',
+      downloadPdf: 'PDF Р¶ТЇРєС‚РµСѓ',
+      volumeLabel: (v: Volume) => `РўРѕРј ${v.number} / ${v.year}`,
+      volumePanelTitle: (v: Volume) => `РўРѕРј ${v.number} / ${v.year}${v.month ? ` (${v.month} Р°Р№)` : ''}`,
+      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
     },
   }[lang]
+
   const { id } = useParams()
   const [volume, setVolume] = useState<Volume | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Layout records map: articleId -> records
+
   type LayoutRecordOut = {
     id: string
     article_id?: number | null
@@ -96,7 +91,7 @@ export default function PublicVolumeDetailPage() {
         const data = (await api.getPublicVolumeById(id)) as Volume
         if (!cancelled) setVolume(data)
       } catch (e: any) {
-        if (!cancelled) setError(e?.bodyJson?.detail || e?.message || 'Не удалось загрузить том')
+        if (!cancelled) setError(e?.bodyJson?.detail || e?.message || 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С‚РѕРј')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -140,7 +135,7 @@ export default function PublicVolumeDetailPage() {
       <div className="section public-section">
         <p className="eyebrow">{t.eyebrow}</p>
         <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-          <h1 className="hero__title">{volume ? t.volumeLabel(volume) : '—'}</h1>
+          <h1 className="hero__title">{volume ? t.volumeLabel(volume) : 'вЂ”'}</h1>
           <Link className="button button--ghost" to="/archive">{t.back}</Link>
         </div>
 
@@ -170,24 +165,25 @@ export default function PublicVolumeDetailPage() {
             <div className="latest-table__title">{t.tableTitle}</div>
             <div className="latest-table__head">
               <span>{t.th.title}</span>
-              <span>{t.th.type}</span>
               <span>{t.th.authors}</span>
-              <span>{t.th.file}</span>
               <span>{t.th.layout}</span>
             </div>
             <div className="latest-table__body">
               {volume.articles.map((a: Article) => (
-                <div className="latest-table__row" key={String(a.id)}>
+                <div className="latest-table__row" key={String((a as any).id ?? a.id)}>
                   <div className="latest-table__cell latest-table__cell--title">
-                    <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || t.untitled}</div>
+                    <div className="latest-table__name">
+                      <Link
+                        to={id ? `/archive/volumes/${id}/articles/${String((a as any).id)}` : '#'}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                      >
+                        {a.title_ru || a.title_en || a.title_kz || t.untitled}
+                      </Link>
+                    </div>
                     <div className="latest-table__meta">{t.doi(a.doi)}</div>
                   </div>
-                  <div className="latest-table__cell">{a.article_type || '—'}</div>
-                  <div className="latest-table__cell">{Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}</div>
                   <div className="latest-table__cell">
-                    {a.manuscript_file_url ? null : (
-                      <span className="meta-label">{t.noFile}</span>
-                    )}
+                    {Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : 'вЂ”'}
                   </div>
                   <div className="latest-table__cell">
                     {(() => {
@@ -195,8 +191,14 @@ export default function PublicVolumeDetailPage() {
                       const recs = Number.isFinite(aid) ? layoutByArticle[aid] || [] : []
                       if (layoutLoading && recs.length === 0) return <span className="meta-label">{t.loadingLayout}</span>
                       if (recs.length === 0) return <span className="meta-label">{t.noLayout}</span>
-                      const first = recs[0]
-                      const href = toApiFilesUrl(first.file_url || (first.file_id ? `/files/${first.file_id}/download` : undefined)) || '#'
+                      const sorted = [...recs].sort((l, r) => {
+                        const lt = Date.parse(String(l.updated_at || l.created_at || '')) || 0
+                        const rt = Date.parse(String(r.updated_at || r.created_at || '')) || 0
+                        return rt - lt
+                      })
+                      const first = sorted[0]
+                      const href =
+                        toApiFilesUrl(first?.file_url || (first?.file_id ? `/files/${first.file_id}/download` : undefined)) || '#'
                       return (
                         <a className="button button--ghost button--compact" href={href} target="_blank" rel="noreferrer">{t.downloadPdf}</a>
                       )
@@ -211,3 +213,4 @@ export default function PublicVolumeDetailPage() {
     </div>
   )
 }
+
