@@ -55,6 +55,11 @@ async def get_current_user(request: Request, authorization: str = Header(None)):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
+def ensure_service_secret(x_service_secret: str | None):
+    if not x_service_secret or x_service_secret != getattr(config, "SHARED_SERVICE_SECRET", ""):
+        raise HTTPException(status_code=403, detail="Invalid service secret")
+
+
 @router.post("/", response_model=schemas.UserProfileOut)
 def create_profile(profile: schemas.UserProfileCreate, db: Session = Depends(get_db)):
     db_profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == profile.user_id).first()
@@ -102,7 +107,7 @@ def get_reviewers(
     """
     # Проверка роли
     roles = current.get("roles", [])
-    if "editor" not in roles:
+    if "editor" not in roles and "admin" not in roles:
         raise HTTPException(status_code=403, detail="Editor role required")
 
     # Use ARRAY any() to avoid Postgres casting issues (text[] vs varchar[])
@@ -158,14 +163,6 @@ def get_reviewers(
     return enriched
 
 
-@router.get("/{user_id}", response_model=schemas.UserProfileOut)
-def get_profile(user_id: int, db: Session = Depends(get_db)):
-    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return profile
-
-
 @router.get("/internal/editors/ids", response_model=list[int])
 def get_editor_ids_internal(
     x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
@@ -175,10 +172,43 @@ def get_editor_ids_internal(
 
     Protected by X-Service-Secret. Intended for internal service-to-service calls.
     """
-    if not x_service_secret or x_service_secret != getattr(config, "SHARED_SERVICE_SECRET", ""):
-        raise HTTPException(status_code=403, detail="Invalid service secret")
+    ensure_service_secret(x_service_secret)
 
     # Filter roles array by 'editor'
     query = db.query(models.UserProfile).filter(models.UserProfile.roles.any("editor"))
     rows = query.all()
     return [row.user_id for row in rows if row.user_id is not None]
+
+
+@router.get("/internal/profiles", response_model=list[schemas.UserProfileOut])
+def get_profiles_internal(
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+    db: Session = Depends(get_db),
+):
+    ensure_service_secret(x_service_secret)
+    return db.query(models.UserProfile).all()
+
+
+@router.patch("/internal/{user_id}/roles", response_model=schemas.UserProfileOut)
+def update_profile_roles_internal(
+    user_id: int,
+    payload: schemas.UserRolesUpdate,
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+    db: Session = Depends(get_db),
+):
+    ensure_service_secret(x_service_secret)
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    profile.roles = payload.roles or ["author"]
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.get("/{user_id}", response_model=schemas.UserProfileOut)
+def get_profile(user_id: int, db: Session = Depends(get_db)):
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return profile

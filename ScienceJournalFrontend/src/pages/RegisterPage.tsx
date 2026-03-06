@@ -12,7 +12,7 @@ export function RegisterPage() {
   const [username, setUsername] = useState('')
   const [organization, setOrganization] = useState('')
   const [institution, setInstitution] = useState('')
-  const [role, setRole] = useState<'author' | 'editor' | 'reviewer'>('author')
+  const [role, setRole] = useState<'author' | 'editor' | 'reviewer' | 'admin'>('author')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -21,6 +21,12 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
+  const roleLabels = {
+    author: t.fields.role.options.author,
+    reviewer: t.fields.role.options.reviewer,
+    editor: t.fields.role.options.editor,
+    admin: lang === 'en' ? 'Administrator' : lang === 'kz' ? 'Әкімші' : 'Администратор',
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,11 +155,12 @@ export function RegisterPage() {
             <select
               className="text-input"
               value={role}
-              onChange={(e) => setRole(e.target.value as 'author' | 'editor' | 'reviewer')}
+              onChange={(e) => setRole(e.target.value as 'author' | 'editor' | 'reviewer' | 'admin')}
             >
-              <option value="author">{t.fields.role.options.author}</option>
-              <option value="reviewer">{t.fields.role.options.reviewer}</option>
-              <option value="editor">{t.fields.role.options.editor}</option>
+              <option value="author">{roleLabels.author}</option>
+              <option value="reviewer">{roleLabels.reviewer}</option>
+              <option value="editor">{roleLabels.editor}</option>
+              <option value="admin">{roleLabels.admin}</option>
             </select>
           </label>
           <div className="grid grid-2 auth-grid">

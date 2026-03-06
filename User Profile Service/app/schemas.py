@@ -39,6 +39,10 @@ class UserRolesOut(BaseModel):
     preferred_language: Language | None = None
 
 
+class UserRolesUpdate(BaseModel):
+    roles: List[str]
+
+
 class ArticleLinkBase(BaseModel):
     article_id: int
     role: str

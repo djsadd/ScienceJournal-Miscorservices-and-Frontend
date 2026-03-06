@@ -265,7 +265,7 @@ def request_resubmission(
     current_user: dict = Depends(get_current_user),
 ):
     roles = current_user.get("roles", [])
-    if "editor" not in roles:
+    if "editor" not in roles and "admin" not in roles:
         raise HTTPException(status_code=403, detail="Editor role required")
 
     db_review = db.query(models.Review).filter(models.Review.id == review_id).first()
@@ -312,7 +312,7 @@ def get_review(review_id: int, db: Session = Depends(get_db), current_user: dict
     if not db_review:
         raise HTTPException(status_code=404, detail="Review not found")
     roles = current_user.get("roles", [])
-    if ("editor" not in roles) and (db_review.reviewer_id != current_user["user_id"]):
+    if ("editor" not in roles) and ("admin" not in roles) and (db_review.reviewer_id != current_user["user_id"]):
         raise HTTPException(status_code=403, detail="Not allowed to view this review")
     return db_review
 

@@ -32,7 +32,8 @@ def get_current_user(authorization: str = Header(...)):
 
 
 def ensure_editor(user):
-    if "editor" not in user.get("roles", []):
+    roles = user.get("roles", [])
+    if "editor" not in roles and "admin" not in roles:
         raise HTTPException(status_code=403, detail="Editor role required")
 
 

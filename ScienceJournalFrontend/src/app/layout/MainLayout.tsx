@@ -10,7 +10,7 @@ interface MainLayoutProps {
   children: ReactNode
 }
 
-type RoleKey = 'author' | 'editor' | 'reviewer' | 'designer'
+type RoleKey = 'author' | 'editor' | 'reviewer' | 'layout' | 'admin'
 type LangKey = 'ru' | 'en' | 'kz'
 
 type SidebarCopy = {
@@ -40,7 +40,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       author: 'Автор',
       editor: 'Редактор',
       reviewer: 'Рецензент',
-      designer: 'Вёрстальщик',
+      layout: 'Вёрстальщик',
+      admin: 'Администратор',
     },
     nav: {
       author: [
@@ -96,7 +97,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [{ label: 'Мои рецензии', path: '/cabinet/reviews' }],
         },
       ],
-      designer: [
+      layout: [
         {
           title: 'Обзор',
           items: [
@@ -111,6 +112,20 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
             { label: 'Доска макетов', path: '/cabinet/layout' },
             { label: 'Архив (скоро)', tag: 'soon' },
           ],
+        },
+      ],
+      admin: [
+        {
+          title: 'Обзор',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Уведомления', path: '/cabinet/notifications' },
+          ],
+        },
+        {
+          title: 'Администрирование',
+          items: [{ label: 'Пользователи', path: '/cabinet/admin/users' }],
         },
       ],
     },
@@ -130,7 +145,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       author: 'Author',
       editor: 'Editor',
       reviewer: 'Reviewer',
-      designer: 'Designer',
+      layout: 'Designer',
+      admin: 'Administrator',
     },
     nav: {
       author: [
@@ -186,7 +202,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [{ label: 'My reviews', path: '/cabinet/reviews' }],
         },
       ],
-      designer: [
+      layout: [
         {
           title: 'Overview',
           items: [
@@ -201,6 +217,20 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
             { label: 'Layout board', path: '/cabinet/layout' },
             { label: 'Archive (soon)', tag: 'soon' },
           ],
+        },
+      ],
+      admin: [
+        {
+          title: 'Overview',
+          items: [
+            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Profile', path: '/cabinet/profile' },
+            { label: 'Notifications', path: '/cabinet/notifications' },
+          ],
+        },
+        {
+          title: 'Administration',
+          items: [{ label: 'Users', path: '/cabinet/admin/users' }],
         },
       ],
     },
@@ -220,7 +250,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       author: 'Автор',
       editor: 'Редактор',
       reviewer: 'Рецензент',
-      designer: 'Дизайнер',
+      layout: 'Дизайнер',
+      admin: 'Әкімші',
     },
     nav: {
       author: [
@@ -276,7 +307,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [{ label: 'Менің рецензияларым', path: '/cabinet/reviews' }],
         },
       ],
-      designer: [
+      layout: [
         {
           title: 'Шолу',
           items: [
@@ -293,6 +324,20 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           ],
         },
       ],
+      admin: [
+        {
+          title: 'Шолу',
+          items: [
+            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Профиль', path: '/cabinet/profile' },
+            { label: 'Хабарламалар', path: '/cabinet/notifications' },
+          ],
+        },
+        {
+          title: 'Әкімшілік',
+          items: [{ label: 'Пайдаланушылар', path: '/cabinet/admin/users' }],
+        },
+      ],
     },
     resourcesTitle: 'Ресурстар',
     terms: 'Ережелер мен саясат',
@@ -307,7 +352,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
   },
 }
 
-const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'designer']
+const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
 const isRoleKey = (value: string): value is RoleKey => allRoles.includes(value as RoleKey)
 const languageOptions: Lang[] = ['ru', 'en', 'kz']
 
@@ -337,7 +382,12 @@ export function MainLayout({ children }: MainLayoutProps) {
       try {
         const response = await api.get<{ user_id: string; roles: string[] }>('/users/me/roles')
         const roles = (response.roles || []).filter(isRoleKey)
-        const nextRoles: RoleKey[] = roles.length > 0 ? roles : ['author']
+        const nextRoles: RoleKey[] =
+          roles.includes('admin')
+            ? Array.from(new Set<RoleKey>(['admin', 'editor', 'reviewer', 'author', ...roles]))
+            : roles.length > 0
+              ? roles
+              : ['author']
         if (!isMounted) return
         setAvailableRoles(nextRoles)
         setActiveRole((prev) => {

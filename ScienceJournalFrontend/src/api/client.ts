@@ -291,6 +291,16 @@ export const api = {
     request<T>(`/articles/${articleId}/assign_reviewers`, 'POST', { json: body }),
   getArticleReviewers: <T>(articleId: string | number) => request<T>(`/articles/${articleId}/reviewers`, 'GET'),
   getReviewers: <T>(language?: 'ru' | 'kz') => request<T>('/users/reviewers', 'GET', { params: { language } }),
+  getAdminUsers: <T>() => request<T>('/auth/admin/users', 'GET'),
+  getAdminUserStats: <T>() => request<T>('/auth/admin/users/stats', 'GET'),
+  activateAdminUser: <T>(userId: number | string, isActive: boolean) =>
+    request<T>(`/auth/admin/users/${userId}/activate`, 'PATCH', { json: { is_active: isActive } }),
+  updateAdminUserRole: <T>(userId: number | string, role: string) =>
+    request<T>(`/auth/admin/users/${userId}/role`, 'PATCH', { json: { role } }),
+  resetAdminUserPassword: <T>(userId: number | string, newPassword?: string) =>
+    request<T>(`/auth/admin/users/${userId}/reset-password`, 'POST', {
+      json: newPassword ? { new_password: newPassword } : {},
+    }),
   // Change article status (editor role required)
   changeArticleStatus: <T>(articleId: string | number, status: string, options?: { comment_for_author?: string }) =>
     request<T>(`/articles/${articleId}/status`, 'PATCH', { json: { status, ...(options?.comment_for_author ? { comment_for_author: options.comment_for_author } : {}) } }),

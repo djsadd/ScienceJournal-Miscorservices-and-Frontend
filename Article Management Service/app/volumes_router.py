@@ -38,7 +38,8 @@ def get_current_user(authorization: str = Header(...)):
 
 
 def ensure_editor(user):
-    if "editor" not in user.get("roles", []):
+    roles = user.get("roles", [])
+    if "editor" not in roles and "admin" not in roles:
         raise HTTPException(status_code=403, detail="Editor role required")
 
 
@@ -65,7 +66,8 @@ def list_volumes(
         query = query.filter(models.Volume.month == month)
     # Определяем, нужно ли фильтровать только активные тома
     # По умолчанию: редактор видит все, остальные — только активные
-    is_editor = "editor" in current_user.get("roles", [])
+    roles = current_user.get("roles", [])
+    is_editor = "editor" in roles or "admin" in roles
     effective_active_only = (not is_editor) if active_only is None else bool(active_only)
     if effective_active_only:
         query = query.filter(models.Volume.is_active.is_(True))

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 import httpx
+import secrets
+import string
 from jose import jwt, JWTError
 from app import models, schemas, database, security, config
 
@@ -13,6 +15,42 @@ def get_db():
     finally:
         db.close()
 
+
+def sync_profile_role(user_id: int, role: str) -> None:
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            client.patch(
+                f"{config.USER_SERVICE_URL}/users/internal/{user_id}/roles",
+                json={"roles": [role]},
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+    except Exception:
+        pass
+
+
+def get_profiles_map() -> dict[int, dict]:
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            response = client.get(
+                f"{config.USER_SERVICE_URL}/users/internal/profiles",
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+            if response.status_code != 200:
+                return {}
+            profiles = response.json() or []
+            return {
+                int(item["user_id"]): item
+                for item in profiles
+                if isinstance(item, dict) and item.get("user_id") is not None
+            }
+    except Exception:
+        return {}
+
+
+def generate_temporary_password(length: int = 12) -> str:
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter((models.User.username == user.username) | (models.User.email == user.email)).first()
@@ -21,7 +59,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     hashed_password = security.hash_password(user.password)
     
     # Авто-активация только для роли автора; остальные неактивны
-    is_active = True if user.role == "author" else False
+    is_active = True if user.role in {"author", "admin"} else False
     
     new_user = models.User(
         username=user.username,
@@ -60,7 +98,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # Create notification (and email) via Notification Service
     try:
         with httpx.Client(timeout=5.0) as client:
-            if new_user.role == "author":
+            if new_user.role in {"author", "admin"}:
                 # Автор активируется сразу, отправим приветственное письмо
                 notify_payload = {
                     "user_id": new_user.id,
@@ -123,7 +161,7 @@ def verify_email(token: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
     # После подтверждения почты: авто-активация только для автора
-    if user.role == "author":
+    if user.role in {"author", "admin"}:
         user.is_active = True
         db.commit()
         return {"status": "verified", "activated": True, "user_id": user.id}
@@ -303,6 +341,68 @@ def get_pending_users(
     return pending_users
 
 
+@router.get("/admin/users", response_model=list[schemas.AdminUserListItem])
+def get_all_users(
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    profiles_map = get_profiles_map()
+    users = db.query(models.User).order_by(models.User.id.desc()).all()
+    result: list[dict] = []
+    for user in users:
+        profile = profiles_map.get(user.id, {})
+        result.append(
+            {
+                "id": user.id,
+                "username": user.username,
+                "full_name": user.full_name,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "organization": profile.get("organization") or user.organization,
+                "institution": user.institution,
+                "email": user.email,
+                "role": user.role,
+                "is_active": user.is_active,
+                "accept_terms": user.accept_terms,
+                "notify_status": user.notify_status,
+                "phone": profile.get("phone"),
+                "preferred_language": profile.get("preferred_language"),
+                "roles": profile.get("roles", [user.role]),
+                "profile_id": profile.get("id"),
+                "is_council_member": profile.get("is_council_member"),
+                "is_collegium_member": profile.get("is_collegium_member"),
+            }
+        )
+    return result
+
+
+@router.get("/admin/users/stats", response_model=schemas.AdminUserStats)
+def get_user_stats(
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    users = db.query(models.User).all()
+    by_role: dict[str, int] = {}
+    active = 0
+    inactive = 0
+    pending = 0
+    for user in users:
+        by_role[user.role] = by_role.get(user.role, 0) + 1
+        if user.is_active:
+            active += 1
+        else:
+            inactive += 1
+            if user.role in {"editor", "reviewer"}:
+                pending += 1
+    return {
+        "total": len(users),
+        "active": active,
+        "inactive": inactive,
+        "pending": pending,
+        "by_role": by_role,
+    }
+
+
 @router.patch("/admin/users/{user_id}/activate", response_model=schemas.UserOut)
 def activate_user(
     user_id: int,
@@ -343,4 +443,26 @@ def update_user_role(
         user.is_active = True
     db.commit()
     db.refresh(user)
+    sync_profile_role(user.id, user.role)
     return user
+
+
+@router.post("/admin/users/{user_id}/reset-password", response_model=schemas.AdminPasswordResetResponse)
+def reset_user_password(
+    user_id: int,
+    payload: schemas.AdminPasswordResetRequest,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    temporary_password = payload.new_password or generate_temporary_password()
+    user.hashed_password = security.hash_password(temporary_password)
+    db.commit()
+    return {
+        "user_id": user.id,
+        "temporary_password": temporary_password,
+        "generated": payload.new_password is None,
+    }

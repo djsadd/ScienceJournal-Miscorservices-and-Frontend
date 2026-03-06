@@ -75,6 +75,45 @@ class UserRoleUpdate(BaseModel):
     role: str
 
 
+class AdminUserListItem(BaseModel):
+    id: int
+    username: str
+    full_name: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    organization: str | None = None
+    institution: str | None = None
+    email: EmailStr
+    role: str
+    is_active: bool
+    accept_terms: bool
+    notify_status: bool
+    phone: str | None = None
+    preferred_language: str | None = None
+    roles: list[str] = []
+    profile_id: int | None = None
+    is_council_member: bool | None = None
+    is_collegium_member: bool | None = None
+
+
+class AdminUserStats(BaseModel):
+    total: int
+    active: int
+    inactive: int
+    pending: int
+    by_role: dict[str, int]
+
+
+class AdminPasswordResetRequest(BaseModel):
+    new_password: str | None = Field(default=None, min_length=8, max_length=128)
+
+
+class AdminPasswordResetResponse(BaseModel):
+    user_id: int
+    temporary_password: str
+    generated: bool
+
+
 class RefreshTokenRequest(BaseModel):
     """Request body for token refresh."""
     refresh_token: str

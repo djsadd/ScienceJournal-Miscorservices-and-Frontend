@@ -44,6 +44,7 @@ import VolumeEditPage from './pages/VolumeEditPage'
 import NotificationsPage from './pages/NotificationsPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import QuickPublishPage from './pages/QuickPublishPage'
+import AdminUsersPage from './pages/AdminUsersPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -338,6 +339,16 @@ function App() {
           <RequireAuth>
             <MainLayout>
               <NotificationsPage />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cabinet/admin/users"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <AdminUsersPage />
             </MainLayout>
           </RequireAuth>
         }

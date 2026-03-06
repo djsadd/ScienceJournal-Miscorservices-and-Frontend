@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
 
-roles = ["author", "reviewer", "editor", "layout"]
+roles = ["author", "reviewer", "editor", "layout", "admin"]
 
 
 class Language(str, enum.Enum):

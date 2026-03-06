@@ -69,12 +69,14 @@ def get_current_user(authorization: str = Header(...)):
 
 
 def ensure_author(user):
-    if "author" not in user.get("roles", []):
+    roles = user.get("roles", [])
+    if "author" not in roles and "admin" not in roles:
         raise HTTPException(status_code=403, detail="You are not allowed to create articles")
 
 
 def ensure_editor(user):
-    if "editor" not in user.get("roles", []):
+    roles = user.get("roles", [])
+    if "editor" not in roles and "admin" not in roles:
         raise HTTPException(status_code=403, detail="Editor role required")
 
 
