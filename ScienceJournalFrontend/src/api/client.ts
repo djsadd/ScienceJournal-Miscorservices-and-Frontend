@@ -292,6 +292,8 @@ export const api = {
   getArticleReviewers: <T>(articleId: string | number) => request<T>(`/articles/${articleId}/reviewers`, 'GET'),
   getReviewers: <T>(language?: 'ru' | 'kz') => request<T>('/users/reviewers', 'GET', { params: { language } }),
   getAdminUsers: <T>() => request<T>('/auth/admin/users', 'GET'),
+  updateMyLanguage: <T>(preferredLanguage: 'ru' | 'en' | 'kz') =>
+    request<T>('/users/me/language', 'PATCH', { params: { preferred_language: preferredLanguage } }),
   getAdminUserStats: <T>() => request<T>('/auth/admin/users/stats', 'GET'),
   activateAdminUser: <T>(userId: number | string, isActive: boolean) =>
     request<T>(`/auth/admin/users/${userId}/activate`, 'PATCH', { json: { is_active: isActive } }),

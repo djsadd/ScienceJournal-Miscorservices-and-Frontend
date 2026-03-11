@@ -103,6 +103,11 @@ type RegisterCopy = {
     institution: { label: string; placeholder: string }
     email: { label: string; placeholder: string }
     role: { label: string; options: { author: string; reviewer: string; editor: string } }
+    reviewLanguages: {
+      label: string
+      hint: string
+      options: { ru: string; en: string; kz: string }
+    }
     password: { label: string; placeholder: string; hint: string }
     confirm: { label: string; placeholder: string }
     accept: string
@@ -117,7 +122,20 @@ type RegisterCopy = {
   asideSubtitle: string
   steps: { title: string; text: string }[]
   meta: [string, string, string]
-  errors: { passwordMismatch: string; acceptRequired: string }
+  errors: {
+    requiredField: string
+    invalidEmail: string
+    invalidUsername: string
+    passwordTooShort: string
+    passwordWeak: string
+    confirmRequired: string
+    passwordMismatch: string
+    acceptRequired: string
+    reviewLanguagesRequired?: string
+    invalidForm: string
+    registrationFailed: string
+    networkFail: string
+  }
 }
 
 export const publicNavCopy: Record<Lang, NavCopy> = {
@@ -588,7 +606,7 @@ export const loginCopy: Record<Lang, LoginCopy> = {
 export const registerCopy: Record<Lang, RegisterCopy> = {
   ru: {
     headerEyebrow: 'Новый аккаунт',
-    headerTitle: 'Регистрация в Science Journal',
+    headerTitle: 'Регистрация в известия университета «Туран-Астана»',
     headerSubtitle:
       'Создайте профиль автора, редактора или рецензента. После подтверждения мы пришлём инструкции на электронную почту.',
     fields: {
@@ -599,6 +617,11 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       institution: { label: 'Подразделение', placeholder: 'Кафедра, лаборатория, институт' },
       email: { label: 'Рабочий email', placeholder: 'name@example.com' },
       role: { label: 'Роль', options: { author: 'Автор', reviewer: 'Рецензент', editor: 'Редактор' } },
+      reviewLanguages: {
+        label: 'Языки рецензирования',
+        hint: 'Можно выбрать один или несколько языков.',
+        options: { ru: 'Русский', en: 'English', kz: 'Қазақша' },
+      },
       password: {
         label: 'Пароль',
         placeholder: 'Минимум 8 символов',
@@ -627,8 +650,18 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       'Профиль и контакты можно обновить в любой момент',
     ],
     errors: {
+      requiredField: 'Заполните это поле',
+      invalidEmail: 'Введите корректный email',
+      invalidUsername: 'Username должен содержать минимум 3 символа и только буквы, цифры, ".", "_" или "-"',
+      passwordTooShort: 'Пароль должен содержать минимум 8 символов',
+      passwordWeak: 'Пароль должен содержать буквы и цифры',
+      confirmRequired: 'Подтвердите пароль',
       passwordMismatch: 'Пароли не совпадают',
       acceptRequired: 'Примите условия оферты и политику конфиденциальности',
+      reviewLanguagesRequired: 'Выберите хотя бы один язык рецензирования',
+      invalidForm: 'Исправьте ошибки в форме',
+      registrationFailed: 'Не удалось выполнить регистрацию. Проверьте данные и попробуйте снова.',
+      networkFail: 'Не удалось выполнить регистрацию. Проверьте подключение и попробуйте снова.',
     },
   },
   en: {
@@ -644,6 +677,11 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       institution: { label: 'Institution', placeholder: 'Department, lab, institute' },
       email: { label: 'Work email', placeholder: 'name@example.com' },
       role: { label: 'Role', options: { author: 'Author', reviewer: 'Reviewer', editor: 'Editor' } },
+      reviewLanguages: {
+        label: 'Review languages',
+        hint: 'Select one or several languages.',
+        options: { ru: 'Russian', en: 'English', kz: 'Kazakh' },
+      },
       password: {
         label: 'Password',
         placeholder: 'Minimum 8 characters',
@@ -672,8 +710,18 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       'You can update profile and contacts at any time',
     ],
     errors: {
+      requiredField: 'Fill out this field',
+      invalidEmail: 'Enter a valid email address',
+      invalidUsername: 'Username must be at least 3 characters and use only letters, numbers, ".", "_" or "-"',
+      passwordTooShort: 'Password must be at least 8 characters long',
+      passwordWeak: 'Password must contain letters and numbers',
+      confirmRequired: 'Confirm your password',
       passwordMismatch: 'Passwords do not match',
       acceptRequired: 'Please accept the terms and privacy policy',
+      reviewLanguagesRequired: 'Select at least one review language',
+      invalidForm: 'Fix the highlighted form errors',
+      registrationFailed: 'Failed to register. Check your data and try again.',
+      networkFail: 'Failed to register. Check your connection and try again.',
     },
   },
   kz: {
@@ -689,6 +737,11 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       institution: { label: 'Бөлімше', placeholder: 'Кафедра, зертхана, институт' },
       email: { label: 'Жұмыс email', placeholder: 'name@example.com' },
       role: { label: 'Рөл', options: { author: 'Автор', reviewer: 'Рецензент', editor: 'Редактор' } },
+      reviewLanguages: {
+        label: 'Рецензия тілдері',
+        hint: 'Бір немесе бірнеше тілді таңдауға болады.',
+        options: { ru: 'Орысша', en: 'English', kz: 'Қазақша' },
+      },
       password: {
         label: 'Құпиясөз',
         placeholder: 'Ең аз 8 таңба',
@@ -717,8 +770,18 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
       'Профиль мен контактілерді кез келген уақытта жаңартуға болады',
     ],
     errors: {
+      requiredField: 'Бұл өрісті толтырыңыз',
+      invalidEmail: 'Дұрыс email енгізіңіз',
+      invalidUsername: 'Пайдаланушы аты кемінде 3 таңбадан тұруы және тек әріп, сан, ".", "_" немесе "-" қамтуы керек',
+      passwordTooShort: 'Құпиясөз кемінде 8 таңбадан тұруы керек',
+      passwordWeak: 'Құпиясөзде әріптер мен сандар болуы керек',
+      confirmRequired: 'Құпиясөзді растаңыз',
       passwordMismatch: 'Құпиясөздер сәйкес емес',
       acceptRequired: 'Оферта мен құпиялылық саясатын қабылдаңыз',
+      reviewLanguagesRequired: 'Кемінде бір рецензия тілін таңдаңыз',
+      invalidForm: 'Формадағы қателерді түзетіңіз',
+      registrationFailed: 'Тіркелу сәтсіз аяқталды. Деректерді тексеріп, қайта көріңіз.',
+      networkFail: 'Тіркелу сәтсіз аяқталды. Қосылымды тексеріп, қайта көріңіз.',
     },
   },
 }

@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
+from typing import List
 
 
 class UserCreate(BaseModel):
@@ -11,6 +12,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     role: str = "author"
+    preferred_language: str | List[str] | None = None
     accept_terms: bool = False
     notify_status: bool = True
 
@@ -61,6 +63,7 @@ class UserFullInfo(BaseModel):
     # From User Profile Service
     profile_id: int | None = None
     phone: str | None = None
+    preferred_language: str | None = None
     roles: list[str] = []
 
     class Config:

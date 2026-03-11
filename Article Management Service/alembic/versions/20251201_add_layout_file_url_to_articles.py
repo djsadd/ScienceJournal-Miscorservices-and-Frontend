@@ -6,6 +6,7 @@ Create Date: 2025-12-01
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = '20251201_add_layout'
@@ -14,15 +15,16 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    try:
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    columns = {c["name"] for c in inspector.get_columns("articles")}
+    if "layout_file_url" not in columns:
         op.add_column('articles', sa.Column('layout_file_url', sa.String(), nullable=True))
-    except Exception:
-        # If column already exists (idempotency), ignore
-        pass
 
 
 def downgrade():
-    try:
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    columns = {c["name"] for c in inspector.get_columns("articles")}
+    if "layout_file_url" in columns:
         op.drop_column('articles', 'layout_file_url')
-    except Exception:
-        pass

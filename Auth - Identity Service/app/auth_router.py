@@ -51,11 +51,47 @@ def generate_temporary_password(length: int = 12) -> str:
     alphabet = string.ascii_letters + string.digits
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
+
+def normalize_preferred_language(value: str | list[str] | None) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, list):
+        normalized = [item.strip() for item in value if isinstance(item, str) and item.strip()]
+        return ",".join(dict.fromkeys(normalized)) or None
+    if isinstance(value, str):
+        return value.strip() or None
+    return None
+
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter((models.User.username == user.username) | (models.User.email == user.email)).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username or email already registered")
+    existing_username = db.query(models.User).filter(models.User.username == user.username).first()
+    existing_email = db.query(models.User).filter(models.User.email == user.email).first()
+    if existing_username or existing_email:
+        field_errors: dict[str, str] = {}
+        if existing_username:
+            field_errors["username"] = "Пользователь с таким логином уже существует"
+        if existing_email:
+            field_errors["email"] = "Пользователь с таким email уже существует"
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Не удалось завершить регистрацию",
+                "fields": field_errors,
+            },
+        )
+
+    normalized_preferred_language = normalize_preferred_language(user.preferred_language)
+
+    if user.role == "reviewer" and not normalized_preferred_language:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Для рецензента нужно выбрать язык рецензирования",
+                "fields": {
+                    "preferred_language": "Выберите язык рецензирования",
+                },
+            },
+        )
     hashed_password = security.hash_password(user.password)
     
     # Авто-активация только для роли автора; остальные неактивны
@@ -86,6 +122,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
             "full_name": new_user.full_name or new_user.username,
             "roles": [new_user.role],
             "organization": new_user.organization,
+            "preferred_language": normalized_preferred_language or "en",
             "phone": None,
         }
         with httpx.Client(timeout=5.0) as client:
@@ -124,7 +161,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
                     "type": "system",
                     "title": "Подтверждение электронной почты",
                     "message": (
-                        "Вы успешно зарегистрированы в ScienceJournal. "
+                        "Вы успешно зарегистрированы в системе «Известия университета Туран-Астана». "
                         "Подтвердите эл. почту по ссылке: "
                         f"{verify_link}. "
                         "После подтверждения администратор активирует ваш аккаунт."
@@ -280,6 +317,7 @@ def get_user_full_info(
         "notify_status": user.notify_status,
         "profile_id": None,
         "phone": None,
+        "preferred_language": None,
         "roles": [user.role],
     }
     
@@ -291,6 +329,7 @@ def get_user_full_info(
                 profile_data = response.json()
                 user_info["profile_id"] = profile_data.get("id")
                 user_info["phone"] = profile_data.get("phone")
+                user_info["preferred_language"] = profile_data.get("preferred_language")
                 user_info["roles"] = profile_data.get("roles", [user.role])
                 # Update organization from profile if it's more recent
                 if profile_data.get("organization"):

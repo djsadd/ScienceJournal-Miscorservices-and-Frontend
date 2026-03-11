@@ -7,6 +7,7 @@ Create Date: 2026-02-03
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -17,17 +18,18 @@ depends_on = None
 
 
 def upgrade():
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    columns = {c["name"] for c in inspector.get_columns("volumes")}
     for name in ("complete_issue_file_url", "cover_file_url", "contents_file_url"):
-        try:
+        if name not in columns:
             op.add_column("volumes", sa.Column(name, sa.String(), nullable=True))
-        except Exception as e:
-            # If the column already exists (e.g. a partial/failed prior run), continue.
-            print(f"Migration warning ({name}): {e}")
 
 
 def downgrade():
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    columns = {c["name"] for c in inspector.get_columns("volumes")}
     for name in ("contents_file_url", "cover_file_url", "complete_issue_file_url"):
-        try:
+        if name in columns:
             op.drop_column("volumes", name)
-        except Exception as e:
-            print(f"Downgrade warning ({name}): {e}")

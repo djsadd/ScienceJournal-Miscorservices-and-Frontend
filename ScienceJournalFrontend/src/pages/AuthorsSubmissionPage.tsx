@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 
@@ -8,7 +8,6 @@ const mapArticleTypeToApi: Record<string, 'original' | 'review'> = {
   'Обзорная статья': 'review',
 }
 
-type ApiKeyword = { id?: number; title_ru: string; title_kz: string; title_en: string }
 type Keyword = { id?: number; ru: string; kz: string; en: string }
 type Lang = 'ru' | 'kz' | 'en'
 
@@ -60,15 +59,12 @@ type AuthorForm = {
 }
 
 export function AuthorsSubmissionPage() {
-  const [keywords, setKeywords] = useState<Keyword[]>([])
   const [selectedKeywords, setSelectedKeywords] = useState<Keyword[]>([])
-  const [keywordInput, setKeywordInput] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
-  const [newKeyword, setNewKeyword] = useState<Keyword>({ ru: '', kz: '', en: '' })
+  const [modalKeywords, setModalKeywords] = useState<Keyword[]>([])
   const [activeLang, setActiveLang] = useState<Lang>('ru')
   const [titles, setTitles] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
   const [abstracts, setAbstracts] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
-  const [authors, setAuthors] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
   const [articleType, setArticleType] = useState('')
   const [comments, setComments] = useState('')
   void setComments
@@ -77,8 +73,6 @@ export function AuthorsSubmissionPage() {
   const [confirmOriginality, setConfirmOriginality] = useState(false)
   const [confirmConsent, setConfirmConsent] = useState(false)
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
-  const [allAuthors, setAllAuthors] = useState<AuthorApi[]>([])
-  const [authorQuery, setAuthorQuery] = useState('')
   const [authorForm, setAuthorForm] = useState<AuthorForm>({
     email: '',
     prefix: '',
@@ -103,75 +97,6 @@ export function AuthorsSubmissionPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const navigate = useNavigate()
 
-  useEffect(() => {
-    let isMounted = true
-    const loadKeywords = async () => {
-      try {
-        const data = await api.get<ApiKeyword[]>('/articles/keywords')
-        if (!isMounted) return
-        const mapped =
-          data?.map((item) => ({
-            id: item.id,
-            ru: item.title_ru,
-            kz: item.title_kz,
-            en: item.title_en,
-          })) ?? []
-        setKeywords(mapped)
-      } catch (error) {
-        console.error('Failed to load keywords', error)
-      }
-    }
-    loadKeywords()
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  useEffect(() => {
-    let isMounted = true
-    const loadAuthors = async () => {
-      try {
-        const data = await api.get<AuthorApi[]>('/articles/authors')
-        if (!isMounted || !Array.isArray(data)) return
-        setAllAuthors(data)
-      } catch (error) {
-        console.error('Failed to load authors', error)
-      }
-    }
-    loadAuthors()
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  const matches = useMemo(
-    () => {
-      const query = keywordInput.trim().toLowerCase()
-      if (!query) return []
-      return keywords.filter((kw) => {
-        const titleRu = kw.ru.toLowerCase()
-        const titleKz = kw.kz.toLowerCase()
-        const titleEn = kw.en.toLowerCase()
-        const isSelected = selectedKeywords.some(
-          (selected) => (selected.id ?? selected.ru) === (kw.id ?? kw.ru),
-        )
-        return (
-          !isSelected && (titleRu.includes(query) || titleKz.includes(query) || titleEn.includes(query))
-        )
-      })
-    },
-    [keywords, keywordInput, selectedKeywords],
-  )
-
-  const handleAddKeyword = (keyword: Keyword) => {
-    const exists = selectedKeywords.some(
-      (selected) => (selected.id ?? selected.ru) === (keyword.id ?? keyword.ru),
-    )
-    if (exists) return
-    setSelectedKeywords((prev) => [...prev, keyword])
-    setKeywordInput('')
-  }
-
   const handleRemoveKeyword = (keyword: Keyword) => {
     setSelectedKeywords((prev) =>
       prev.filter(
@@ -180,50 +105,64 @@ export function AuthorsSubmissionPage() {
     )
   }
 
-  const authorMatches = useMemo(
-    () => {
-      const query = authorQuery.trim().toLowerCase()
-      if (!query) return []
-      return allAuthors.filter((a) => {
-        const fullName = [a.prefix, a.first_name, a.patronymic, a.last_name].filter(Boolean).join(' ').toLowerCase()
-        return fullName.includes(query) || a.email.toLowerCase().includes(query)
-      })
-    },
-    [allAuthors, authorQuery],
-  )
+  const createEmptyKeyword = (): Keyword => ({ ru: '', kz: '', en: '' })
 
-  const handleAttachExistingAuthor = (apiAuthor: AuthorApi) => {
-    const mapped = mapApiAuthorToForm(apiAuthor)
-    setAuthorList((prev) => {
-      if (prev.some((a) => a.email === mapped.email)) return prev
-      return [...prev, mapped]
-    })
-    setAuthorQuery('')
+  const ensureMinimumKeywords = (items: Keyword[]) => {
+    const next = [...items]
+    while (next.length < 5) next.push(createEmptyKeyword())
+    return next
   }
 
-  const handleSaveKeyword = async () => {
-    if (!newKeyword.ru.trim()) return
-    try {
-      const created = await api.post<ApiKeyword>('/articles/keywords', {
-        title_ru: newKeyword.ru.trim(),
-        title_kz: newKeyword.kz.trim(),
-        title_en: newKeyword.en.trim(),
-      })
-      const keyword: Keyword = {
-        id: created.id,
-        ru: created.title_ru,
-        kz: created.title_kz,
-        en: created.title_en,
-      }
-      // Add to available list and immediately select it
-      setKeywords((prev) => [...prev, keyword])
-      setSelectedKeywords((prev) => [...prev, keyword])
-      setKeywordInput('')
-      setNewKeyword({ ru: '', kz: '', en: '' })
-      setModalOpen(false)
-    } catch (error) {
-      console.error('Failed to create keyword', error)
+  const openKeywordModal = () => {
+    setModalKeywords(ensureMinimumKeywords(selectedKeywords.map((keyword) => ({ ...keyword }))))
+    setModalOpen(true)
+  }
+
+  const handleKeywordDraftChange = (index: number, field: Lang, value: string) => {
+    setModalKeywords((prev) =>
+      prev.map((keyword, keywordIndex) =>
+        keywordIndex === index ? { ...keyword, [field]: value } : keyword,
+      ),
+    )
+  }
+
+  const handleAddKeywordRow = () => {
+    setModalKeywords((prev) => [...prev, createEmptyKeyword()])
+  }
+
+  const handleRemoveKeywordRow = (index: number) => {
+    setModalKeywords((prev) => {
+      if (prev.length <= 5) return prev
+      return prev.filter((_, keywordIndex) => keywordIndex !== index)
+    })
+  }
+
+  const handleSaveKeywords = () => {
+    const normalizedKeywords = modalKeywords.map((keyword) => ({
+      ru: keyword.ru.trim(),
+      kz: keyword.kz.trim(),
+      en: keyword.en.trim(),
+    }))
+
+    const hasIncompleteKeyword = normalizedKeywords.some(
+      (keyword) => !keyword.ru || !keyword.kz || !keyword.en,
+    )
+
+    if (normalizedKeywords.length < 5 || hasIncompleteKeyword) {
+      setErrors((prev) => ({
+        ...prev,
+        keywords: 'Добавьте минимум 5 ключевых слов и заполните каждое слово на трех языках',
+      }))
+      return
     }
+
+    setSelectedKeywords(normalizedKeywords)
+    setErrors((prev) => {
+      const nextErrors = { ...prev }
+      delete nextErrors.keywords
+      return nextErrors
+    })
+    setModalOpen(false)
   }
 
   const resetAuthorForm = () =>
@@ -290,12 +229,15 @@ export function AuthorsSubmissionPage() {
         if (prev.some((a) => a.email === mapped.email)) return prev
         return [...prev, mapped]
       })
-      setAllAuthors((prev) => [...prev, created])
       resetAuthorForm()
       setAuthorModalOpen(false)
     } catch (error) {
       console.error('Failed to create author', error)
     }
+  }
+
+  const removeAuthor = (email: string) => {
+    setAuthorList((prev) => prev.filter((author) => author.email !== email))
   }
 
   const langLabels: Record<Lang, string> = { ru: 'Русский', kz: 'Казахский', en: 'Английский' }
@@ -309,15 +251,20 @@ export function AuthorsSubmissionPage() {
     kz: 'Аннотация на казахском',
     en: 'Abstract in English',
   }
-  const authorsPlaceholders: Record<Lang, string> = {
-    ru: 'Авторы на русском',
-    kz: 'Авторы на казахском',
-    en: 'Authors in English',
-  }
-
   const selectedKeywordsValue = useMemo(
     () => selectedKeywords.map((kw) => kw.ru).join(', '),
     [selectedKeywords],
+  )
+
+  const authorsText = useMemo<Record<Lang, string>>(
+    () => {
+      const fullNames = authorList
+        .map((author) => [author.prefix, author.firstName, author.middleName, author.lastName].filter(Boolean).join(' '))
+        .filter(Boolean)
+        .join('; ')
+      return { ru: fullNames, kz: fullNames, en: fullNames }
+    },
+    [authorList],
   )
 
   const uploadFile = async (file: File): Promise<FileOut> => {
@@ -342,9 +289,8 @@ export function AuthorsSubmissionPage() {
     ;(['ru', 'kz', 'en'] as Lang[]).forEach((lang) => {
       if (!titles[lang]?.trim()) nextErrors[`title_${lang}`] = 'Заполните заголовок'
       if (!abstracts[lang]?.trim()) nextErrors[`abstract_${lang}`] = 'Заполните аннотацию'
-      if (!authors[lang]?.trim()) nextErrors[`authors_${lang}`] = 'Укажите авторов'
     })
-    if (selectedKeywords.length === 0) nextErrors.keywords = 'Добавьте хотя бы одно ключевое слово'
+    if (selectedKeywords.length < 5) nextErrors.keywords = 'Добавьте минимум 5 ключевых слов'
     if (authorList.length === 0) nextErrors.authorList = 'Добавьте минимум одного автора'
     const manuscript = getFileNameFromInputIndex(0)
     const antiplag = getFileNameFromInputIndex(3)
@@ -447,14 +393,13 @@ export function AuthorsSubmissionPage() {
                   authors_agree: true,
                   generative_ai_info: generativeAiInfo.trim() || null,
 
-                  authors_text: authors,
-                  keyword_ids: selectedKeywords
-                    .map((k) => k.id)
-                    .filter((id): id is number => typeof id === 'number'),
-                  // Передаём названия новых ключевых слов для авто-создания и привязки
-                  keywords: selectedKeywords
-                    .filter((k) => !k.id)
-                    .map((k) => ({ title_ru: k.ru, title_kz: k.kz, title_en: k.en })),
+                  authors_text: authorsText,
+                  keyword_ids: [],
+                  keywords: selectedKeywords.map((k) => ({
+                    title_ru: k.ru,
+                    title_kz: k.kz,
+                    title_en: k.en,
+                  })),
                   author_ids: authorList
                     .map((a) => a.id)
                     .filter((id): id is number => typeof id === 'number'),
@@ -511,20 +456,20 @@ export function AuthorsSubmissionPage() {
           </div>
 
           <div className="form-field form-field--article-file">
-            <label className="form-label">Выберите ключевые слова</label>
+            <label className="form-label">{'\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043b\u044e\u0447\u0435\u0432\u044b\u0435 \u0441\u043b\u043e\u0432\u0430'}</label>
             <div className="form-field">
               {selectedKeywords.length > 0 ? (
                 <div className="pill-list">
-                  {selectedKeywords.map((kw) => (
+                  {selectedKeywords.map((kw, index) => (
                     <span
-                      key={kw.id ?? kw.ru}
+                      key={`${kw.ru}-${kw.kz}-${kw.en}-${index}`}
                       className="status-chip status-chip--submitted"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
                       {kw.ru} / {kw.kz} / {kw.en}
                       <button
                         type="button"
-                        aria-label="Удалить ключевое слово"
+                        aria-label={'\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u043a\u043b\u044e\u0447\u0435\u0432\u043e\u0435 \u0441\u043b\u043e\u0432\u043e'}
                         onClick={() => handleRemoveKeyword(kw)}
                         style={{
                           background: 'transparent',
@@ -536,52 +481,28 @@ export function AuthorsSubmissionPage() {
                           padding: 0,
                         }}
                       >
-                        ×
+                        {'\u00d7'}
                       </button>
                     </span>
                   ))}
                 </div>
-              ) : null}
-              <input
-                className="text-input"
-                placeholder={
-                  activeLang === 'ru'
-                    ? 'Введите ключевое слово'
-                    : activeLang === 'kz'
-                    ? 'Кілт сөзді енгізіңіз'
-                    : 'Enter a keyword'
-                }
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
+              ) : (
+                <div className="table__empty">{'\u041a\u043b\u044e\u0447\u0435\u0432\u044b\u0435 \u0441\u043b\u043e\u0432\u0430 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u044b.'}</div>
+              )}
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={openKeywordModal}
                 data-error-key="keywords"
-                style={errors.keywords ? { borderColor: 'red' } : undefined}
-              />
+                style={errors.keywords ? { borderColor: 'red', color: 'red' } : undefined}
+              >
+                {selectedKeywords.length > 0
+                  ? '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u043a\u043b\u044e\u0447\u0435\u0432\u044b\u0435 \u0441\u043b\u043e\u0432\u0430'
+                  : '\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043a\u043b\u044e\u0447\u0435\u0432\u044b\u0435 \u0441\u043b\u043e\u0432\u0430'}
+              </button>
               <input type="hidden" name="keywords" value={selectedKeywordsValue} />
             </div>
-            {keywordInput.trim() ? (
-              <div className="pill-list">
-    {matches.length > 0 ? (
-      matches.map((kw) => (
-        <button
-          key={kw.id ?? kw.ru}
-          type="button"
-          className="status-chip status-chip--submitted"
-          onClick={() => handleAddKeyword(kw)}
-        >
-          {kw.ru} / {kw.kz} / {kw.en}
-        </button>
-      ))
-    ) : (
-      <span className="table__empty">Совпадений не найдено.</span>
-    )}
-  </div>
-) : null}
-
-            {keywordInput.trim() && matches.length === 0 ? (
-              <button type="button" className="button button--ghost" onClick={() => setModalOpen(true)}>
-                Добавить новое ключевое слово
-              </button>
-            ) : null}
+            <p className="form-hint">{'\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u043c\u0438\u043d\u0438\u043c\u0443\u043c 5 \u043a\u043b\u044e\u0447\u0435\u0432\u044b\u0445 \u0441\u043b\u043e\u0432. \u041a\u0430\u0436\u0434\u043e\u0435 \u0441\u043b\u043e\u0432\u043e \u043d\u0443\u0436\u043d\u043e \u0437\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u043d\u0430 \u0440\u0443\u0441\u0441\u043a\u043e\u043c, \u043a\u0430\u0437\u0430\u0445\u0441\u043a\u043e\u043c \u0438 \u0430\u043d\u0433\u043b\u0438\u0439\u0441\u043a\u043e\u043c.'}</p>
             {errors.keywords ? (<p className="form-hint" style={{ color: 'red' }}>{errors.keywords}</p>) : null}
           </div>
 
@@ -629,18 +550,6 @@ export function AuthorsSubmissionPage() {
             {errors[`abstract_${activeLang}`] ? (<p className="form-hint" style={{ color: 'red' }}>{errors[`abstract_${activeLang}`]}</p>) : null}
           </div>
 
-          <div className="form-field">
-            <label className="form-label">Авторы статьи ({langLabels[activeLang]})</label>
-            <input
-              className="text-input"
-              placeholder={authorsPlaceholders[activeLang]}
-              value={authors[activeLang]}
-              onChange={(e) => setAuthors((prev) => ({ ...prev, [activeLang]: e.target.value }))}
-              data-error-key={`authors_${activeLang}`}
-              style={errors[`authors_${activeLang}`] ? { borderColor: 'red' } : undefined}
-            />
-            {errors[`authors_${activeLang}`] ? (<p className="form-hint" style={{ color: 'red' }}>{errors[`authors_${activeLang}`]}</p>) : null}
-          </div>
 
           <div className="form-field">
             <label className="form-label">Загрузить рукопись (любой формат текста: .docx)</label>
@@ -728,49 +637,23 @@ export function AuthorsSubmissionPage() {
       <div className="section public-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Авторы статьи</p>
-            <h2 className="panel-title">Состав авторов</h2>
+            <p className="eyebrow">?????? ??????</p>
+            <h2 className="panel-title">?????? ???????</h2>
           </div>
           <button className="button button--primary button--compact" type="button" onClick={() => setAuthorModalOpen(true)}>
-            Добавить автора
+            ???????? ??????
           </button>
-          </div>
-          <div className="form-field">
-            <label className="form-label">Поиск автора в базе</label>
-            <input
-              className="text-input"
-              value={authorQuery}
-              onChange={(e) => setAuthorQuery(e.target.value)}
-              placeholder="Начните вводить ФИО или email автора"
-            />
-            {authorQuery.trim() ? (
-              <div className="pill-list">
-                {authorMatches.length > 0 ? (
-                  authorMatches.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      className="status-chip status-chip--submitted"
-                      onClick={() => handleAttachExistingAuthor(a)}
-                    >
-                      {[a.prefix, a.first_name, a.patronymic, a.last_name].filter(Boolean).join(' ')} ({a.email})
-                    </button>
-                  ))
-                ) : (
-                  <span className="table__empty">Авторы не найдены.</span>
-                )}
-              </div>
-            ) : null}
-          </div>
-          {authorList.length === 0 ? (
-          <div className="table__empty">Авторы пока не добавлены.</div>
+        </div>
+        {authorList.length === 0 ? (
+          <div className="table__empty">?????? ???? ?? ?????????.</div>
         ) : (
           <div className="table">
             <div className="table__head">
-              <span>Имя</span>
+              <span>???</span>
               <span>Email</span>
-              <span>Аффилиации</span>
-              <span>Корр. автор</span>
+              <span>??????????</span>
+              <span>????. ?????</span>
+              <span>????????</span>
             </div>
             <div className="table__body">
               {authorList.map((a, idx) => (
@@ -784,9 +667,14 @@ export function AuthorsSubmissionPage() {
                   </div>
                   <div className="table__cell">{a.email}</div>
                   <div className="table__cell">
-                    {[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '—'}
+                    {[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '?'}
                   </div>
-                  <div className="table__cell">{a.isCorresponding ? 'Да' : 'Нет'}</div>
+                  <div className="table__cell">{a.isCorresponding ? '??' : '???'}</div>
+                  <div className="table__cell">
+                    <button type="button" className="button button--ghost button--compact" onClick={() => removeAuthor(a.email)}>
+                      ???????
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -797,48 +685,89 @@ export function AuthorsSubmissionPage() {
 
       {modalOpen ? (
         <div className="modal-backdrop" onClick={() => setModalOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal--wide author-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Новое ключевое слово</h3>
-              <button className="modal__close" onClick={() => setModalOpen(false)} aria-label="Закрыть">
-                ×
+              <h3>{'\u041a\u043b\u044e\u0447\u0435\u0432\u044b\u0435 \u0441\u043b\u043e\u0432\u0430 \u0441\u0442\u0430\u0442\u044c\u0438'}</h3>
+              <button className="modal__close" onClick={() => setModalOpen(false)} aria-label={'\u0417\u0430\u043a\u0440\u044b\u0442\u044c'}>
+                {'\u00d7'}
               </button>
             </div>
             <div className="modal__body">
-              <div className="form-field">
-                <label className="form-label">На русском</label>
-                <input
-                  className="text-input"
-                  value={newKeyword.ru}
-                  onChange={(e) => setNewKeyword((prev) => ({ ...prev, ru: e.target.value }))}
-                  placeholder="Например: Искусственный интеллект"
-                />
+              <p className="form-hint" style={{ margin: 0 }}>
+                {'\u0417\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043c\u0438\u043d\u0438\u043c\u0443\u043c 5 \u043a\u043b\u044e\u0447\u0435\u0432\u044b\u0445 \u0441\u043b\u043e\u0432 \u043d\u0430 \u0442\u0440\u0435\u0445 \u044f\u0437\u044b\u043a\u0430\u0445. \u041a\u043d\u043e\u043f\u043a\u0430 \u043f\u043b\u044e\u0441 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0435\u0442 \u0434\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0441\u043b\u043e\u0432\u0430.'}
+              </p>
+              <div style={{ display: 'grid', gap: 12 }}>
+                {modalKeywords.map((keyword, index) => (
+                  <div
+                    key={`keyword-row-${index}`}
+                    style={{
+                      display: 'grid',
+                      gap: 12,
+                      padding: 12,
+                      border: '1px solid rgba(148, 163, 184, 0.35)',
+                      borderRadius: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                      <strong>{'\u041a\u043b\u044e\u0447\u0435\u0432\u043e\u0435 \u0441\u043b\u043e\u0432\u043e'} {index + 1}</strong>
+                      {index >= 5 ? (
+                        <button
+                          type="button"
+                          className="button button--ghost button--compact"
+                          onClick={() => handleRemoveKeywordRow(index)}
+                        >
+                          {'\u0423\u0434\u0430\u043b\u0438\u0442\u044c'}
+                        </button>
+                      ) : null}
+                    </div>
+                    <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                      <div className="form-field" style={{ margin: 0 }}>
+                        <label className="form-label">{'\u041d\u0430 \u0440\u0443\u0441\u0441\u043a\u043e\u043c'}</label>
+                        <input
+                          className="text-input"
+                          value={keyword.ru}
+                          onChange={(e) => handleKeywordDraftChange(index, 'ru', e.target.value)}
+                          placeholder={'\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442'}
+                        />
+                      </div>
+                      <div className="form-field" style={{ margin: 0 }}>
+                        <label className="form-label">{'\u041d\u0430 \u043a\u0430\u0437\u0430\u0445\u0441\u043a\u043e\u043c'}</label>
+                        <input
+                          className="text-input"
+                          value={keyword.kz}
+                          onChange={(e) => handleKeywordDraftChange(index, 'kz', e.target.value)}
+                          placeholder={'\u041c\u044b\u0441\u0430\u043b\u044b: \u0416\u0430\u0441\u0430\u043d\u0434\u044b \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442'}
+                        />
+                      </div>
+                      <div className="form-field" style={{ margin: 0 }}>
+                        <label className="form-label">{'\u041d\u0430 \u0430\u043d\u0433\u043b\u0438\u0439\u0441\u043a\u043e\u043c'}</label>
+                        <input
+                          className="text-input"
+                          value={keyword.en}
+                          onChange={(e) => handleKeywordDraftChange(index, 'en', e.target.value)}
+                          placeholder="For example: Artificial intelligence"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="form-field">
-                <label className="form-label">На казахском</label>
-                <input
-                  className="text-input"
-                  value={newKeyword.kz}
-                  onChange={(e) => setNewKeyword((prev) => ({ ...prev, kz: e.target.value }))}
-                  placeholder="Аналитика деректері"
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">На английском</label>
-                <input
-                  className="text-input"
-                  value={newKeyword.en}
-                  onChange={(e) => setNewKeyword((prev) => ({ ...prev, en: e.target.value }))}
-                  placeholder="Artificial Intelligence"
-                />
-              </div>
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={handleAddKeywordRow}
+                style={{ justifySelf: 'start' }}
+              >
+                {'+ \u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0435\u0449\u0435 \u043a\u043b\u044e\u0447\u0435\u0432\u043e\u0435 \u0441\u043b\u043e\u0432\u043e'}
+              </button>
+              {errors.keywords ? (<p className="form-hint" style={{ color: 'red', margin: 0 }}>{errors.keywords}</p>) : null}
             </div>
             <div className="modal__footer">
               <button className="button button--ghost" type="button" onClick={() => setModalOpen(false)}>
-                Отмена
+                {'\u041e\u0442\u043c\u0435\u043d\u0430'}
               </button>
-              <button className="button button--primary" type="button" onClick={handleSaveKeyword} disabled={!newKeyword.ru.trim()}>
-                Добавить
+              <button className="button button--primary" type="button" onClick={handleSaveKeywords}>
+                {'\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c'}
               </button>
             </div>
           </div>
@@ -847,164 +776,87 @@ export function AuthorsSubmissionPage() {
 
       {authorModalOpen ? (
         <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
-          <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal--wide author-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Добавить автора</h3>
-              <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Закрыть">
-                ×
+              <h3>???????? ??????</h3>
+              <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="???????">
+                ?
               </button>
             </div>
-            <div className="modal__body author-grid">
-              <div className="form-field">
-                <label className="form-label">Email *</label>
-                <input
-                  className="text-input"
-                  value={authorForm.email}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))}
-                />
+            <div className="modal__body author-modal__body">
+              <div className="author-modal__intro">
+                <p className="author-modal__eyebrow">???????? ??????</p>
+                <p className="author-modal__hint">????????? ???????????? ????, ????? ??? ????????????? ???????? ?????????? ? ??????? ??????????????.</p>
               </div>
-              <div className="form-field">
-                <label className="form-label">Префикс</label>
-                <input
-                  className="text-input"
-                  value={authorForm.prefix}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Имя *</label>
-                <input
-                  className="text-input"
-                  value={authorForm.firstName}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Отчество</label>
-                <input
-                  className="text-input"
-                  value={authorForm.middleName}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Фамилия *</label>
-                <input
-                  className="text-input"
-                  value={authorForm.lastName}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Телефон</label>
-                <input
-                  className="text-input"
-                  value={authorForm.phone}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))}
-                />
-              </div>
-              <div className="form-field form-field--span-2">
-                <label className="form-label">Адрес</label>
-                <input
-                  className="text-input"
-                  value={authorForm.address}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Страна *</label>
-                <input
-                  className="text-input"
-                  value={authorForm.country}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))}
-                />
-              </div>
-
-              <div className="form-field">
-                <label className="form-label">Аффилиация 1 *</label>
-                <textarea
-                  className="text-input"
-                  rows={3}
-                  value={authorForm.affiliation1}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Аффилиация 2</label>
-                <textarea
-                  className="text-input"
-                  rows={3}
-                  value={authorForm.affiliation2}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Аффилиация 3</label>
-                <textarea
-                  className="text-input"
-                  rows={3}
-                  value={authorForm.affiliation3}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))}
-                />
-              </div>
-
-              <div className="form-field">
-                <label className="form-label">Соответствующий автор</label>
-                <div className="pill-list">
-                  <button
-                    type="button"
-                    className={`button button--ghost button--compact ${authorForm.isCorresponding ? 'button--active' : ''}`}
-                    onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: true }))}
-                  >
-                    Да
-                  </button>
-                  <button
-                    type="button"
-                    className={`button button--ghost button--compact ${!authorForm.isCorresponding ? 'button--active' : ''}`}
-                    onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: false }))}
-                  >
-                    Нет
-                  </button>
+              <div className="author-grid">
+                <div className="form-field">
+                  <label className="form-label">Email *</label>
+                  <input className="text-input" value={authorForm.email} onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">???????</label>
+                  <input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">??? *</label>
+                  <input className="text-input" value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">????????</label>
+                  <input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">??????? *</label>
+                  <input className="text-input" value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">???????</label>
+                  <input className="text-input" value={authorForm.phone} onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))} />
+                </div>
+                <div className="form-field form-field--span-2">
+                  <label className="form-label">?????</label>
+                  <input className="text-input" value={authorForm.address} onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">?????? *</label>
+                  <input className="text-input" value={authorForm.country} onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">?????????? 1 *</label>
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation1} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">?????????? 2</label>
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation2} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">?????????? 3</label>
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation3} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">??????????????? ?????</label>
+                  <div className="pill-list">
+                    <button type="button" className={`button button--ghost button--compact ${authorForm.isCorresponding ? 'button--active' : ''}`} onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: true }))}>??</button>
+                    <button type="button" className={`button button--ghost button--compact ${!authorForm.isCorresponding ? 'button--active' : ''}`} onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: false }))}>???</button>
+                  </div>
+                </div>
+                <div className="form-field">
+                  <label className="form-label">ORCID</label>
+                  <input className="text-input" value={authorForm.orcid} onChange={(e) => setAuthorForm((p) => ({ ...p, orcid: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">Scopus Author ID</label>
+                  <input className="text-input" value={authorForm.scopusId} onChange={(e) => setAuthorForm((p) => ({ ...p, scopusId: e.target.value }))} />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">Researcher ID</label>
+                  <input className="text-input" value={authorForm.researcherId} onChange={(e) => setAuthorForm((p) => ({ ...p, researcherId: e.target.value }))} />
                 </div>
               </div>
-
-              <div className="form-field">
-                <label className="form-label">ORCID</label>
-                <input
-                  className="text-input"
-                  value={authorForm.orcid}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, orcid: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Scopus Author ID</label>
-                <input
-                  className="text-input"
-                  value={authorForm.scopusId}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, scopusId: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Researcher ID</label>
-                <input
-                  className="text-input"
-                  value={authorForm.researcherId}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, researcherId: e.target.value }))}
-                />
-              </div>
             </div>
-            <div className="modal__footer">
-              <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>
-                Отмена
-              </button>
-              <button
-                className="button button--primary"
-                type="button"
-                onClick={saveAuthor}
-                disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}
-              >
-                Сохранить автора
-              </button>
+            <div className="modal__footer author-modal__footer">
+              <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>??????</button>
+              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}>????????? ??????</button>
             </div>
           </div>
         </div>
@@ -1014,83 +866,37 @@ export function AuthorsSubmissionPage() {
         <div className="modal-backdrop" onClick={() => setConfirmModalOpen(false)}>
           <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Подтверждение создания статьи</h3>
-              <button className="modal__close" onClick={() => setConfirmModalOpen(false)} aria-label="Закрыть">
-                ×
-              </button>
+              <h3>????????????? ???????? ??????</h3>
+              <button className="modal__close" onClick={() => setConfirmModalOpen(false)} aria-label="???????">?</button>
             </div>
             <div className="modal__body">
               <div className="table">
                 <div className="table__head">
-                  <span>Поле</span>
-                  <span>Значение</span>
+                  <span>????</span>
+                  <span>????????</span>
                 </div>
                 <div className="table__body">
-                  <div className="table__row"><div className="table__cell">Язык</div><div className="table__cell">
-                    <div className="lang-switch">
-                      {(['ru','kz','en'] as Lang[]).map(code => (
-                        <button
-                          key={code}
-                          type="button"
-                          className={`lang-chip ${confirmLang === code ? 'lang-chip--active' : ''}`}
-                          onClick={() => setConfirmLang(code)}
-                        >{langLabels[code]}</button>
-                      ))}
-                    </div>
-                  </div></div>
-                  <div className="table__row"><div className="table__cell">Заголовок</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.title_ru) || (confirmLang === 'kz' && pendingPayload.title_kz) || (confirmLang === 'en' && pendingPayload.title_en) || '—'}</div></div>
-                  <div className="table__row"><div className="table__cell">Аннотация</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.abstract_ru) || (confirmLang === 'kz' && pendingPayload.abstract_kz) || (confirmLang === 'en' && pendingPayload.abstract_en) || '—'}</div></div>
-                  <div className="table__row"><div className="table__cell">Тип статьи</div><div className="table__cell">{articleType || '—'}</div></div>
-                  <div className="table__row"><div className="table__cell">Ключевые слова</div><div className="table__cell">
-                    {selectedKeywords.length
-                      ? selectedKeywords
-                          .map(kw =>
-                            confirmLang === 'ru' ? kw.ru : confirmLang === 'kz' ? kw.kz : kw.en,
-                          )
-                          .filter(Boolean)
-                          .join(', ')
-                      : '—'}
-                  </div></div>
-                  <div className="table__row"><div className="table__cell">Ответственный автор</div><div className="table__cell">
-                    {(() => {
-                      const responsible = authorList.find(a => a.id === pendingPayload.responsible_user_id)
-                      if (!responsible) return pendingPayload.responsible_user_id ?? '—'
-                      const name = [responsible.prefix, responsible.firstName, responsible.middleName, responsible.lastName].filter(Boolean).join(' ')
-                      return `${name} (${responsible.email})`
-                    })()}
-                  </div></div>
-                  <div className="table__row"><div className="table__cell">Авторы (список)</div><div className="table__cell">
-                    {authorList.length
-                      ? authorList.map(a => [a.prefix, a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')).join('; ')
-                      : '—'}
-                  </div></div>
-                  <div className="table__row"><div className="table__cell">Файл рукописи</div><div className="table__cell">{getFileNameFromInputIndex(0) || (pendingPayload.manuscript_file_id ? 'загружен' : '—')}</div></div>
-                  <div className="table__row"><div className="table__cell">Антиплагиат</div><div className="table__cell">{getFileNameFromInputIndex(3) || (pendingPayload.antiplagiarism_file_id ? 'загружен' : '—')}</div></div>
-                  <div className="table__row"><div className="table__cell">Сведения об авторах</div><div className="table__cell">{getFileNameFromInputIndex(1) || (pendingPayload.author_info_file_id ? 'загружены' : '—')}</div></div>
-                  <div className="table__row"><div className="table__cell">Сопроводительное письмо</div><div className="table__cell">{getFileNameFromInputIndex(2) || (pendingPayload.cover_letter_file_id ? 'загружено' : '—')}</div></div>
-                  <div className="table__row"><div className="table__cell">Генеративный ИИ</div><div className="table__cell">{pendingPayload.generative_ai_info || '—'}</div></div>
-                  <div className="table__row"><div className="table__cell">Подтверждения</div><div className="table__cell">{pendingPayload.confirmations ? ['copyright','originality','consent'].filter((k)=>pendingPayload.confirmations[k]).join(', ') : '—'}</div></div>
-                  <div className="table__row"><div className="table__cell">Комментарии</div><div className="table__cell">{pendingPayload.comments || '—'}</div></div>
+                  <div className="table__row"><div className="table__cell">???? ?????????</div><div className="table__cell"><div className="lang-switch">{(['ru', 'kz', 'en'] as Lang[]).map((code) => (<button key={code} type="button" className={`lang-chip ${confirmLang === code ? 'lang-chip--active' : ''}`} onClick={() => setConfirmLang(code)}>{langLabels[code]}</button>))}</div></div></div>
+                  <div className="table__row"><div className="table__cell">?????????</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.title_ru) || (confirmLang === 'kz' && pendingPayload.title_kz) || (confirmLang === 'en' && pendingPayload.title_en) || '?'}</div></div>
+                  <div className="table__row"><div className="table__cell">?????????</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.abstract_ru) || (confirmLang === 'kz' && pendingPayload.abstract_kz) || (confirmLang === 'en' && pendingPayload.abstract_en) || '?'}</div></div>
+                  <div className="table__row"><div className="table__cell">??? ??????</div><div className="table__cell">{articleType || '?'}</div></div>
+                  <div className="table__row"><div className="table__cell">???????? ?????</div><div className="table__cell">{selectedKeywords.length ? selectedKeywords.map((kw) => confirmLang === 'ru' ? kw.ru : confirmLang === 'kz' ? kw.kz : kw.en).filter(Boolean).join(', ') : '?'}</div></div>
+                  <div className="table__row"><div className="table__cell">????????????? ?????</div><div className="table__cell">{(() => { const responsible = authorList.find((a) => a.id === pendingPayload.responsible_user_id); if (!responsible) return pendingPayload.responsible_user_id ?? '?'; const name = [responsible.prefix, responsible.firstName, responsible.middleName, responsible.lastName].filter(Boolean).join(' '); return `${name} (${responsible.email})`; })()}</div></div>
+                  <div className="table__row"><div className="table__cell">??????</div><div className="table__cell">{authorList.length ? authorList.map((a) => [a.prefix, a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')).join('; ') : '?'}</div></div>
+                  <div className="table__row"><div className="table__cell">???? ????????</div><div className="table__cell">{getFileNameFromInputIndex(0) || (pendingPayload.manuscript_file_id ? '????????' : '?')}</div></div>
+                  <div className="table__row"><div className="table__cell">???????????</div><div className="table__cell">{getFileNameFromInputIndex(3) || (pendingPayload.antiplagiarism_file_id ? '????????' : '?')}</div></div>
+                  <div className="table__row"><div className="table__cell">???????? ?? ???????</div><div className="table__cell">{getFileNameFromInputIndex(1) || (pendingPayload.author_info_file_id ? '?????????' : '?')}</div></div>
+                  <div className="table__row"><div className="table__cell">???????????????? ??????</div><div className="table__cell">{getFileNameFromInputIndex(2) || (pendingPayload.cover_letter_file_id ? '?????????' : '?')}</div></div>
+                  <div className="table__row"><div className="table__cell">???????????? ??</div><div className="table__cell">{pendingPayload.generative_ai_info || '?'}</div></div>
+                  <div className="table__row"><div className="table__cell">?????????????</div><div className="table__cell">{pendingPayload.confirmations ? ['copyright', 'originality', 'consent'].filter((k) => pendingPayload.confirmations[k]).join(', ') : '?'}</div></div>
+                  <div className="table__row"><div className="table__cell">???????????</div><div className="table__cell">{pendingPayload.comments || '?'}</div></div>
                 </div>
               </div>
-              <p className="form-hint" style={{ marginTop: 12 }}>Вы действительно уверены, что хотите создать статью с указанными данными?</p>
+              <p className="form-hint" style={{ marginTop: 12 }}>?? ????????????? ???????, ??? ?????? ??????? ?????? ? ?????????? ????????</p>
             </div>
             <div className="modal__footer">
-              <button className="button button--ghost" type="button" onClick={() => setConfirmModalOpen(false)}>Отмена</button>
-              <button
-                className="button button--primary"
-                type="button"
-                onClick={async () => {
-                  try {
-                    await api.post('/articles', pendingPayload)
-                    setConfirmModalOpen(false)
-                    setPendingPayload(null)
-                    navigate('/cabinet/submissions')
-                  } catch (error) {
-                    console.error('Failed to submit article', error)
-                  }
-                }}
-              >Подтвердить и создать</button>
+              <button className="button button--ghost" type="button" onClick={() => setConfirmModalOpen(false)}>??????</button>
+              <button className="button button--primary" type="button" onClick={async () => { try { await api.post('/articles', pendingPayload); setConfirmModalOpen(false); setPendingPayload(null); navigate('/cabinet/submissions'); } catch (error) { console.error('Failed to submit article', error); } }}>??????????? ? ???????</button>
             </div>
           </div>
         </div>

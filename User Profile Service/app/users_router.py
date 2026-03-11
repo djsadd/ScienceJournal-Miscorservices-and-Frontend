@@ -6,6 +6,17 @@ import httpx
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+
+def normalize_preferred_language(value: str | list[str] | None) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, list):
+        normalized = [item.strip() for item in value if isinstance(item, str) and item.strip()]
+        return ",".join(dict.fromkeys(normalized)) or None
+    if isinstance(value, str):
+        return value.strip() or None
+    return None
+
 def get_db():
     db = database.SessionLocal()
     try:
@@ -65,7 +76,9 @@ def create_profile(profile: schemas.UserProfileCreate, db: Session = Depends(get
     db_profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == profile.user_id).first()
     if db_profile:
         raise HTTPException(status_code=400, detail="Profile already exists")
-    new_profile = models.UserProfile(**profile.dict())
+    payload = profile.dict()
+    payload["preferred_language"] = normalize_preferred_language(payload.get("preferred_language")) or schemas.Language.en.value
+    new_profile = models.UserProfile(**payload)
     db.add(new_profile)
     db.commit()
     db.refresh(new_profile)
@@ -114,7 +127,7 @@ def get_reviewers(
     query = db.query(models.UserProfile).filter(models.UserProfile.roles.any("reviewer"))
 
     if language:
-        query = query.filter(models.UserProfile.preferred_language == language)
+        query = query.filter(models.UserProfile.preferred_language.contains(language))
 
     reviewers = query.all()
 

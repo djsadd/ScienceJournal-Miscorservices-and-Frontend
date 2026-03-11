@@ -14,7 +14,7 @@ class UserProfileBase(BaseModel):
     phone: str | None = None
     organization: str | None = None
     roles: List[str] = ["author"]
-    preferred_language: Language = Language.en
+    preferred_language: str = Language.en.value
     is_council_member: bool = False
     is_collegium_member: bool = False
 
@@ -36,7 +36,7 @@ class UserProfileOut(UserProfileBase):
 class UserRolesOut(BaseModel):
     user_id: int
     roles: List[str]
-    preferred_language: Language | None = None
+    preferred_language: str | None = None
 
 
 class UserRolesUpdate(BaseModel):
@@ -75,7 +75,7 @@ class ReviewerFullInfo(BaseModel):
     phone: str | None = None
     organization: str | None = None
     roles: List[str] = []
-    preferred_language: Language
+    preferred_language: str
     is_active: bool | None = None
     is_council_member: bool | None = None
     is_collegium_member: bool | None = None
