@@ -637,23 +637,23 @@ export function AuthorsSubmissionPage() {
       <div className="section public-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">?????? ??????</p>
-            <h2 className="panel-title">?????? ???????</h2>
+            <p className="eyebrow">{'\u0410\u0432\u0442\u043e\u0440\u044b \u0441\u0442\u0430\u0442\u044c\u0438'}</p>
+            <h2 className="panel-title">{'\u0421\u043e\u0441\u0442\u0430\u0432 \u0430\u0432\u0442\u043e\u0440\u043e\u0432'}</h2>
           </div>
           <button className="button button--primary button--compact" type="button" onClick={() => setAuthorModalOpen(true)}>
-            ???????? ??????
+            {'\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0430\u0432\u0442\u043e\u0440\u0430'}
           </button>
         </div>
         {authorList.length === 0 ? (
-          <div className="table__empty">?????? ???? ?? ?????????.</div>
+          <div className="table__empty">{'\u0410\u0432\u0442\u043e\u0440\u044b \u043f\u043e\u043a\u0430 \u043d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u044b.'}</div>
         ) : (
           <div className="table">
             <div className="table__head">
-              <span>???</span>
+              <span>{'\u0418\u043c\u044f'}</span>
               <span>Email</span>
-              <span>??????????</span>
-              <span>????. ?????</span>
-              <span>????????</span>
+              <span>{'\u0410\u0444\u0444\u0438\u043b\u0438\u0430\u0446\u0438\u0438'}</span>
+              <span>{'\u041a\u043e\u0440\u0440. \u0430\u0432\u0442\u043e\u0440'}</span>
+              <span>{'\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044f'}</span>
             </div>
             <div className="table__body">
               {authorList.map((a, idx) => (
@@ -667,12 +667,12 @@ export function AuthorsSubmissionPage() {
                   </div>
                   <div className="table__cell">{a.email}</div>
                   <div className="table__cell">
-                    {[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '?'}
+                    {[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '—'}
                   </div>
-                  <div className="table__cell">{a.isCorresponding ? '??' : '???'}</div>
+                  <div className="table__cell">{a.isCorresponding ? '\u0414\u0430' : '\u041d\u0435\u0442'}</div>
                   <div className="table__cell">
                     <button type="button" className="button button--ghost button--compact" onClick={() => removeAuthor(a.email)}>
-                      ???????
+                      {'\u0423\u0434\u0430\u043b\u0438\u0442\u044c'}
                     </button>
                   </div>
                 </div>
@@ -778,15 +778,15 @@ export function AuthorsSubmissionPage() {
         <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
           <div className="modal modal--wide author-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>???????? ??????</h3>
-              <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="???????">
-                ?
+              <h3>{'\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0430\u0432\u0442\u043e\u0440\u0430'}</h3>
+              <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label={'\u0417\u0430\u043a\u0440\u044b\u0442\u044c'}>
+                {'\u00d7'}
               </button>
             </div>
             <div className="modal__body author-modal__body">
               <div className="author-modal__intro">
-                <p className="author-modal__eyebrow">???????? ??????</p>
-                <p className="author-modal__hint">????????? ???????????? ????, ????? ??? ????????????? ???????? ?????????? ? ??????? ??????????????.</p>
+                <p className="author-modal__eyebrow">{'\u041a\u0430\u0440\u0442\u043e\u0447\u043a\u0430 \u0430\u0432\u0442\u043e\u0440\u0430'}</p>
+                <p className="author-modal__hint">{'\u0417\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u043f\u043e\u043b\u044f, \u0437\u0430\u0442\u0435\u043c \u043f\u0440\u0438 \u043d\u0435\u043e\u0431\u0445\u043e\u0434\u0438\u043c\u043e\u0441\u0442\u0438 \u0434\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u0430\u0444\u0444\u0438\u043b\u0438\u0430\u0446\u0438\u0438 \u0438 \u043d\u0430\u0443\u0447\u043d\u044b\u0435 \u0438\u0434\u0435\u043d\u0442\u0438\u0444\u0438\u043a\u0430\u0442\u043e\u0440\u044b.'}</p>
               </div>
               <div className="author-grid">
                 <div className="form-field">
@@ -794,7 +794,7 @@ export function AuthorsSubmissionPage() {
                   <input className="text-input" value={authorForm.email} onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">???????</label>
+                  <label className="form-label">{'\u041f\u0440\u0435\u0444\u0438\u043a\u0441'}</label>
                   <input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} />
                 </div>
                 <div className="form-field">
@@ -802,39 +802,39 @@ export function AuthorsSubmissionPage() {
                   <input className="text-input" value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">????????</label>
+                  <label className="form-label">{'\u041e\u0442\u0447\u0435\u0441\u0442\u0432\u043e'}</label>
                   <input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">??????? *</label>
+                  <label className="form-label">{'\u0424\u0430\u043c\u0438\u043b\u0438\u044f *'}</label>
                   <input className="text-input" value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">???????</label>
+                  <label className="form-label">{'\u0422\u0435\u043b\u0435\u0444\u043e\u043d'}</label>
                   <input className="text-input" value={authorForm.phone} onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))} />
                 </div>
                 <div className="form-field form-field--span-2">
-                  <label className="form-label">?????</label>
+                  <label className="form-label">{'\u0410\u0434\u0440\u0435\u0441'}</label>
                   <input className="text-input" value={authorForm.address} onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">?????? *</label>
+                  <label className="form-label">{'\u0421\u0442\u0440\u0430\u043d\u0430 *'}</label>
                   <input className="text-input" value={authorForm.country} onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">?????????? 1 *</label>
+                  <label className="form-label">{'\u0410\u0444\u0444\u0438\u043b\u0438\u0430\u0446\u0438\u044f 1 *'}</label>
                   <textarea className="text-input" rows={3} value={authorForm.affiliation1} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">?????????? 2</label>
+                  <label className="form-label">{'\u0410\u0444\u0444\u0438\u043b\u0438\u0430\u0446\u0438\u044f 2'}</label>
                   <textarea className="text-input" rows={3} value={authorForm.affiliation2} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">?????????? 3</label>
+                  <label className="form-label">{'\u0410\u0444\u0444\u0438\u043b\u0438\u0430\u0446\u0438\u044f 3'}</label>
                   <textarea className="text-input" rows={3} value={authorForm.affiliation3} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">??????????????? ?????</label>
+                  <label className="form-label">{'\u0421\u043e\u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u044e\u0449\u0438\u0439 \u0430\u0432\u0442\u043e\u0440'}</label>
                   <div className="pill-list">
                     <button type="button" className={`button button--ghost button--compact ${authorForm.isCorresponding ? 'button--active' : ''}`} onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: true }))}>??</button>
                     <button type="button" className={`button button--ghost button--compact ${!authorForm.isCorresponding ? 'button--active' : ''}`} onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: false }))}>???</button>
@@ -855,8 +855,8 @@ export function AuthorsSubmissionPage() {
               </div>
             </div>
             <div className="modal__footer author-modal__footer">
-              <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>??????</button>
-              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}>????????? ??????</button>
+              <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>{'\u041e\u0442\u043c\u0435\u043d\u0430'}</button>
+              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}>{'\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u0430\u0432\u0442\u043e\u0440\u0430'}</button>
             </div>
           </div>
         </div>
