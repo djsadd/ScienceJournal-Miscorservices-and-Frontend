@@ -212,7 +212,8 @@ def login(form_data: schemas.LoginRequest, db: Session = Depends(get_db)):
     # Allow login via either username or email using the same field
     identifier = form_data.username
     user = db.query(models.User).filter(
-        (models.User.username == identifier) | (models.User.email == identifier)
+        ((models.User.username == identifier) | (models.User.email == identifier)),
+        models.User.is_hidden == False,
     ).first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -286,6 +287,8 @@ def get_current_active_user(user_id: int = Depends(get_current_user_id), db: Ses
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if user.is_hidden:
+        raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(
             status_code=403,
@@ -313,6 +316,7 @@ def get_user_full_info(
         "email": user.email,
         "role": user.role,
         "is_active": user.is_active,
+        "is_hidden": user.is_hidden,
         "accept_terms": user.accept_terms,
         "notify_status": user.notify_status,
         "profile_id": None,
@@ -374,6 +378,7 @@ def get_pending_users(
 ):
     """Get all users waiting for activation (editors and reviewers)"""
     pending_users = db.query(models.User).filter(
+        models.User.is_hidden == False,
         models.User.is_active == False,
         models.User.role.in_(["editor", "reviewer"])
     ).all()
@@ -386,7 +391,12 @@ def get_all_users(
     db: Session = Depends(get_db),
 ):
     profiles_map = get_profiles_map()
-    users = db.query(models.User).order_by(models.User.id.desc()).all()
+    users = (
+        db.query(models.User)
+        .filter(models.User.is_hidden == False)
+        .order_by(models.User.id.desc())
+        .all()
+    )
     result: list[dict] = []
     for user in users:
         profile = profiles_map.get(user.id, {})
@@ -402,6 +412,7 @@ def get_all_users(
                 "email": user.email,
                 "role": user.role,
                 "is_active": user.is_active,
+                "is_hidden": user.is_hidden,
                 "accept_terms": user.accept_terms,
                 "notify_status": user.notify_status,
                 "phone": profile.get("phone"),
@@ -415,12 +426,51 @@ def get_all_users(
     return result
 
 
+@router.get("/admin/users/{user_id}", response_model=schemas.AdminUserDetail)
+def get_admin_user_detail(
+    user_id: int,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    profiles_map = get_profiles_map()
+    user = (
+        db.query(models.User)
+        .filter(models.User.id == user_id, models.User.is_hidden == False)
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    profile = profiles_map.get(user.id, {})
+    return {
+        "id": user.id,
+        "username": user.username,
+        "full_name": user.full_name,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "organization": profile.get("organization") or user.organization,
+        "institution": user.institution,
+        "email": user.email,
+        "role": user.role,
+        "is_active": user.is_active,
+        "is_hidden": user.is_hidden,
+        "accept_terms": user.accept_terms,
+        "notify_status": user.notify_status,
+        "phone": profile.get("phone"),
+        "preferred_language": profile.get("preferred_language"),
+        "roles": profile.get("roles", [user.role]),
+        "profile_id": profile.get("id"),
+        "is_council_member": profile.get("is_council_member"),
+        "is_collegium_member": profile.get("is_collegium_member"),
+    }
+
+
 @router.get("/admin/users/stats", response_model=schemas.AdminUserStats)
 def get_user_stats(
     admin: models.User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    users = db.query(models.User).all()
+    users = db.query(models.User).filter(models.User.is_hidden == False).all()
     by_role: dict[str, int] = {}
     active = 0
     inactive = 0
@@ -453,6 +503,8 @@ def activate_user(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if user.is_hidden:
+        raise HTTPException(status_code=404, detail="User not found")
     
     user.is_active = activation.is_active
     db.commit()
@@ -470,6 +522,8 @@ def update_user_role(
     """Update a user's role (e.g., set to 'admin')."""
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.is_hidden:
         raise HTTPException(status_code=404, detail="User not found")
 
     allowed_roles = {"author", "editor", "reviewer", "layout", "admin"}
@@ -496,6 +550,8 @@ def reset_user_password(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if user.is_hidden:
+        raise HTTPException(status_code=404, detail="User not found")
 
     temporary_password = payload.new_password or generate_temporary_password()
     user.hashed_password = security.hash_password(temporary_password)
@@ -505,3 +561,24 @@ def reset_user_password(
         "temporary_password": temporary_password,
         "generated": payload.new_password is None,
     }
+
+
+@router.delete("/admin/users/{user_id}", response_model=schemas.AdminUserHideResponse)
+def hide_user(
+    user_id: int,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    if admin.id == user_id:
+        raise HTTPException(status_code=400, detail="You cannot hide your own account")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.is_hidden:
+        return {"user_id": user.id, "is_hidden": True}
+
+    user.is_hidden = True
+    user.is_active = False
+    db.commit()
+    return {"user_id": user.id, "is_hidden": True}

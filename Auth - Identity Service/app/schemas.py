@@ -28,6 +28,7 @@ class UserOut(BaseModel):
     email: EmailStr
     role: str
     is_active: bool
+    is_hidden: bool = False
     accept_terms: bool
     notify_status: bool
 
@@ -47,7 +48,7 @@ class TokenData(BaseModel):
 
 class UserFullInfo(BaseModel):
     """Complete user information from Auth and User Profile services"""
-    # From Auth Service
+
     id: int
     username: str
     full_name: str | None = None
@@ -58,9 +59,9 @@ class UserFullInfo(BaseModel):
     email: EmailStr
     role: str
     is_active: bool = True
+    is_hidden: bool = False
     accept_terms: bool
     notify_status: bool
-    # From User Profile Service
     profile_id: int | None = None
     phone: str | None = None
     preferred_language: str | None = None
@@ -89,6 +90,7 @@ class AdminUserListItem(BaseModel):
     email: EmailStr
     role: str
     is_active: bool
+    is_hidden: bool = False
     accept_terms: bool
     notify_status: bool
     phone: str | None = None
@@ -97,6 +99,10 @@ class AdminUserListItem(BaseModel):
     profile_id: int | None = None
     is_council_member: bool | None = None
     is_collegium_member: bool | None = None
+
+
+class AdminUserDetail(AdminUserListItem):
+    pass
 
 
 class AdminUserStats(BaseModel):
@@ -117,12 +123,19 @@ class AdminPasswordResetResponse(BaseModel):
     generated: bool
 
 
+class AdminUserHideResponse(BaseModel):
+    user_id: int
+    is_hidden: bool
+
+
 class RefreshTokenRequest(BaseModel):
     """Request body for token refresh."""
+
     refresh_token: str
 
 
 class LoginRequest(BaseModel):
     """Login payload supporting username OR email as identifier."""
+
     username: str
     password: str

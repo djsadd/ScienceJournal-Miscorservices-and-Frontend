@@ -292,6 +292,7 @@ export const api = {
   getArticleReviewers: <T>(articleId: string | number) => request<T>(`/articles/${articleId}/reviewers`, 'GET'),
   getReviewers: <T>(language?: 'ru' | 'kz') => request<T>('/users/reviewers', 'GET', { params: { language } }),
   getAdminUsers: <T>() => request<T>('/auth/admin/users', 'GET'),
+  getAdminUserDetail: <T>(userId: number | string) => request<T>(`/auth/admin/users/${userId}`, 'GET'),
   updateMyLanguage: <T>(preferredLanguage: 'ru' | 'en' | 'kz') =>
     request<T>('/users/me/language', 'PATCH', { params: { preferred_language: preferredLanguage } }),
   getAdminUserStats: <T>() => request<T>('/auth/admin/users/stats', 'GET'),
@@ -303,6 +304,8 @@ export const api = {
     request<T>(`/auth/admin/users/${userId}/reset-password`, 'POST', {
       json: newPassword ? { new_password: newPassword } : {},
     }),
+  deleteAdminUser: <T>(userId: number | string) =>
+    request<T>(`/auth/admin/users/${userId}`, 'DELETE'),
   // Change article status (editor role required)
   changeArticleStatus: <T>(articleId: string | number, status: string, options?: { comment_for_author?: string }) =>
     request<T>(`/articles/${articleId}/status`, 'PATCH', { json: { status, ...(options?.comment_for_author ? { comment_for_author: options.comment_for_author } : {}) } }),

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.responses import StreamingResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List
 from jose import jwt, JWTError
@@ -1465,7 +1466,9 @@ async def assign_reviewers(
         raise HTTPException(status_code=404, detail="Article not found")
     
     # Сохраняем связь article-reviewers в Article Management Service
-    for reviewer_id in request.reviewer_ids:
+    reviewer_ids = list(dict.fromkeys(request.reviewer_ids))
+
+    for reviewer_id in reviewer_ids:
         # Проверяем, не назначен ли уже этот рецензент
         existing = db.execute(
             models.article_reviewers.select().where(
@@ -1475,12 +1478,23 @@ async def assign_reviewers(
         ).first()
         
         if not existing:
-            db.execute(
-                models.article_reviewers.insert().values(
-                    article_id=article.id, 
-                    user_id=reviewer_id
+            try:
+                db.execute(
+                    models.article_reviewers.insert().values(
+                        article_id=article.id,
+                        user_id=reviewer_id
+                    )
                 )
-            )
+            except IntegrityError:
+                db.rollback()
+                existing_after_conflict = db.execute(
+                    models.article_reviewers.select().where(
+                        models.article_reviewers.c.article_id == article_id,
+                        models.article_reviewers.c.user_id == reviewer_id
+                    )
+                ).first()
+                if not existing_after_conflict:
+                    raise
     
     db.commit()
     
@@ -1497,7 +1511,7 @@ async def assign_reviewers(
     
     async with httpx.AsyncClient() as client:
         try:
-            for reviewer_id in request.reviewer_ids:
+            for reviewer_id in reviewer_ids:
                 payload = {
                     "article_id": article_id,
                     "reviewer_id": reviewer_id
@@ -1519,7 +1533,7 @@ async def assign_reviewers(
             print(f"Error communicating with Review Service: {e}")
             # Продолжаем работу, даже если Review Service недоступен
     
-    return {"message": "Reviewers assigned successfully", "article_id": article_id, "reviewer_ids": request.reviewer_ids}
+    return {"message": "Reviewers assigned successfully", "article_id": article_id, "reviewer_ids": reviewer_ids}
 
 
 @router.get("/{article_id}/reviewers")

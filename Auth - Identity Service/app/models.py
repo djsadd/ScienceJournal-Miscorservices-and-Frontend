@@ -16,5 +16,6 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(String, default="author")  # author, editor, reviewer, layout, admin
     is_active = Column(Boolean, default=True)
+    is_hidden = Column(Boolean, default=False, nullable=False)
     accept_terms = Column(Boolean, default=False)
     notify_status = Column(Boolean, default=True)

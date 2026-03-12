@@ -16,7 +16,7 @@ article_reviewers = Table(
     "article_reviewers",
     Base.metadata,
     Column("article_id", Integer, ForeignKey("articles.id"), primary_key=True),
-    Column("user_id", Integer, nullable=False),
+    Column("user_id", Integer, primary_key=True, nullable=False),
 )
 
 article_keywords = Table(

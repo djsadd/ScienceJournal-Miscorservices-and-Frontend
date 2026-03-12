@@ -256,6 +256,7 @@ export default function EditorArticleDetailPage() {
       .catch(() => {})
   }, [])
   const isEditor = (me?.role === 'editor') || (me?.roles?.includes('editor'))
+  const assignedReviewerIds = useMemo(() => new Set(reviewList.map((item) => item.reviewer_id)), [reviewList])
 
   // Upload layout states (editor-only UI)
   const [layoutFile, setLayoutFile] = useState<File | null>(null)
@@ -992,7 +993,7 @@ export default function EditorArticleDetailPage() {
 
       {isAddReviewerOpen && (
         <div className="modal-backdrop" onClick={() => setIsAddReviewerOpen(false)}>
-          <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal--wide modal--reviewers" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ margin: 0 }}>Добавить рецензента</h3>
               <button className="modal__close" onClick={() => setIsAddReviewerOpen(false)}>×</button>
@@ -1021,19 +1022,24 @@ export default function EditorArticleDetailPage() {
                       <div className="table__cell" style={{ gridColumn: '1 / -1' }}>Ничего не найдено.</div>
                     </div>
                   ) : (
-                    availableReviewers.map((r) => (
-                      <div className="table__row table__row--align" key={r.id}>
-                        <div className="table__cell">
+                    availableReviewers.map((r) => {
+                      const isAssigned = assignedReviewerIds.has(r.id)
+                      return (
+                      <div className={`table__row table__row--align reviewer-modal__row${isAssigned ? ' reviewer-modal__row--assigned' : ''}`} key={r.id}>
+                        <div className="table__cell reviewer-modal__cell reviewer-modal__identity">
                           <div className="table__title">{r.full_name}</div>
+                          {r.phone ? <div className="table__meta">{r.phone}</div> : null}
                         </div>
                         <div className="table__cell">{r.email ?? '—'}</div>
                         <div className="table__cell">{r.organization ?? '—'}</div>
                         <div className="table__cell">{r.preferred_language?.toUpperCase?.() ?? '—'}</div>
                         <div className="table__cell">{r.id}</div>
                         <div className="table__cell">{r.is_active == null ? '—' : r.is_active ? 'Да' : 'Нет'}</div>
-                        <div className="table__cell table__cell--actions">
-                          {data!.status !== 'rejected' && assigningReviewerId === r.id ? (
-                            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div className="table__cell table__cell--actions reviewer-modal__actions">
+                          {isAssigned ? (
+                            <span className="badge badge--success">Назначен</span>
+                          ) : data!.status !== 'rejected' && assigningReviewerId === r.id ? (
+                            <div className="reviewer-modal__assign-form">
                               <input
                                 className="text-input"
                                 type="text"
@@ -1091,7 +1097,7 @@ export default function EditorArticleDetailPage() {
                           ) : null}
                         </div>
                       </div>
-                    ))
+                    )})
                   )}
                 </div>
               </div>
