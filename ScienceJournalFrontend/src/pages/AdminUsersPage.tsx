@@ -45,6 +45,7 @@ type PasswordResetResult = {
 type LangKey = 'ru' | 'en' | 'kz'
 
 const roleOptions: AdminRole[] = ['author', 'reviewer', 'editor', 'layout', 'admin']
+const PAGE_SIZE = 10
 
 const roleLabels: Record<LangKey, Record<AdminRole, string>> = {
   ru: {
@@ -133,6 +134,10 @@ const copy: Record<
     deleteConfirm: string
     detailError: string
     passwordLabel: string
+    previousPage: string
+    nextPage: string
+    pageMeta: string
+    pageSummary: string
   }
 > = {
   ru: {
@@ -196,6 +201,10 @@ const copy: Record<
     deleteConfirm: 'Скрыть',
     detailError: 'Не удалось загрузить карточку пользователя',
     passwordLabel: 'Управление паролем',
+    previousPage: 'Назад',
+    nextPage: 'Вперед',
+    pageMeta: 'Стр. {current} / {total}',
+    pageSummary: 'Показано {from}-{to} из {total}',
   },
   en: {
     title: 'Users',
@@ -258,6 +267,10 @@ const copy: Record<
     deleteConfirm: 'Hide',
     detailError: 'Failed to load user details',
     passwordLabel: 'Password management',
+    previousPage: 'Previous',
+    nextPage: 'Next',
+    pageMeta: 'Page {current} / {total}',
+    pageSummary: 'Showing {from}-{to} of {total}',
   },
   kz: {
     title: 'Пайдаланушылар',
@@ -320,6 +333,10 @@ const copy: Record<
     deleteConfirm: 'Жасыру',
     detailError: 'Пайдаланушы картасын жүктеу мүмкін болмады',
     passwordLabel: 'Парольді басқару',
+    previousPage: 'Алдыңғы',
+    nextPage: 'Келесі',
+    pageMeta: 'Бет {current} / {total}',
+    pageSummary: '{total} ішінен {from}-{to} көрсетілді',
   },
 }
 
@@ -340,6 +357,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<'all' | AdminRole>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -414,6 +432,20 @@ export default function AdminUsersPage() {
       return matchesQuery && matchesRole && matchesStatus
     })
   }, [users, search, roleFilter, statusFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const pageStart = filteredUsers.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1
+  const pageEnd = filteredUsers.length === 0 ? 0 : pageStart + paginatedUsers.length - 1
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, roleFilter, statusFilter])
+
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
 
   const closeModal = () => {
     setSelectedUserId(null)
@@ -564,7 +596,7 @@ export default function AdminUsersPage() {
             ) : filteredUsers.length === 0 ? (
               <div className="table__empty">{t.empty}</div>
             ) : (
-              filteredUsers.map((user) => (
+              paginatedUsers.map((user) => (
                 <div className="table__row table__row--align" key={user.id}>
                   <div className="table__cell table__cell--title">
                     <div className="table__title">{getDisplayName(user)}</div>
@@ -597,6 +629,38 @@ export default function AdminUsersPage() {
             )}
           </div>
         </div>
+
+        {!loading && filteredUsers.length > 0 ? (
+          <div className="admin-users__pagination">
+            <span className="pagination__meta">
+              {t.pageSummary
+                .replace('{from}', String(pageStart))
+                .replace('{to}', String(pageEnd))
+                .replace('{total}', String(filteredUsers.length))}
+            </span>
+            <div className="pagination">
+              <button
+                type="button"
+                className="button button--ghost button--compact"
+                disabled={currentPage === 1}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              >
+                {t.previousPage}
+              </button>
+              <span className="pagination__meta">
+                {t.pageMeta.replace('{current}', String(currentPage)).replace('{total}', String(totalPages))}
+              </span>
+              <button
+                type="button"
+                className="button button--ghost button--compact"
+                disabled={currentPage === totalPages}
+                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              >
+                {t.nextPage}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {selectedUserId != null ? (
