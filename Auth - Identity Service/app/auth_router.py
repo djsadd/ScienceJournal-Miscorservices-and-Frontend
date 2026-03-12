@@ -28,6 +28,52 @@ def sync_profile_role(user_id: int, role: str) -> None:
         pass
 
 
+def send_account_status_notification(user: models.User, is_active: bool) -> None:
+    role_titles = {
+        "author": "автора",
+        "reviewer": "рецензента",
+        "editor": "редактора",
+        "layout": "верстальщика",
+        "admin": "администратора",
+    }
+    display_name = user.full_name or user.first_name or user.username
+    cabinet_url = f"{config.PUBLIC_BASE_URL}/login"
+    role_title = role_titles.get(user.role, "пользователя")
+
+    if is_active:
+        title = "Аккаунт активирован"
+        message = (
+            f"Здравствуйте, {display_name}. "
+            f"Ваш аккаунт в журнале «Известия университета Туран-Астана» активирован администратором. "
+            f"Роль аккаунта: {role_title}. "
+            f"Теперь вы можете войти в систему и продолжить работу в личном кабинете: {cabinet_url}"
+        )
+    else:
+        title = "Аккаунт деактивирован"
+        message = (
+            f"Здравствуйте, {display_name}. "
+            f"Ваш аккаунт в журнале «Известия университета Туран-Астана» был деактивирован администратором. "
+            f"Доступ к личному кабинету временно ограничен. "
+            f"Если вы считаете это ошибкой, свяжитесь с редакцией или администратором системы."
+        )
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            client.post(
+                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
+                json={
+                    "user_id": user.id,
+                    "type": "system",
+                    "title": title,
+                    "message": message,
+                    "related_entity": f"auth:activation:{user.id}",
+                },
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+    except Exception:
+        pass
+
+
 def get_profiles_map() -> dict[int, dict]:
     try:
         with httpx.Client(timeout=5.0) as client:
@@ -505,10 +551,13 @@ def activate_user(
         raise HTTPException(status_code=404, detail="User not found")
     if user.is_hidden:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    previous_is_active = user.is_active
     user.is_active = activation.is_active
     db.commit()
     db.refresh(user)
+    if previous_is_active != user.is_active:
+        send_account_status_notification(user, user.is_active)
     return user
 
 
