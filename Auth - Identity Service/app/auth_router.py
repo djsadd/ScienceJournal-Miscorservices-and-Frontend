@@ -426,6 +426,33 @@ def get_all_users(
     return result
 
 
+@router.get("/admin/users/stats", response_model=schemas.AdminUserStats)
+def get_user_stats(
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    users = db.query(models.User).filter(models.User.is_hidden == False).all()
+    by_role: dict[str, int] = {}
+    active = 0
+    inactive = 0
+    pending = 0
+    for user in users:
+        by_role[user.role] = by_role.get(user.role, 0) + 1
+        if user.is_active:
+            active += 1
+        else:
+            inactive += 1
+            if user.role in {"editor", "reviewer"}:
+                pending += 1
+    return {
+        "total": len(users),
+        "active": active,
+        "inactive": inactive,
+        "pending": pending,
+        "by_role": by_role,
+    }
+
+
 @router.get("/admin/users/{user_id}", response_model=schemas.AdminUserDetail)
 def get_admin_user_detail(
     user_id: int,
@@ -462,33 +489,6 @@ def get_admin_user_detail(
         "profile_id": profile.get("id"),
         "is_council_member": profile.get("is_council_member"),
         "is_collegium_member": profile.get("is_collegium_member"),
-    }
-
-
-@router.get("/admin/users/stats", response_model=schemas.AdminUserStats)
-def get_user_stats(
-    admin: models.User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    users = db.query(models.User).filter(models.User.is_hidden == False).all()
-    by_role: dict[str, int] = {}
-    active = 0
-    inactive = 0
-    pending = 0
-    for user in users:
-        by_role[user.role] = by_role.get(user.role, 0) + 1
-        if user.is_active:
-            active += 1
-        else:
-            inactive += 1
-            if user.role in {"editor", "reviewer"}:
-                pending += 1
-    return {
-        "total": len(users),
-        "active": active,
-        "inactive": inactive,
-        "pending": pending,
-        "by_role": by_role,
     }
 
 
