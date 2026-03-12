@@ -19,9 +19,14 @@ def get_db():
 def sync_profile_role(user_id: int, role: str) -> None:
     try:
         with httpx.Client(timeout=5.0) as client:
+            current_roles: list[str] = []
+            current_profile_response = client.get(f"{config.USER_SERVICE_URL}/users/{user_id}")
+            if current_profile_response.status_code == 200:
+                current_profile = current_profile_response.json() or {}
+                current_roles = [item for item in (current_profile.get("roles") or []) if isinstance(item, str) and item]
             client.patch(
                 f"{config.USER_SERVICE_URL}/users/internal/{user_id}/roles",
-                json={"roles": [role]},
+                json={"roles": list(dict.fromkeys([role, *current_roles]))},
                 headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
             )
     except Exception:
@@ -91,6 +96,20 @@ def get_profiles_map() -> dict[int, dict]:
             }
     except Exception:
         return {}
+
+
+def get_effective_roles(user_id: int, primary_role: str) -> list[str]:
+    roles: list[str] = [primary_role]
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            response = client.get(f"{config.USER_SERVICE_URL}/users/{user_id}")
+            if response.status_code == 200:
+                profile = response.json() or {}
+                profile_roles = profile.get("roles") or []
+                roles = list(dict.fromkeys([primary_role, *[role for role in profile_roles if isinstance(role, str) and role]]))
+    except Exception:
+        pass
+    return roles
 
 
 def generate_temporary_password(length: int = 12) -> str:
@@ -272,7 +291,7 @@ def login(form_data: schemas.LoginRequest, db: Session = Depends(get_db)):
         )
     
     # JWT spec expects `sub` to be a string; cast user.id accordingly
-    access_token = security.create_access_token({"sub": str(user.id), "roles": [user.role]})
+    access_token = security.create_access_token({"sub": str(user.id), "roles": get_effective_roles(user.id, user.role)})
     refresh_token = security.create_refresh_token({"sub": str(user.id)})
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
@@ -303,7 +322,7 @@ def refresh_token(payload: schemas.RefreshTokenRequest, db: Session = Depends(ge
         raise HTTPException(status_code=403, detail="Account inactive")
 
     # Issue a new access token and rotate refresh token
-    access_token = security.create_access_token({"sub": str(user.id), "roles": [user.role]})
+    access_token = security.create_access_token({"sub": str(user.id), "roles": get_effective_roles(user.id, user.role)})
     new_refresh_token = security.create_refresh_token({"sub": str(user.id)})
     return {"access_token": access_token, "refresh_token": new_refresh_token, "token_type": "bearer"}
 
