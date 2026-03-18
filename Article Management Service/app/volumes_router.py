@@ -160,13 +160,6 @@ def create_volume(
     ensure_editor(current_user)
 
     # Проверка уникальности (год+номер)
-    existing = db.query(models.Volume).filter(
-        models.Volume.year == payload.year,
-        models.Volume.number == payload.number,
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Volume with this year and number already exists")
-
     volume = models.Volume(
         year=payload.year,
         number=payload.number,
@@ -218,16 +211,6 @@ def update_volume(
     update_data = payload.dict(exclude_unset=True)
 
     # Если меняется год/номер нужно проверить уникальность
-    if ("year" in update_data or "number" in update_data):
-        new_year = update_data.get("year", volume.year)
-        new_number = update_data.get("number", volume.number)
-        exists = db.query(models.Volume).filter(
-            models.Volume.year == new_year,
-            models.Volume.number == new_number,
-            models.Volume.id != volume_id,
-        ).first()
-        if exists:
-            raise HTTPException(status_code=400, detail="Another volume with this year and number exists")
 
     # Обновляем простые поля
     for field in [
