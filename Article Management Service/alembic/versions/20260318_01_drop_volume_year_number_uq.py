@@ -1,6 +1,6 @@
 """drop volumes(year, number) unique constraint
 
-Revision ID: 20260318_01_drop_volume_year_number_uq
+Revision ID: 20260318_01_drop_vol_uq
 Revises: 20260312_01
 Create Date: 2026-03-18
 """
@@ -10,7 +10,7 @@ from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
-revision = "20260318_01_drop_volume_year_number_uq"
+revision = "20260318_01_drop_vol_uq"
 down_revision = "20260312_01"
 branch_labels = None
 depends_on = None
