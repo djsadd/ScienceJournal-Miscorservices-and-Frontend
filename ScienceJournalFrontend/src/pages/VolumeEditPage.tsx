@@ -382,8 +382,8 @@ export default function VolumeEditPage() {
                       {Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}
                     </div>
                     <div className="latest-table__cell volume-edit__cell--file">
-                      {a.manuscript_file_url ? (
-                        <a className="button button--ghost button--compact" href={toApiFilesUrl(a.manuscript_file_url)} target="_blank" rel="noreferrer">
+                      {a.layout_file_url || a.manuscript_file_url ? (
+                        <a className="button button--ghost button--compact" href={toApiFilesUrl(a.layout_file_url || a.manuscript_file_url || '')} target="_blank" rel="noreferrer">
                           PDF
                         </a>
                       ) : (
@@ -516,8 +516,8 @@ export default function VolumeEditPage() {
                       {Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}
                     </div>
                     <div className="latest-table__cell volume-edit__cell--file">
-                      {a.manuscript_file_url ? (
-                        <a className="button button--ghost button--compact" href={toApiFilesUrl(a.manuscript_file_url)} target="_blank" rel="noreferrer">
+                      {a.layout_file_url || a.manuscript_file_url ? (
+                        <a className="button button--ghost button--compact" href={toApiFilesUrl(a.layout_file_url || a.manuscript_file_url || '')} target="_blank" rel="noreferrer">
                           PDF
                         </a>
                       ) : (
