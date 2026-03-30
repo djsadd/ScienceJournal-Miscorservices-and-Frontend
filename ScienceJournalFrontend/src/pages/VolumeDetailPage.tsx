@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+
 import { api } from '../api/client'
-import type { Volume, Article } from '../shared/types'
+import type { Article, Volume } from '../shared/types'
+import { toApiFilesUrl } from '../shared/url'
 
 export default function VolumeDetailPage() {
   const { id } = useParams()
   const [volume, setVolume] = useState<Volume | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [movingArticleId, setMovingArticleId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -25,8 +28,26 @@ export default function VolumeDetailPage() {
       }
     }
     run()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [id])
+
+  const moveArticle = async (articleId: string, direction: 'up' | 'down') => {
+    if (!id) return
+    setMovingArticleId(articleId)
+    setError(null)
+    try {
+      const updated = await api.reorderVolumeArticle<Volume>(id, articleId, direction)
+      setVolume(updated)
+    } catch (e: any) {
+      setError(e?.bodyJson?.detail || e?.message || 'Не удалось изменить порядок статей')
+    } finally {
+      setMovingArticleId(null)
+    }
+  }
+
+  const articles = volume?.articles || []
 
   return (
     <div className="app-container">
@@ -61,40 +82,74 @@ export default function VolumeDetailPage() {
               </div>
               {volume.description && <p className="article-abstract">{volume.description}</p>}
               <div className="article-footer">
-                <span className="meta-label">Статей: {volume.articles?.length ?? 0}</span>
+                <span className="meta-label">Статей: {articles.length}</span>
               </div>
             </div>
           )}
         </div>
 
-        {volume?.articles && volume.articles.length > 0 && (
+        {articles.length > 0 && (
           <div className="panel">
             <div className="latest-table__title">Статьи в томе</div>
-            <div className="latest-table__head">
+            <div className="latest-table__head" style={{ gridTemplateColumns: '88px minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.2fr) 170px 150px' }}>
+              <span>Порядок</span>
               <span>Название</span>
               <span>Тип</span>
               <span>Авторы</span>
               <span>Файл</span>
+              <span>Действия</span>
             </div>
             <div className="latest-table__body">
-              {volume.articles.map((a: Article) => (
-                <div className="latest-table__row" key={String(a.id)}>
-                  <div className="latest-table__cell latest-table__cell--title">
-                    <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
-                    <div className="latest-table__meta">DOI: {a.doi || '—'}</div>
-                  </div>
-                  <div className="latest-table__cell">{a.article_type || '—'}</div>
-                  <div className="latest-table__cell">{Array.isArray(a.authors) ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}</div>
-                  <div className="latest-table__cell">
-                    {(() => {
-                      const downloadSrc = a.layout_file_url ?? a.manuscript_file_url
-                      return downloadSrc ? null : (
+              {articles.map((article: Article, index) => {
+                const downloadSrc = article.layout_file_url ?? article.manuscript_file_url
+                const isMoving = movingArticleId === String(article.id)
+                return (
+                  <div
+                    className="latest-table__row"
+                    key={String(article.id)}
+                    style={{ gridTemplateColumns: '88px minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.2fr) 170px 150px' }}
+                  >
+                    <div className="latest-table__cell">
+                      <strong>{article.sort_order ?? index + 1}</strong>
+                    </div>
+                    <div className="latest-table__cell latest-table__cell--title">
+                      <div className="latest-table__name">{article.title_ru || article.title_en || article.title_kz || 'Без заголовка'}</div>
+                      <div className="latest-table__meta">DOI: {article.doi || '—'}</div>
+                    </div>
+                    <div className="latest-table__cell">{article.article_type || '—'}</div>
+                    <div className="latest-table__cell">
+                      {Array.isArray(article.authors) ? article.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ') : '—'}
+                    </div>
+                    <div className="latest-table__cell">
+                      {downloadSrc ? (
+                        <a className="button button--ghost button--compact" href={toApiFilesUrl(downloadSrc)} target="_blank" rel="noreferrer">
+                          PDF
+                        </a>
+                      ) : (
                         <span className="meta-label">Нет файла</span>
-                      )
-                    })()}
+                      )}
+                    </div>
+                    <div className="latest-table__cell" style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        className="button button--ghost button--compact"
+                        type="button"
+                        onClick={() => moveArticle(String(article.id), 'up')}
+                        disabled={isMoving || index === 0}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        className="button button--ghost button--compact"
+                        type="button"
+                        onClick={() => moveArticle(String(article.id), 'down')}
+                        disabled={isMoving || index === articles.length - 1}
+                      >
+                        ↓
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

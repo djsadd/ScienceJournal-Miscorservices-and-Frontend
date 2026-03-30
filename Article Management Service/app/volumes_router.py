@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
-from sqlalchemy.orm import Session, joinedload
 from typing import List
-from jose import jwt, JWTError
-from app import models, schemas, database, config
+
 import httpx
+from fastapi import APIRouter, Depends, HTTPException, Header
+from jose import JWTError, jwt
+from sqlalchemy import and_, select
+from sqlalchemy.orm import Session, joinedload
+
+from app import config, database, models, schemas
 
 router = APIRouter(prefix="/volumes", tags=["volumes"])
 
@@ -43,6 +46,90 @@ def ensure_editor(user):
         raise HTTPException(status_code=403, detail="Editor role required")
 
 
+def _load_volume_article_orders(db: Session, volume_ids: list[int]) -> dict[int, list[tuple[int, int]]]:
+    if not volume_ids:
+        return {}
+    rows = db.execute(
+        select(
+            models.volume_articles.c.volume_id,
+            models.volume_articles.c.article_id,
+            models.volume_articles.c.sort_order,
+        )
+        .where(models.volume_articles.c.volume_id.in_(volume_ids))
+        .order_by(
+            models.volume_articles.c.volume_id.asc(),
+            models.volume_articles.c.sort_order.asc(),
+            models.volume_articles.c.article_id.asc(),
+        )
+    ).all()
+    result: dict[int, list[tuple[int, int]]] = {}
+    for volume_id, article_id, sort_order in rows:
+        result.setdefault(volume_id, []).append((article_id, sort_order))
+    return result
+
+
+def _apply_article_order(db: Session, volumes: list[models.Volume]):
+    order_map = _load_volume_article_orders(db, [v.id for v in volumes if v.id is not None])
+    for volume in volumes:
+        ordered = order_map.get(volume.id, [])
+        if not ordered or not getattr(volume, "articles", None):
+            continue
+        article_by_id = {article.id: article for article in volume.articles}
+        seen_article_ids = set()
+        reordered_articles = []
+        for article_id, sort_order in ordered:
+            article = article_by_id.get(article_id)
+            if article is None:
+                continue
+            setattr(article, "sort_order", sort_order)
+            reordered_articles.append(article)
+            seen_article_ids.add(article_id)
+        for article in volume.articles:
+            if article.id in seen_article_ids:
+                continue
+            setattr(article, "sort_order", None)
+            reordered_articles.append(article)
+        volume.articles = reordered_articles
+
+
+def _attach_articles_to_volume(db: Session, volume_id: int, article_ids: list[int]):
+    if not article_ids:
+        return
+    articles = db.query(models.Article).filter(models.Article.id.in_(article_ids)).all()
+    found_ids = {a.id for a in articles}
+    missing = [aid for aid in article_ids if aid not in found_ids]
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Articles not found: {missing}")
+    not_published = [a.id for a in articles if a.status != models.ArticleStatus.published]
+    if not_published:
+        raise HTTPException(status_code=400, detail=f"Articles not published: {not_published}")
+    for sort_order, article_id in enumerate(article_ids, start=1):
+        db.execute(
+            models.volume_articles.insert().values(
+                volume_id=volume_id,
+                article_id=article_id,
+                sort_order=sort_order,
+            )
+        )
+
+
+def _get_volume_with_articles(db: Session, volume_id: int, active_only: bool = False):
+    query = (
+        db.query(models.Volume)
+        .options(
+            joinedload(models.Volume.articles).joinedload(models.Article.authors),
+            joinedload(models.Volume.articles).joinedload(models.Article.keywords),
+        )
+        .filter(models.Volume.id == volume_id)
+    )
+    if active_only:
+        query = query.filter(models.Volume.is_active.is_(True))
+    volume = query.first()
+    if volume:
+        _apply_article_order(db, [volume])
+    return volume
+
+
 @router.get("/", response_model=List[schemas.VolumeOut])
 def list_volumes(
     db: Session = Depends(get_db),
@@ -50,8 +137,6 @@ def list_volumes(
     year: int | None = None,
     number: int | None = None,
     month: int | None = None,
-    # Для редактора по умолчанию показываем все (включая неактивные),
-    # для остальных по умолчанию только активные. Пользователь может переопределить через query param.
     active_only: bool | None = None,
 ):
     query = db.query(models.Volume).options(
@@ -64,15 +149,13 @@ def list_volumes(
         query = query.filter(models.Volume.number == number)
     if month is not None:
         query = query.filter(models.Volume.month == month)
-    # Определяем, нужно ли фильтровать только активные тома
-    # По умолчанию: редактор видит все, остальные — только активные
     roles = current_user.get("roles", [])
     is_editor = "editor" in roles or "admin" in roles
     effective_active_only = (not is_editor) if active_only is None else bool(active_only)
     if effective_active_only:
         query = query.filter(models.Volume.is_active.is_(True))
-    # Порядок новее раньше
     volumes = query.order_by(models.Volume.year.desc(), models.Volume.number.desc()).all()
+    _apply_article_order(db, volumes)
     _enrich_articles_with_layout(volumes)
     return volumes
 
@@ -84,11 +167,6 @@ def list_active_volumes_public(
     number: int | None = None,
     month: int | None = None,
 ):
-    """Публичный (гостевой) список активных томов.
-
-    Не требует аутентификации. Всегда показывает только тома с `is_active = True`.
-    Поддерживает фильтры по году, номеру и месяцу. Сортировка: новые сначала.
-    """
     query = db.query(models.Volume).options(
         joinedload(models.Volume.articles).joinedload(models.Article.authors),
         joinedload(models.Volume.articles).joinedload(models.Article.keywords),
@@ -102,6 +180,7 @@ def list_active_volumes_public(
         query = query.filter(models.Volume.month == month)
 
     volumes = query.order_by(models.Volume.year.desc(), models.Volume.number.desc()).all()
+    _apply_article_order(db, volumes)
     _enrich_articles_with_layout(volumes)
     return volumes
 
@@ -111,19 +190,7 @@ def get_active_volume_public(
     volume_id: int,
     db: Session = Depends(get_db),
 ):
-    """Публичное получение одного активного тома по ID.
-
-    Возвращает 404 если том не найден или не активен.
-    """
-    volume = (
-        db.query(models.Volume)
-        .options(
-            joinedload(models.Volume.articles).joinedload(models.Article.authors),
-            joinedload(models.Volume.articles).joinedload(models.Article.keywords),
-        )
-        .filter(models.Volume.id == volume_id, models.Volume.is_active.is_(True))
-        .first()
-    )
+    volume = _get_volume_with_articles(db, volume_id, active_only=True)
     if not volume:
         raise HTTPException(status_code=404, detail="Active volume not found")
     _enrich_articles_with_layout([volume])
@@ -136,15 +203,7 @@ def get_volume(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    volume = (
-        db.query(models.Volume)
-        .options(
-            joinedload(models.Volume.articles).joinedload(models.Article.authors),
-            joinedload(models.Volume.articles).joinedload(models.Article.keywords),
-        )
-        .filter(models.Volume.id == volume_id)
-        .first()
-    )
+    volume = _get_volume_with_articles(db, volume_id)
     if not volume:
         raise HTTPException(status_code=404, detail="Volume not found")
     _enrich_articles_with_layout([volume])
@@ -159,7 +218,6 @@ def create_volume(
 ):
     ensure_editor(current_user)
 
-    # Проверка уникальности (год+номер)
     volume = models.Volume(
         year=payload.year,
         number=payload.number,
@@ -176,22 +234,11 @@ def create_volume(
     db.add(volume)
     db.flush()
 
-    # Привязка статей (только опубликованные)
     if payload.article_ids:
-        articles = db.query(models.Article).filter(models.Article.id.in_(payload.article_ids)).all()
-        found_ids = {a.id for a in articles}
-        missing = [aid for aid in payload.article_ids if aid not in found_ids]
-        if missing:
-            raise HTTPException(status_code=400, detail=f"Articles not found: {missing}")
-        # Проверяем статусы
-        not_published = [a.id for a in articles if a.status != models.ArticleStatus.published]
-        if not_published:
-            raise HTTPException(status_code=400, detail=f"Articles not published: {not_published}")
-        for article in articles:
-            db.execute(models.volume_articles.insert().values(volume_id=volume.id, article_id=article.id))
+        _attach_articles_to_volume(db, volume.id, payload.article_ids)
 
     db.commit()
-    db.refresh(volume)
+    volume = _get_volume_with_articles(db, volume.id)
     return volume
 
 
@@ -210,9 +257,6 @@ def update_volume(
 
     update_data = payload.dict(exclude_unset=True)
 
-    # Если меняется год/номер нужно проверить уникальность
-
-    # Обновляем простые поля
     for field in [
         "year",
         "number",
@@ -229,7 +273,6 @@ def update_volume(
         if field in update_data:
             setattr(volume, field, update_data[field])
 
-    # file_id -> file_url conversion
     if "complete_issue_file_id" in update_data:
         volume.complete_issue_file_url = _file_id_to_url(update_data["complete_issue_file_id"])
     if "cover_file_id" in update_data:
@@ -237,24 +280,78 @@ def update_volume(
     if "contents_file_id" in update_data:
         volume.contents_file_url = _file_id_to_url(update_data["contents_file_id"])
 
-    # Полная замена списка статей если передан article_ids
     if "article_ids" in update_data and update_data["article_ids"] is not None:
         article_ids = update_data["article_ids"]
         db.execute(models.volume_articles.delete().where(models.volume_articles.c.volume_id == volume_id))
-        if article_ids:
-            articles = db.query(models.Article).filter(models.Article.id.in_(article_ids)).all()
-            found_ids = {a.id for a in articles}
-            missing = [aid for aid in article_ids if aid not in found_ids]
-            if missing:
-                raise HTTPException(status_code=400, detail=f"Articles not found: {missing}")
-            not_published = [a.id for a in articles if a.status != models.ArticleStatus.published]
-            if not_published:
-                raise HTTPException(status_code=400, detail=f"Articles not published: {not_published}")
-            for article in articles:
-                db.execute(models.volume_articles.insert().values(volume_id=volume.id, article_id=article.id))
+        _attach_articles_to_volume(db, volume.id, article_ids)
 
     db.commit()
-    db.refresh(volume)
+    volume = _get_volume_with_articles(db, volume_id)
+    _enrich_articles_with_layout([volume])
+    return volume
+
+
+@router.patch("/{volume_id}/articles/{article_id}/order", response_model=schemas.VolumeOut)
+def update_volume_article_order(
+    volume_id: int,
+    article_id: int,
+    payload: schemas.VolumeArticleOrderUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    ensure_editor(current_user)
+    volume = db.query(models.Volume).filter(models.Volume.id == volume_id).first()
+    if not volume:
+        raise HTTPException(status_code=404, detail="Volume not found")
+
+    rows = db.execute(
+        select(
+            models.volume_articles.c.article_id,
+            models.volume_articles.c.sort_order,
+        )
+        .where(models.volume_articles.c.volume_id == volume_id)
+        .order_by(models.volume_articles.c.sort_order.asc(), models.volume_articles.c.article_id.asc())
+    ).all()
+    if not rows:
+        raise HTTPException(status_code=404, detail="Volume has no articles")
+
+    article_ids = [row.article_id for row in rows]
+    if article_id not in article_ids:
+        raise HTTPException(status_code=404, detail="Article not found in volume")
+
+    current_index = article_ids.index(article_id)
+    target_index = current_index - 1 if payload.direction == "up" else current_index + 1
+    if target_index < 0 or target_index >= len(article_ids):
+        raise HTTPException(status_code=400, detail="Article cannot be moved further")
+
+    target_article_id = article_ids[target_index]
+    current_sort_order = rows[current_index].sort_order
+    target_sort_order = rows[target_index].sort_order
+
+    db.execute(
+        models.volume_articles.update()
+        .where(
+            and_(
+                models.volume_articles.c.volume_id == volume_id,
+                models.volume_articles.c.article_id == article_id,
+            )
+        )
+        .values(sort_order=target_sort_order)
+    )
+    db.execute(
+        models.volume_articles.update()
+        .where(
+            and_(
+                models.volume_articles.c.volume_id == volume_id,
+                models.volume_articles.c.article_id == target_article_id,
+            )
+        )
+        .values(sort_order=current_sort_order)
+    )
+
+    db.commit()
+
+    volume = _get_volume_with_articles(db, volume_id)
     _enrich_articles_with_layout([volume])
     return volume
 
@@ -269,24 +366,21 @@ def delete_volume(
     volume = db.query(models.Volume).filter(models.Volume.id == volume_id).first()
     if not volume:
         raise HTTPException(status_code=404, detail="Volume not found")
-    # Удаляем связи
     db.execute(models.volume_articles.delete().where(models.volume_articles.c.volume_id == volume_id))
     db.delete(volume)
     db.commit()
     return None
 
-# Utility: enrich article objects with latest layout file links
+
 def _enrich_articles_with_layout(volumes: list[models.Volume]):
     layout_base = getattr(config, "LAYOUT_SERVICE_URL", "http://layout:8000")
-    # Collect unique published article IDs
     article_map = {}
-    for v in volumes:
-        for a in getattr(v, "articles", []) or []:
-            if a.status == models.ArticleStatus.published:
-                article_map[a.id] = a
+    for volume in volumes:
+        for article in getattr(volume, "articles", []) or []:
+            if article.status == models.ArticleStatus.published:
+                article_map[article.id] = article
     if not article_map:
         return
-    # Fetch layout records per article sequentially (low volume); can optimize later
     for article_id, article in article_map.items():
         try:
             with httpx.Client(timeout=3.0) as client:
@@ -294,12 +388,9 @@ def _enrich_articles_with_layout(volumes: list[models.Volume]):
                 if resp.status_code == 200:
                     data = resp.json() or []
                     if data:
-                        # data is list ordered by created_at desc in service implementation
                         layout_record = data[0]
                         file_url = layout_record.get("file_url")
                         if file_url:
-                            # expose layout link; frontend can prefer this over manuscript
                             setattr(article, "layout_file_url", file_url)
         except Exception:
-            # Soft-fail: ignore layout errors
             pass

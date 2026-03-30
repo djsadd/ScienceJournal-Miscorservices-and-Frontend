@@ -224,6 +224,7 @@ class ArticleOut(BaseModel):
     cover_letter_file_url: Optional[str] = None
     # Ссылка на файл верстки (если доступна)
     layout_file_url: Optional[str] = None
+    sort_order: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     versions: List[ArticleVersionOut] = Field(default_factory=list)
@@ -306,3 +307,7 @@ class VolumeOut(VolumeBase):
 
     class Config:
         orm_mode = True
+
+
+class VolumeArticleOrderUpdate(BaseModel):
+    direction: str = Field(..., regex="^(up|down)$")

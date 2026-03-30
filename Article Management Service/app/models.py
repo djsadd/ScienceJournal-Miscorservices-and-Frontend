@@ -47,6 +47,7 @@ volume_articles = Table(
     Base.metadata,
     Column("volume_id", Integer, ForeignKey("volumes.id"), primary_key=True),
     Column("article_id", Integer, ForeignKey("articles.id"), primary_key=True),
+    Column("sort_order", Integer, nullable=False, default=0),
 )
 
 

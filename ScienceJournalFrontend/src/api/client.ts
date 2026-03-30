@@ -368,6 +368,8 @@ export const api = {
     is_active: boolean
     article_ids: number[]
   }>) => request<T>(`/volumes/${id}`, 'PATCH', { json: body }),
+  reorderVolumeArticle: <T>(volumeId: number | string, articleId: number | string, direction: 'up' | 'down') =>
+    request<T>(`/volumes/${volumeId}/articles/${articleId}/order`, 'PATCH', { json: { direction } }),
   // Notifications
   getNotifications: <T>(params?: { status?: 'unread' | 'read'; limit?: number; offset?: number }) =>
     request<T>('/notifications', 'GET', { params }),
