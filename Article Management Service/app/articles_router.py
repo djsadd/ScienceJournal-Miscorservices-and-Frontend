@@ -102,6 +102,7 @@ def _create_article_version_snapshot(db: Session, article: models.Article, versi
         abstract_kz=article.abstract_kz,
         abstract_en=article.abstract_en,
         abstract_ru=article.abstract_ru,
+        article_language=article.article_language,
         doi=article.doi,
         article_type=article.article_type,
         manuscript_file_url=article.manuscript_file_url,
@@ -834,6 +835,30 @@ def create_author(
     return new_author
 
 
+@router.patch("/authors/{author_id}", response_model=schemas.AuthorOut)
+def update_author(
+    author_id: int,
+    payload: schemas.AuthorUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    roles = current_user.get("roles", [])
+    if "author" not in roles and "editor" not in roles:
+        raise HTTPException(status_code=403, detail="Author or editor role required")
+
+    author = db.query(models.Author).filter(models.Author.id == author_id).first()
+    if not author:
+        raise HTTPException(status_code=404, detail="Author not found")
+
+    update_data = payload.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(author, field, value)
+
+    db.commit()
+    db.refresh(author)
+    return author
+
+
 @router.post("/", response_model=schemas.ArticleOut)
 def create_article(article: schemas.ArticleCreateWithIds, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """Create article.
@@ -852,6 +877,7 @@ def create_article(article: schemas.ArticleCreateWithIds, db: Session = Depends(
         abstract_kz=article.abstract_kz,
         abstract_en=article.abstract_en,
         abstract_ru=article.abstract_ru,
+        article_language=article.article_language,
         doi=article.doi,
         status=models.ArticleStatus.submitted,
         article_type=article.article_type,
@@ -953,6 +979,7 @@ def quick_publish_article(
             abstract_kz=article.abstract_kz,
             abstract_en=article.abstract_en,
             abstract_ru=article.abstract_ru,
+            article_language=article.article_language,
             doi=article.doi,
             status=models.ArticleStatus.published,  # Direct to published
             article_type=article.article_type,
@@ -1052,6 +1079,7 @@ def create_article_by_ids(
         abstract_kz=article.abstract_kz,
         abstract_en=article.abstract_en,
         abstract_ru=article.abstract_ru,
+        article_language=article.article_language,
         doi=article.doi,
         status=article.status,
         article_type=article.article_type,

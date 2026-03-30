@@ -113,6 +113,7 @@ class Article(Base):
     abstract_kz = Column(String, nullable=True)
     abstract_en = Column(String, nullable=True)
     abstract_ru = Column(String, nullable=True)
+    article_language = Column(String, nullable=True)
     doi = Column(String, nullable=True)
     status = Column(Enum(ArticleStatus), default=ArticleStatus.draft)
     article_type = Column(Enum(ArticleType), nullable=False, default=ArticleType.original)
@@ -157,6 +158,7 @@ class ArticleVersion(Base):
     abstract_kz = Column(String, nullable=True)
     abstract_en = Column(String, nullable=True)
     abstract_ru = Column(String, nullable=True)
+    article_language = Column(String, nullable=True)
     doi = Column(String, nullable=True)
     article_type = Column(Enum(ArticleType), nullable=False)
     

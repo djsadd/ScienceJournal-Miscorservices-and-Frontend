@@ -38,6 +38,7 @@ interface ApiArticle {
   abstract_kz: string
   abstract_en: string
   abstract_ru: string
+  article_language: string | null
   doi: string | null
   status: string
   article_type: string
@@ -81,10 +82,72 @@ interface ArticleUpdatePayload {
   abstract_kz?: string | null
   abstract_en?: string | null
   abstract_ru?: string | null
+  article_language?: string | null
   doi?: string | null
 }
 
 const normalizeKeywordValue = (value: string) => value.trim()
+const articleLanguageOptions = [
+  { value: 'ru', label: 'Русский' },
+  { value: 'kz', label: 'Казахский' },
+  { value: 'en', label: 'Английский' },
+]
+
+type AuthorForm = {
+  id?: number
+  email: string
+  prefix: string
+  firstName: string
+  middleName: string
+  lastName: string
+  phone: string
+  address: string
+  country: string
+  affiliation1: string
+  affiliation2: string
+  affiliation3: string
+  isCorresponding: boolean
+  orcid: string
+  scopusId: string
+  researcherId: string
+}
+
+const createEmptyAuthorForm = (): AuthorForm => ({
+  email: '',
+  prefix: '',
+  firstName: '',
+  middleName: '',
+  lastName: '',
+  phone: '',
+  address: '',
+  country: '',
+  affiliation1: '',
+  affiliation2: '',
+  affiliation3: '',
+  isCorresponding: true,
+  orcid: '',
+  scopusId: '',
+  researcherId: '',
+})
+
+const mapApiAuthorToForm = (author: ApiAuthor): AuthorForm => ({
+  id: author.id,
+  email: author.email,
+  prefix: author.prefix ?? '',
+  firstName: author.first_name,
+  middleName: author.patronymic ?? '',
+  lastName: author.last_name,
+  phone: author.phone ?? '',
+  address: author.address ?? '',
+  country: author.country,
+  affiliation1: author.affiliation1,
+  affiliation2: author.affiliation2 ?? '',
+  affiliation3: author.affiliation3 ?? '',
+  isCorresponding: author.is_corresponding,
+  orcid: author.orcid ?? '',
+  scopusId: author.scopus_author_id ?? '',
+  researcherId: author.researcher_id ?? '',
+})
 
 export default function EditorPublishedArticleEditPage() {
   const { id } = useParams<{ id: string }>()
@@ -106,46 +169,12 @@ export default function EditorPublishedArticleEditPage() {
   const [selectedKeywords, setSelectedKeywords] = useState<Keyword[]>([])
   const [kwModalOpen, setKwModalOpen] = useState(false)
   const [newKeyword, setNewKeyword] = useState<Keyword>({ ru: '', kz: '', en: '' })
-  // authors edit state (reused from submission page)
-  type AuthorForm = {
-    id?: number
-    email: string
-    prefix: string
-    firstName: string
-    middleName: string
-    lastName: string
-    phone: string
-    address: string
-    country: string
-    affiliation1: string
-    affiliation2: string
-    affiliation3: string
-    isCorresponding: boolean
-    orcid: string
-    scopusId: string
-    researcherId: string
-  }
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [allAuthors, setAllAuthors] = useState<ApiAuthor[]>([])
   const [authorQuery, setAuthorQuery] = useState('')
-  const [authorForm, setAuthorForm] = useState<AuthorForm>({
-    email: '',
-    prefix: '',
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    phone: '',
-    address: '',
-    country: '',
-    affiliation1: '',
-    affiliation2: '',
-    affiliation3: '',
-    isCorresponding: true,
-    orcid: '',
-    scopusId: '',
-    researcherId: '',
-  })
+  const [authorForm, setAuthorForm] = useState<AuthorForm>(createEmptyAuthorForm())
   const [authorList, setAuthorList] = useState<AuthorForm[]>([])
+  const [editingAuthorIndex, setEditingAuthorIndex] = useState<number | null>(null)
   // file replacement state
   const [fileManuscript, setFileManuscript] = useState<File | null>(null)
   const [fileAntiplagiarism, setFileAntiplagiarism] = useState<File | null>(null)
@@ -170,24 +199,7 @@ export default function EditorPublishedArticleEditPage() {
         const mappedSelected = (articleData.keywords ?? []).map((k) => ({ id: k.id, ru: k.title_ru, kz: k.title_kz, en: k.title_en }))
         setSelectedKeywords(mappedSelected)
         // initialize authors list for editing
-        const initAuthors: AuthorForm[] = (articleData.authors ?? []).map((a) => ({
-          id: a.id,
-          email: a.email,
-          prefix: a.prefix ?? '',
-          firstName: a.first_name,
-          middleName: a.patronymic ?? '',
-          lastName: a.last_name,
-          phone: a.phone ?? '',
-          address: a.address ?? '',
-          country: a.country,
-          affiliation1: a.affiliation1,
-          affiliation2: a.affiliation2 ?? '',
-          affiliation3: a.affiliation3 ?? '',
-          isCorresponding: a.is_corresponding,
-          orcid: a.orcid ?? '',
-          scopusId: a.scopus_author_id ?? '',
-          researcherId: a.researcher_id ?? '',
-        }))
+        const initAuthors: AuthorForm[] = (articleData.authors ?? []).map(mapApiAuthorToForm)
         setAuthorList(initAuthors)
       })
       .catch((err: Error) => {
@@ -211,6 +223,97 @@ export default function EditorPublishedArticleEditPage() {
       mounted = false
     }
   }, [])
+
+  const openCreateAuthorModal = () => {
+    setEditingAuthorIndex(null)
+    setAuthorForm(createEmptyAuthorForm())
+    setAuthorModalOpen(true)
+  }
+
+  const openEditAuthorModal = (index: number) => {
+    setEditingAuthorIndex(index)
+    setAuthorForm({ ...authorList[index] })
+    setAuthorModalOpen(true)
+  }
+
+  const closeAuthorModal = () => {
+    setAuthorModalOpen(false)
+    setEditingAuthorIndex(null)
+    setAuthorForm(createEmptyAuthorForm())
+  }
+
+  const syncAuthorInCollections = (savedAuthor: ApiAuthor, listIndex: number | null) => {
+    setAllAuthors((prev) => {
+      const next = [...prev]
+      const existingIndex = next.findIndex((item) => item.id === savedAuthor.id)
+      if (existingIndex >= 0) next[existingIndex] = savedAuthor
+      else next.push(savedAuthor)
+      return next
+    })
+
+    const mapped = mapApiAuthorToForm(savedAuthor)
+    setAuthorList((prev) => {
+      if (listIndex === null) return [...prev, mapped]
+      return prev.map((item, index) => (index === listIndex ? mapped : item))
+    })
+
+    setArticle((prev) => {
+      if (!prev) return prev
+      const nextAuthors = [...(prev.authors ?? [])]
+      if (listIndex === null) nextAuthors.push(savedAuthor)
+      else nextAuthors[listIndex] = savedAuthor
+      return { ...prev, authors: nextAuthors }
+    })
+  }
+
+  const saveAuthor = async () => {
+    if (
+      !authorForm.email.trim()
+      || !authorForm.firstName.trim()
+      || !authorForm.lastName.trim()
+      || !authorForm.country.trim()
+      || !authorForm.affiliation1.trim()
+    ) return
+    const payload = {
+      email: authorForm.email.trim(),
+      prefix: authorForm.prefix.trim() || null,
+      first_name: authorForm.firstName.trim(),
+      patronymic: authorForm.middleName.trim() || null,
+      last_name: authorForm.lastName.trim(),
+      phone: authorForm.phone.trim() || null,
+      address: authorForm.address.trim() || null,
+      country: authorForm.country.trim(),
+      affiliation1: authorForm.affiliation1.trim(),
+      affiliation2: authorForm.affiliation2.trim() || null,
+      affiliation3: authorForm.affiliation3.trim() || null,
+      is_corresponding: authorForm.isCorresponding,
+      orcid: authorForm.orcid.trim() || null,
+      scopus_author_id: authorForm.scopusId.trim() || null,
+      researcher_id: authorForm.researcherId.trim() || null,
+    }
+
+    try {
+      if (editingAuthorIndex !== null && authorForm.id) {
+        const updated = await api.updateAuthor<ApiAuthor>(authorForm.id, payload)
+        syncAuthorInCollections(updated, editingAuthorIndex)
+      } else {
+        const created = await api.post<ApiAuthor>('/articles/authors', payload)
+        syncAuthorInCollections(created, null)
+      }
+      closeAuthorModal()
+    } catch (err) {
+      console.error('Failed to save author', err)
+      alert('Не удалось сохранить автора. Попробуйте позже.')
+    }
+  }
+
+  const removeAuthor = (index: number) => {
+    setAuthorList((prev) => prev.filter((_, itemIndex) => itemIndex !== index))
+    setArticle((prev) => {
+      if (!prev) return prev
+      return { ...prev, authors: (prev.authors ?? []).filter((_, itemIndex) => itemIndex !== index) }
+    })
+  }
 
   if (loading) {
     return (
@@ -281,6 +384,7 @@ export default function EditorPublishedArticleEditPage() {
         abstract_kz: article.abstract_kz || null,
         abstract_en: article.abstract_en || null,
         abstract_ru: article.abstract_ru || null,
+        article_language: article.article_language || null,
         doi: article.doi || null,
       }
       const originalKeywordMap = new Map(
@@ -333,6 +437,7 @@ export default function EditorPublishedArticleEditPage() {
       const updated = await api.updateEditorPublishedArticle<ApiArticle>(article.id, extended)
       setArticle(updated)
       setSelectedKeywords((updated.keywords ?? []).map((k) => ({ id: k.id, ru: k.title_ru, kz: k.title_kz, en: k.title_en })))
+      setAuthorList((updated.authors ?? []).map(mapApiAuthorToForm))
       alert(`Статья "${updated.title_ru || updated.title_en || updated.title_kz}" успешно обновлена.`)
     } catch (e) {
       console.error('Ошибка при обновлении статьи', e)
@@ -497,6 +602,27 @@ export default function EditorPublishedArticleEditPage() {
           <div className="form-field">
             <div className="form-label">Дата создания</div>
             <div className="form-hint">{new Date(article.created_at).toLocaleDateString('ru-RU')}</div>
+          </div>
+          <div className="form-field">
+            <div className="form-label">Язык статьи</div>
+            {canEdit ? (
+              <select
+                className="text-input"
+                value={article.article_language ?? ''}
+                onChange={(e) => setArticle({ ...article, article_language: e.target.value || null })}
+              >
+                <option value="">Не указан</option>
+                {articleLanguageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="form-hint">
+                {articleLanguageOptions.find((option) => option.value === article.article_language)?.label || 'Не указан'}
+              </div>
+            )}
           </div>
           <div className="form-field">
             <div className="form-label">DOI</div>
@@ -702,7 +828,7 @@ export default function EditorPublishedArticleEditPage() {
               <div>
                 <h3 className="panel-title">Редактирование состава авторов</h3>
               </div>
-              <button className="button button--primary button--compact" type="button" onClick={() => setAuthorModalOpen(true)}>
+              <button className="button button--primary button--compact" type="button" onClick={openCreateAuthorModal}>
                 Добавить автора
               </button>
             </div>
@@ -728,29 +854,7 @@ export default function EditorPublishedArticleEditPage() {
                         className="status-chip status-chip--submitted"
                         onClick={() => {
                           const exists = authorList.some((x) => x.email === a.email)
-                          if (!exists) {
-                            setAuthorList((prev) => [
-                              ...prev,
-                              {
-                                id: a.id,
-                                email: a.email,
-                                prefix: a.prefix ?? '',
-                                firstName: a.first_name,
-                                middleName: a.patronymic ?? '',
-                                lastName: a.last_name,
-                                phone: a.phone ?? '',
-                                address: a.address ?? '',
-                                country: a.country,
-                                affiliation1: a.affiliation1,
-                                affiliation2: a.affiliation2 ?? '',
-                                affiliation3: a.affiliation3 ?? '',
-                                isCorresponding: a.is_corresponding,
-                                orcid: a.orcid ?? '',
-                                scopusId: a.scopus_author_id ?? '',
-                                researcherId: a.researcher_id ?? '',
-                              },
-                            ])
-                          }
+                          if (!exists) setAuthorList((prev) => [...prev, mapApiAuthorToForm(a)])
                           setAuthorQuery('')
                         }}
                       >
@@ -769,6 +873,7 @@ export default function EditorPublishedArticleEditPage() {
                   <span>Email</span>
                   <span>Аффилиации</span>
                   <span>Корр. автор</span>
+                  <span>Действия</span>
                 </div>
                 <div className="table__body">
                   {authorList.map((a, idx) => (
@@ -783,6 +888,16 @@ export default function EditorPublishedArticleEditPage() {
                       <div className="table__cell">{a.email}</div>
                       <div className="table__cell">{[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '—'}</div>
                       <div className="table__cell">{a.isCorresponding ? 'Да' : 'Нет'}</div>
+                      <div className="table__cell">
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button className="button button--ghost button--compact" type="button" onClick={() => openEditAuthorModal(idx)}>
+                            Редактировать
+                          </button>
+                          <button className="button button--ghost button--compact" type="button" onClick={() => removeAuthor(idx)}>
+                            Убрать
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1049,11 +1164,11 @@ export default function EditorPublishedArticleEditPage() {
       ) : null}
 
       {authorModalOpen ? (
-        <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
+        <div className="modal-backdrop" onClick={closeAuthorModal}>
           <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Добавить автора</h3>
-              <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Закрыть">
+              <h3>{editingAuthorIndex !== null ? 'Редактировать автора' : 'Добавить автора'}</h3>
+              <button className="modal__close" onClick={closeAuthorModal} aria-label="Закрыть">
                 ×
               </button>
             </div>
@@ -1197,63 +1312,22 @@ export default function EditorPublishedArticleEditPage() {
               </div>
             </div>
             <div className="modal__footer">
-              <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>
+              <button className="button button--ghost" type="button" onClick={closeAuthorModal}>
                 Отмена
               </button>
               <button
                 className="button button--primary"
                 type="button"
-                onClick={async () => {
-                  if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()) return
-                  try {
-                    const payload = {
-                      email: authorForm.email.trim(),
-                      prefix: authorForm.prefix.trim() || null,
-                      first_name: authorForm.firstName.trim(),
-                      patronymic: authorForm.middleName.trim() || null,
-                      last_name: authorForm.lastName.trim(),
-                      phone: authorForm.phone.trim() || null,
-                      address: authorForm.address.trim() || null,
-                      country: authorForm.country.trim(),
-                      affiliation1: authorForm.affiliation1.trim(),
-                      affiliation2: authorForm.affiliation2.trim() || null,
-                      affiliation3: authorForm.affiliation3.trim() || null,
-                      is_corresponding: authorForm.isCorresponding,
-                      orcid: authorForm.orcid.trim() || null,
-                      scopus_author_id: authorForm.scopusId.trim() || null,
-                      researcher_id: authorForm.researcherId.trim() || null,
-                    }
-                    const created = await api.post<ApiAuthor>('/articles/authors', payload)
-                    setAllAuthors((prev) => [...prev, created])
-                    setAuthorList((prev) => [
-                      ...prev,
-                      {
-                        id: created.id,
-                        email: created.email,
-                        prefix: created.prefix ?? '',
-                        firstName: created.first_name,
-                        middleName: created.patronymic ?? '',
-                        lastName: created.last_name,
-                        phone: created.phone ?? '',
-                        address: created.address ?? '',
-                        country: created.country,
-                        affiliation1: created.affiliation1,
-                        affiliation2: created.affiliation2 ?? '',
-                        affiliation3: created.affiliation3 ?? '',
-                        isCorresponding: created.is_corresponding,
-                        orcid: created.orcid ?? '',
-                        scopusId: created.scopus_author_id ?? '',
-                        researcherId: created.researcher_id ?? '',
-                      },
-                    ])
-                    setAuthorModalOpen(false)
-                  } catch (err) {
-                    console.error('Failed to create author', err)
-                  }
-                }}
-                disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}
+                onClick={saveAuthor}
+                disabled={
+                  !authorForm.email.trim()
+                  || !authorForm.firstName.trim()
+                  || !authorForm.lastName.trim()
+                  || !authorForm.country.trim()
+                  || !authorForm.affiliation1.trim()
+                }
               >
-                Сохранить автора
+                {editingAuthorIndex !== null ? 'Сохранить изменения' : 'Сохранить автора'}
               </button>
             </div>
           </div>

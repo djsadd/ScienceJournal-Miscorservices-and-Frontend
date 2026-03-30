@@ -237,6 +237,23 @@ export const api = {
     request<T>(`/layout/articles/${articleId}/records`, 'GET'),
   // Domain-specific helpers
   getAuthors: <T>() => request<T>('/articles/authors', 'GET'),
+  updateAuthor: <T>(authorId: number | string, body: Partial<{
+    email: string | null
+    prefix: string | null
+    first_name: string | null
+    patronymic: string | null
+    last_name: string | null
+    phone: string | null
+    address: string | null
+    country: string | null
+    affiliation1: string | null
+    affiliation2: string | null
+    affiliation3: string | null
+    is_corresponding: boolean | null
+    orcid: string | null
+    scopus_author_id: string | null
+    researcher_id: string | null
+  }>) => request<T>(`/articles/authors/${authorId}`, 'PATCH', { json: body }),
   getKeywords: <T>() => request<T>('/articles/keywords', 'GET'),
   getArticleStatuses: <T>(params?: { scope?: 'unassigned' }) => request<T>('/articles/statuses', 'GET', { params }),
   getUnassignedArticles: <T>(params?: {
@@ -260,6 +277,7 @@ export const api = {
     abstract_kz: string | null
     abstract_en: string | null
     abstract_ru: string | null
+    article_language: string | null
     doi: string | null
     article_type: 'original' | 'review' | null
     not_published_elsewhere: boolean | null

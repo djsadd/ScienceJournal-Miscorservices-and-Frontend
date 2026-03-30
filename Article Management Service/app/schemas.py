@@ -59,6 +59,24 @@ class AuthorCreate(BaseModel):
     researcher_id: Optional[str] = None
 
 
+class AuthorUpdate(BaseModel):
+    email: Optional[str] = None
+    prefix: Optional[str] = None
+    first_name: Optional[str] = None
+    patronymic: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    country: Optional[str] = None
+    affiliation1: Optional[str] = None
+    affiliation2: Optional[str] = None
+    affiliation3: Optional[str] = None
+    is_corresponding: Optional[bool] = None
+    orcid: Optional[str] = None
+    scopus_author_id: Optional[str] = None
+    researcher_id: Optional[str] = None
+
+
 class AuthorOut(AuthorCreate):
     id: int
 
@@ -84,6 +102,7 @@ class ArticleVersionOut(BaseModel):
     abstract_kz: Optional[str] = None
     abstract_en: Optional[str] = None
     abstract_ru: Optional[str] = None
+    article_language: Optional[str] = None
     doi: Optional[str] = None
     article_type: ArticleType
     
@@ -120,6 +139,7 @@ class ArticleCreate(BaseModel):
     abstract_kz: Optional[str] = None
     abstract_en: Optional[str] = None
     abstract_ru: Optional[str] = None
+    article_language: Optional[str] = None
     doi: Optional[str] = None
     status: ArticleStatus = ArticleStatus.draft
     article_type: ArticleType = ArticleType.original
@@ -143,6 +163,7 @@ class ArticleCreateWithIds(BaseModel):
     abstract_kz: Optional[str] = None
     abstract_en: Optional[str] = None
     abstract_ru: Optional[str] = None
+    article_language: Optional[str] = None
     doi: Optional[str] = None
     status: ArticleStatus = ArticleStatus.draft
     article_type: ArticleType = ArticleType.original
@@ -169,6 +190,7 @@ class ArticleQuickPublish(BaseModel):
     abstract_kz: Optional[str] = None
     abstract_en: Optional[str] = None
     abstract_ru: Optional[str] = None
+    article_language: Optional[str] = None
     doi: Optional[str] = None
     article_type: ArticleType = ArticleType.original
     layout_file_id: Optional[str] = None  # Pre-formatted file URL
@@ -187,6 +209,7 @@ class ArticleUpdate(BaseModel):
     abstract_kz: Optional[str] = None
     abstract_en: Optional[str] = None
     abstract_ru: Optional[str] = None
+    article_language: Optional[str] = None
     doi: Optional[str] = None
     article_type: Optional[ArticleType] = None
     antiplagiarism_file_id: Optional[str] = None
@@ -209,6 +232,7 @@ class ArticleOut(BaseModel):
     abstract_kz: Optional[str] = None
     abstract_en: Optional[str] = None
     abstract_ru: Optional[str] = None
+    article_language: Optional[str] = None
     doi: Optional[str] = None
     status: ArticleStatus
     article_type: ArticleType

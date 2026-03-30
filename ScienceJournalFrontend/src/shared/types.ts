@@ -68,6 +68,7 @@ export interface Article {
   abstract_kz?: string | null
   abstract_en?: string | null
   abstract_ru?: string | null
+  article_language?: string | null
   doi?: string | null
   status: ArticleStatus
   article_type?: 'original' | 'review'
