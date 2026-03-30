@@ -267,6 +267,7 @@ export const api = {
     authors_agree: boolean | null
     generative_ai_info: string | null
     keyword_ids: number[] | null
+    keywords: Array<{ title_kz?: string; title_en?: string; title_ru?: string }>
     author_ids: number[] | null
   }>) => request<T>(`/articles/editor/${articleId}`, 'PUT', { json: body }),
   // Fast article publication for editors

@@ -84,6 +84,8 @@ interface ArticleUpdatePayload {
   doi?: string | null
 }
 
+const normalizeKeywordValue = (value: string) => value.trim()
+
 export default function EditorPublishedArticleEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -281,9 +283,46 @@ export default function EditorPublishedArticleEditPage() {
         abstract_ru: article.abstract_ru || null,
         doi: article.doi || null,
       }
+      const originalKeywordMap = new Map(
+        (article.keywords ?? []).map((keyword) => [
+          keyword.id,
+          {
+            ru: normalizeKeywordValue(keyword.title_ru),
+            kz: normalizeKeywordValue(keyword.title_kz),
+            en: normalizeKeywordValue(keyword.title_en),
+          },
+        ]),
+      )
+      const normalizedKeywords = selectedKeywords
+        .map((keyword) => ({
+          ...keyword,
+          ru: normalizeKeywordValue(keyword.ru),
+          kz: normalizeKeywordValue(keyword.kz),
+          en: normalizeKeywordValue(keyword.en),
+        }))
+        .filter((keyword) => keyword.ru || keyword.kz || keyword.en)
+
+      const unchangedKeywordIds = normalizedKeywords
+        .filter((keyword) => {
+          if (typeof keyword.id !== 'number') return false
+          const original = originalKeywordMap.get(keyword.id)
+          if (!original) return false
+          return original.ru === keyword.ru && original.kz === keyword.kz && original.en === keyword.en
+        })
+        .map((keyword) => keyword.id as number)
+
+      const editedOrNewKeywords = normalizedKeywords
+        .filter((keyword) => typeof keyword.id !== 'number' || !unchangedKeywordIds.includes(keyword.id))
+        .map((keyword) => ({
+          title_ru: keyword.ru,
+          title_kz: keyword.kz,
+          title_en: keyword.en,
+        }))
+
       const extended: any = {
         ...payload,
-        keyword_ids: selectedKeywords.map((k) => k.id).filter((id): id is number => typeof id === 'number'),
+        keyword_ids: unchangedKeywordIds,
+        keywords: editedOrNewKeywords,
         author_ids: authorList.map((a) => a.id).filter((id): id is number => typeof id === 'number'),
       }
       // Include file field ids only if new files selected
@@ -293,6 +332,7 @@ export default function EditorPublishedArticleEditPage() {
       if (antiplagiarism_file_id !== undefined) extended.antiplagiarism_file_id = antiplagiarism_file_id
       const updated = await api.updateEditorPublishedArticle<ApiArticle>(article.id, extended)
       setArticle(updated)
+      setSelectedKeywords((updated.keywords ?? []).map((k) => ({ id: k.id, ru: k.title_ru, kz: k.title_kz, en: k.title_en })))
       alert(`Статья "${updated.title_ru || updated.title_en || updated.title_kz}" успешно обновлена.`)
     } catch (e) {
       console.error('Ошибка при обновлении статьи', e)
@@ -308,6 +348,12 @@ export default function EditorPublishedArticleEditPage() {
 
   const removeKeyword = (kw: Keyword) => {
     setSelectedKeywords((prev) => prev.filter((s) => (s.id ?? s.ru) !== (kw.id ?? kw.ru)))
+  }
+
+  const updateKeywordField = (index: number, field: keyof Omit<Keyword, 'id'>, value: string) => {
+    setSelectedKeywords((prev) =>
+      prev.map((keyword, keywordIndex) => (keywordIndex === index ? { ...keyword, [field]: value } : keyword)),
+    )
   }
 
   const saveNewKeyword = async () => {
@@ -523,20 +569,51 @@ export default function EditorPublishedArticleEditPage() {
         {canEdit ? (
           <>
             {selectedKeywords.length > 0 ? (
-              <div className="pill-list" style={{ marginBottom: '0.5rem' }}>
-                {selectedKeywords.map((kw) => (
-                  <span key={kw.id ?? kw.ru} className="pill pill--ghost">
-                    {lang === 'ru' ? kw.ru : lang === 'en' ? kw.en : kw.kz}
-                    <button
-                      type="button"
-                      aria-label="Удалить"
-                      className="pill__close"
-                      onClick={() => removeKeyword(kw)}
-                      style={{ marginLeft: 8 }}
-                    >
-                      ×
-                    </button>
-                  </span>
+              <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                {selectedKeywords.map((kw, index) => (
+                  <div key={`${kw.id ?? 'new'}-${index}`} className="panel panel--compact" style={{ margin: 0 }}>
+                    <div className="grid grid-3">
+                      <div className="form-field" style={{ marginBottom: 0 }}>
+                        <label className="form-label">Русский</label>
+                        <input
+                          className="text-input"
+                          value={kw.ru}
+                          onChange={(e) => updateKeywordField(index, 'ru', e.target.value)}
+                          placeholder="Ключевое слово на русском"
+                        />
+                      </div>
+                      <div className="form-field" style={{ marginBottom: 0 }}>
+                        <label className="form-label">Қазақша</label>
+                        <input
+                          className="text-input"
+                          value={kw.kz}
+                          onChange={(e) => updateKeywordField(index, 'kz', e.target.value)}
+                          placeholder="Қазақ тіліндегі кілт сөз"
+                        />
+                      </div>
+                      <div className="form-field" style={{ marginBottom: 0 }}>
+                        <label className="form-label">English</label>
+                        <input
+                          className="text-input"
+                          value={kw.en}
+                          onChange={(e) => updateKeywordField(index, 'en', e.target.value)}
+                          placeholder="Keyword in English"
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center' }}>
+                      <div className="form-hint">
+                        Просмотр: {lang === 'ru' ? kw.ru || 'Не заполнено' : lang === 'en' ? kw.en || 'Не заполнено' : kw.kz || 'Не заполнено'}
+                      </div>
+                      <button
+                        type="button"
+                        className="button button--ghost button--compact"
+                        onClick={() => removeKeyword(kw)}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
