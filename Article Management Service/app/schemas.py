@@ -310,4 +310,4 @@ class VolumeOut(VolumeBase):
 
 
 class VolumeArticleOrderUpdate(BaseModel):
-    direction: str = Field(..., regex="^(up|down)$")
+    direction: str = Field(..., pattern="^(up|down)$")
