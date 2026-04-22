@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api } from '../api/client'
+import { ApiError, api } from '../api/client'
 
 const articleTypes = ['Оригинальная статья', 'Обзорная статья']
 const mapArticleTypeToApi: Record<string, 'original' | 'review'> = {
@@ -95,7 +95,20 @@ export function AuthorsSubmissionPage() {
   const [pendingPayload, setPendingPayload] = useState<any | null>(null)
   const [confirmLang, setConfirmLang] = useState<Lang>('ru')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  const getApiErrorMessage = (error: unknown) => {
+    if (error instanceof ApiError) {
+      const body = error.bodyJson as any
+      if (typeof body?.detail === 'string' && body.detail.trim()) return body.detail
+      if (typeof body?.message === 'string' && body.message.trim()) return body.message
+      if (typeof error.bodyText === 'string' && error.bodyText.trim()) return error.bodyText
+      return `Ошибка сервера (${error.status})`
+    }
+    if (error instanceof Error && error.message.trim()) return error.message
+    return 'Не удалось отправить статью. Данные формы сохранены, исправьте ошибку и попробуйте снова.'
+  }
 
   const handleRemoveKeyword = (keyword: Keyword) => {
     setSelectedKeywords((prev) =>
@@ -283,6 +296,29 @@ export function AuthorsSubmissionPage() {
     }
   }
 
+  const validateSubmissionFields = (): boolean => {
+    const nextErrors: Record<string, string> = {}
+    if (!articleType) nextErrors.articleType = 'Р’С‹Р±РµСЂРёС‚Рµ С‚РёРї СЃС‚Р°С‚СЊРё'
+    ;(['ru', 'kz', 'en'] as Lang[]).forEach((lang) => {
+      if (!titles[lang]?.trim()) nextErrors[`title_${lang}`] = 'Р—Р°РїРѕР»РЅРёС‚Рµ Р·Р°РіРѕР»РѕРІРѕРє'
+      if (!abstracts[lang]?.trim()) nextErrors[`abstract_${lang}`] = 'Р—Р°РїРѕР»РЅРёС‚Рµ Р°РЅРЅРѕС‚Р°С†РёСЋ'
+    })
+    if (selectedKeywords.length < 5) nextErrors.keywords = 'Р”РѕР±Р°РІСЊС‚Рµ РјРёРЅРёРјСѓРј 5 РєР»СЋС‡РµРІС‹С… СЃР»РѕРІ'
+    if (authorList.length === 0) nextErrors.authorList = 'Р”РѕР±Р°РІСЊС‚Рµ РјРёРЅРёРјСѓРј РѕРґРЅРѕРіРѕ Р°РІС‚РѕСЂР°'
+    if (!confirmCopyright) nextErrors.confirmCopyright = 'РџРѕРґС‚РІРµСЂРґРёС‚Рµ РѕС‚СЃСѓС‚СЃС‚РІРёРµ РїР°СЂР°Р»Р»РµР»СЊРЅРѕР№ РїРѕРґР°С‡Рё'
+    if (!confirmOriginality) nextErrors.confirmOriginality = 'РџРѕРґС‚РІРµСЂРґРёС‚Рµ РѕС‚СЃСѓС‚СЃС‚РІРёРµ РїР»Р°РіРёР°С‚Р°'
+    if (!confirmConsent) nextErrors.confirmConsent = 'РџРѕРґС‚РІРµСЂРґРёС‚Рµ СЃРѕРіР»Р°СЃРёРµ РІСЃРµС… Р°РІС‚РѕСЂРѕРІ'
+
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) {
+      const firstErrorKey = Object.keys(nextErrors)[0]
+      const el = document.querySelector<HTMLElement>(`[data-error-key="${firstErrorKey}"]`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return false
+    }
+    return true
+  }
+
   const validateForm = (): boolean => {
     const nextErrors: Record<string, string> = {}
     if (!articleType) nextErrors.articleType = 'Выберите тип статьи'
@@ -314,6 +350,7 @@ export function AuthorsSubmissionPage() {
     }
     return true
   }
+  void validateForm
 
   return (
     <div className="public-container">
@@ -351,7 +388,8 @@ export function AuthorsSubmissionPage() {
             onSubmit={async (e) => {
               e.preventDefault()
               try {
-                if (!validateForm()) return
+                setSubmitError(null)
+                if (!validateSubmissionFields()) return
                 const form = e.currentTarget as HTMLFormElement
                 const fileInputs = Array.from(
                   form.querySelectorAll<HTMLInputElement>('input[type="file"].file-input[data-upload-slot="article-file"]'),
@@ -414,10 +452,16 @@ export function AuthorsSubmissionPage() {
                 setPendingPayload(payload)
                 setConfirmModalOpen(true)
               } catch (error) {
+                setSubmitError(getApiErrorMessage(error))
                 console.error('Failed to submit article', error)
               }
             }}
           >
+          {submitError ? (
+            <div className="alert error" style={{ marginBottom: '1rem' }}>
+              {submitError}
+            </div>
+          ) : null}
           {false && (
           <div className="form-field">
             <label className="form-label">Язык формы</label>
@@ -896,7 +940,7 @@ export function AuthorsSubmissionPage() {
             </div>
             <div className="modal__footer">
               <button className="button button--ghost" type="button" onClick={() => setConfirmModalOpen(false)}>??????</button>
-              <button className="button button--primary" type="button" onClick={async () => { try { await api.post('/articles', pendingPayload); setConfirmModalOpen(false); setPendingPayload(null); navigate('/cabinet/submissions'); } catch (error) { console.error('Failed to submit article', error); } }}>??????????? ? ???????</button>
+              <button className="button button--primary" type="button" onClick={async () => { try { setSubmitError(null); await api.post('/articles', pendingPayload); setConfirmModalOpen(false); setPendingPayload(null); navigate('/cabinet/submissions'); } catch (error) { setSubmitError(getApiErrorMessage(error)); console.error('Failed to submit article', error); } }}>??????????? ? ???????</button>
             </div>
           </div>
         </div>
