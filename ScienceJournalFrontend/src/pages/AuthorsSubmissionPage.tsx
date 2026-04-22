@@ -729,31 +729,28 @@ export function AuthorsSubmissionPage() {
 
       {modalOpen ? (
         <div className="modal-backdrop" onClick={() => setModalOpen(false)}>
-          <div className="modal modal--wide author-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal--wide keyword-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
               <h3>{'\u041a\u043b\u044e\u0447\u0435\u0432\u044b\u0435 \u0441\u043b\u043e\u0432\u0430 \u0441\u0442\u0430\u0442\u044c\u0438'}</h3>
               <button className="modal__close" onClick={() => setModalOpen(false)} aria-label={'\u0417\u0430\u043a\u0440\u044b\u0442\u044c'}>
                 {'\u00d7'}
               </button>
             </div>
-            <div className="modal__body">
-              <p className="form-hint" style={{ margin: 0 }}>
+            <div className="modal__body keyword-modal__body">
+              <div className="keyword-modal__intro">
+                <p className="keyword-modal__eyebrow">{'\u041a\u043b\u044e\u0447\u0435\u0432\u044b\u0435 \u0441\u043b\u043e\u0432\u0430'}</p>
+                <p className="form-hint" style={{ margin: 0 }}>
                 {'\u0417\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u0435 \u043c\u0438\u043d\u0438\u043c\u0443\u043c 5 \u043a\u043b\u044e\u0447\u0435\u0432\u044b\u0445 \u0441\u043b\u043e\u0432 \u043d\u0430 \u0442\u0440\u0435\u0445 \u044f\u0437\u044b\u043a\u0430\u0445. \u041a\u043d\u043e\u043f\u043a\u0430 \u043f\u043b\u044e\u0441 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0435\u0442 \u0434\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0441\u043b\u043e\u0432\u0430.'}
-              </p>
-              <div style={{ display: 'grid', gap: 12 }}>
+                </p>
+              </div>
+              <div className="keyword-modal__list">
                 {modalKeywords.map((keyword, index) => (
-                  <div
-                    key={`keyword-row-${index}`}
-                    style={{
-                      display: 'grid',
-                      gap: 12,
-                      padding: 12,
-                      border: '1px solid rgba(148, 163, 184, 0.35)',
-                      borderRadius: 12,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                      <strong>{'\u041a\u043b\u044e\u0447\u0435\u0432\u043e\u0435 \u0441\u043b\u043e\u0432\u043e'} {index + 1}</strong>
+                  <div key={`keyword-row-${index}`} className="keyword-row">
+                    <div className="keyword-row__header">
+                      <div className="keyword-row__title">
+                        <span className="keyword-row__index">{index + 1}</span>
+                        <strong>{'\u041a\u043b\u044e\u0447\u0435\u0432\u043e\u0435 \u0441\u043b\u043e\u0432\u043e'}</strong>
+                      </div>
                       {index >= 5 ? (
                         <button
                           type="button"
@@ -764,32 +761,32 @@ export function AuthorsSubmissionPage() {
                         </button>
                       ) : null}
                     </div>
-                    <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                      <div className="form-field" style={{ margin: 0 }}>
+                    <div className="keyword-row__grid">
+                      <div className="form-field keyword-row__field" style={{ margin: 0 }}>
                         <label className="form-label">{'\u041d\u0430 \u0440\u0443\u0441\u0441\u043a\u043e\u043c'}</label>
                         <input
-                          className="text-input"
+                          className="text-input keyword-row__input"
                           value={keyword.ru}
                           onChange={(e) => handleKeywordDraftChange(index, 'ru', e.target.value)}
-                          placeholder={'\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u0418\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442'}
+                          placeholder={'\u041d\u0430\u043f\u0440\u0438\u043c\u0435\u0440: \u0438\u0441\u043a\u0443\u0441\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442'}
                         />
                       </div>
-                      <div className="form-field" style={{ margin: 0 }}>
+                      <div className="form-field keyword-row__field" style={{ margin: 0 }}>
                         <label className="form-label">{'\u041d\u0430 \u043a\u0430\u0437\u0430\u0445\u0441\u043a\u043e\u043c'}</label>
                         <input
-                          className="text-input"
+                          className="text-input keyword-row__input"
                           value={keyword.kz}
                           onChange={(e) => handleKeywordDraftChange(index, 'kz', e.target.value)}
-                          placeholder={'\u041c\u044b\u0441\u0430\u043b\u044b: \u0416\u0430\u0441\u0430\u043d\u0434\u044b \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442'}
+                          placeholder={'\u041c\u044b\u0441\u0430\u043b\u044b: \u0436\u0430\u0441\u0430\u043d\u0434\u044b \u0438\u043d\u0442\u0435\u043b\u043b\u0435\u043a\u0442'}
                         />
                       </div>
-                      <div className="form-field" style={{ margin: 0 }}>
+                      <div className="form-field keyword-row__field" style={{ margin: 0 }}>
                         <label className="form-label">{'\u041d\u0430 \u0430\u043d\u0433\u043b\u0438\u0439\u0441\u043a\u043e\u043c'}</label>
                         <input
-                          className="text-input"
+                          className="text-input keyword-row__input"
                           value={keyword.en}
                           onChange={(e) => handleKeywordDraftChange(index, 'en', e.target.value)}
-                          placeholder="For example: Artificial intelligence"
+                          placeholder="Example: artificial intelligence"
                         />
                       </div>
                     </div>
