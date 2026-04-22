@@ -23,23 +23,23 @@ export default function PublicVolumeDetailPage() {
   const { lang } = useLanguage()
   const t = {
     ru: {
-      eyebrow: 'Р°СЂС…РёРІ РЅРѕРјРµСЂРѕРІ',
-      loading: 'Р—Р°РіСЂСѓР·РєР°...',
-      error: 'РћС€РёР±РєР°',
-      home: 'Р“Р»Р°РІРЅР°СЏ',
-      archive: 'РђСЂС…РёРІ',
-      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
-      completeIssue: 'РџРѕР»РЅС‹Р№ РІС‹РїСѓСЃРє',
-      coverFile: 'РћР±Р»РѕР¶РєР°',
-      contentsFile: 'РЎРѕРґРµСЂР¶Р°РЅРёРµ',
-      tableTitle: 'РЎС‚Р°С‚СЊРё РІ С‚РѕРјРµ',
-      th: { title: 'РќР°Р·РІР°РЅРёРµ', authors: 'РђРІС‚РѕСЂС‹', layout: 'Р’РµСЂСЃС‚РєР°' },
-      untitled: 'Р‘РµР· Р·Р°РіРѕР»РѕРІРєР°',
-      loadingLayout: 'Р—Р°РіСЂСѓР·РєР°вЂ¦',
-      noLayout: 'РќРµС‚ РІРµСЂСЃС‚РєРё',
-      downloadPdf: 'РЎРєР°С‡Р°С‚СЊ PDF',
-      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
-      loadError: 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С‚РѕРј',
+      eyebrow: 'архив номеров',
+      loading: 'Загрузка...',
+      error: 'Ошибка',
+      home: 'Главная',
+      archive: 'Архив',
+      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Том ${vol}${issue ? `, Номер ${issue}` : ''}`,
+      completeIssue: 'Полный выпуск',
+      coverFile: 'Обложка',
+      contentsFile: 'Содержание',
+      tableTitle: 'Статьи в томе',
+      th: { title: 'Название', authors: 'Авторы', layout: 'Верстка' },
+      untitled: 'Без заголовка',
+      loadingLayout: 'Загрузка...',
+      noLayout: 'Нет верстки',
+      downloadPdf: 'Скачать PDF',
+      doi: (d?: string | null) => `DOI: ${d || '-'}`,
+      loadError: 'Не удалось загрузить том',
     },
     en: {
       eyebrow: 'archive of issues',
@@ -54,30 +54,30 @@ export default function PublicVolumeDetailPage() {
       tableTitle: 'Articles in this volume',
       th: { title: 'Title', authors: 'Authors', layout: 'Layout' },
       untitled: 'Untitled',
-      loadingLayout: 'LoadingвЂ¦',
+      loadingLayout: 'Loading...',
       noLayout: 'No layout',
       downloadPdf: 'Download PDF',
-      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
+      doi: (d?: string | null) => `DOI: ${d || '-'}`,
       loadError: 'Failed to load volume',
     },
     kz: {
-      eyebrow: 'С€С‹Т“Р°СЂС‹Р»С‹РјРґР°СЂ РјТ±СЂР°Т“Р°С‚С‹',
-      loading: 'Р–ТЇРєС‚РµР»СѓРґРµ...',
-      error: 'ТљР°С‚Рµ',
+      eyebrow: 'шығарылымдар мұрағаты',
+      loading: 'Жүктелуде...',
+      error: 'Қате',
       home: 'Басты бет',
       archive: 'Мұрағат',
-      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Volume ${vol}${issue ? `, Issue ${issue}` : ''}`,
-      completeIssue: 'РўРѕР»С‹Т› РЅУ©РјС–СЂ',
-      coverFile: 'РњТ±Т›Р°Р±Р°',
-      contentsFile: 'РњР°Р·РјТ±РЅС‹',
-      tableTitle: 'Р‘Т±Р» С‚РѕРјРґР°Т“С‹ РјР°Т›Р°Р»Р°Р»Р°СЂ',
-      th: { title: 'РђС‚Р°СѓС‹', authors: 'РђРІС‚РѕСЂР»Р°СЂ', layout: 'Р‘РµС‚С‚РµСѓ' },
-      untitled: 'РђС‚Р°СѓСЃС‹Р·',
-      loadingLayout: 'Р–ТЇРєС‚РµР»СѓРґРµвЂ¦',
-      noLayout: 'Р‘РµС‚С‚РµСѓ Р¶РѕТ›',
-      downloadPdf: 'PDF Р¶ТЇРєС‚РµСѓ',
-      doi: (d?: string | null) => `DOI: ${d || 'вЂ”'}`,
-      loadError: 'РўРѕРјРґС‹ Р¶ТЇРєС‚РµСѓ СЃУ™С‚СЃС–Р· Р°СЏТ›С‚Р°Р»РґС‹',
+      volumeCrumb: (year: number, vol: string, issue?: number | null) => `${year}, Том ${vol}${issue ? `, Нөмір ${issue}` : ''}`,
+      completeIssue: 'Толық нөмір',
+      coverFile: 'Мұқаба',
+      contentsFile: 'Мазмұны',
+      tableTitle: 'Бұл томдағы мақалалар',
+      th: { title: 'Атауы', authors: 'Авторлар', layout: 'Беттеу' },
+      untitled: 'Атаусыз',
+      loadingLayout: 'Жүктелуде...',
+      noLayout: 'Беттеу жоқ',
+      downloadPdf: 'PDF жүктеу',
+      doi: (d?: string | null) => `DOI: ${d || '-'}`,
+      loadError: 'Томды жүктеу сәтсіз аяқталды',
     },
   }[lang]
 
@@ -180,11 +180,11 @@ export default function PublicVolumeDetailPage() {
         <p className="eyebrow">{t.eyebrow}</p>
         <nav className="breadcrumbs" aria-label="Breadcrumb">
           <Link className="breadcrumbs__link" to="/">{t.home}</Link>
-          <span className="breadcrumbs__sep">в†’</span>
+          <span className="breadcrumbs__sep">/</span>
           <Link className="breadcrumbs__link" to="/archive">{t.archive}</Link>
           {volumeCrumbLabel ? (
             <>
-              <span className="breadcrumbs__sep">в†’</span>
+              <span className="breadcrumbs__sep">/</span>
               <span className="breadcrumbs__current">{volumeCrumbLabel}</span>
             </>
           ) : null}
@@ -274,7 +274,7 @@ export default function PublicVolumeDetailPage() {
                   <div className="latest-table__cell">
                     {Array.isArray(a.authors)
                       ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ')
-                      : 'вЂ”'}
+                      : '-'}
                   </div>
                   <div className="latest-table__cell">
                     {(() => {
