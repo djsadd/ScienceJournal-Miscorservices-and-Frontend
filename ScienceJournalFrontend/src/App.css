@@ -1540,7 +1540,7 @@
 }
 
 .brand-wordmark {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: inherit;
   display: flex;
   flex-direction: column;
   line-height: 1.1;
@@ -1560,7 +1560,7 @@
   color: #321421;
 }
 .brand-title {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: inherit;
   font-weight: 500;
   color: #321421;
   font-size: 1.02rem;
