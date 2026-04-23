@@ -32,6 +32,8 @@ type SidebarCopy = {
   brandAlt: string
   mobileMenuOpen: string
   mobileMenuClose: string
+  sidebarShow: string
+  sidebarHide: string
 }
 
 const sidebarCopy: Record<LangKey, SidebarCopy> = {
@@ -139,6 +141,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     brandAlt: 'Логотип журнала',
     mobileMenuOpen: 'Меню',
     mobileMenuClose: 'Закрыть меню',
+    sidebarShow: 'Показать меню',
+    sidebarHide: 'Скрыть меню',
   },
   en: {
     roleOptions: {
@@ -244,6 +248,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     brandAlt: 'Science Journal',
     mobileMenuOpen: 'Menu',
     mobileMenuClose: 'Close menu',
+    sidebarShow: 'Show sidebar',
+    sidebarHide: 'Hide sidebar',
   },
   kz: {
     roleOptions: {
@@ -349,6 +355,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     brandAlt: 'Журнал логотипы',
     mobileMenuOpen: 'Мәзір',
     mobileMenuClose: 'Мәзірді жабу',
+    sidebarShow: 'Мәзірді көрсету',
+    sidebarHide: 'Мәзірді жасыру',
   },
 }
 
@@ -363,6 +371,18 @@ export function MainLayout({ children }: MainLayoutProps) {
   })
   const [availableRoles, setAvailableRoles] = useState<RoleKey[]>(allRoles)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isDesktopViewport, setIsDesktopViewport] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true
+    return window.matchMedia('(min-width: 960px)').matches
+  })
+  const [isSidebarHidden, setIsSidebarHidden] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return window.localStorage.getItem('cabinetSidebarHidden') === '1'
+    } catch {
+      return false
+    }
+  })
   const navigate = useNavigate()
   const { lang, setLang } = useLanguage()
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), [])
@@ -435,6 +455,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     if (typeof window === 'undefined') return
     const mediaQuery = window.matchMedia('(min-width: 960px)')
     const handleBreakpointChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsDesktopViewport(event.matches)
       if (event.matches) {
         setIsSidebarOpen(false)
       }
@@ -448,13 +469,31 @@ export function MainLayout({ children }: MainLayoutProps) {
     return () => mediaQuery.removeListener(handleBreakpointChange)
   }, [])
 
+  useEffect(() => {
+    if (!isDesktopViewport) return
+    try {
+      window.localStorage.setItem('cabinetSidebarHidden', isSidebarHidden ? '1' : '0')
+    } catch {}
+  }, [isDesktopViewport, isSidebarHidden])
+
   const locale: LangKey = ['ru', 'en', 'kz'].includes(lang) ? (lang as LangKey) : 'ru'
   const copy = sidebarCopy[locale]
   const sections = useMemo(() => copy.nav[activeRole], [activeRole, copy])
+  const isSidebarVisible = isDesktopViewport ? !isSidebarHidden : isSidebarOpen
+  const toggleSidebar = () => {
+    if (isDesktopViewport) {
+      setIsSidebarHidden((prev) => !prev)
+      return
+    }
+    setIsSidebarOpen((prev) => !prev)
+  }
+  const sidebarToggleLabel = isDesktopViewport
+    ? isSidebarVisible ? copy.sidebarHide : copy.sidebarShow
+    : isSidebarOpen ? copy.mobileMenuClose : copy.mobileMenuOpen
 
   return (
-    <div className={`app-shell ${lowVision ? 'low-vision' : ''}`}>
-      <aside id="cabinet-sidebar" className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''}`}>
+    <div className={`app-shell ${lowVision ? 'low-vision' : ''} ${isDesktopViewport && !isSidebarVisible ? 'app-shell--sidebar-hidden' : ''}`}>
+      <aside id="cabinet-sidebar" className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''} ${isDesktopViewport && !isSidebarVisible ? 'sidebar--hidden' : ''}`}>
         <div className="sidebar__brand">
           <Link to="/" className="brand--compact">
             <div className="brand-mark">
@@ -591,10 +630,10 @@ export function MainLayout({ children }: MainLayoutProps) {
             type="button"
             className="sidebar-toggle"
             aria-controls="cabinet-sidebar"
-            aria-expanded={isSidebarOpen}
-            onClick={() => setIsSidebarOpen((prev) => !prev)}
+            aria-expanded={isSidebarVisible}
+            onClick={toggleSidebar}
           >
-            {isSidebarOpen ? copy.mobileMenuClose : copy.mobileMenuOpen}
+            {sidebarToggleLabel}
           </button>
           <span className="mobile-shell-role">{copy.roleOptions[activeRole]}</span>
           <button

@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { getArticleLanguageLabel, getArticleLanguageOptions } from '../shared/articleLanguages'
 import { toApiFilesUrl } from '../shared/url'
 
 interface ApiKeyword {
@@ -87,11 +88,10 @@ interface ArticleUpdatePayload {
 }
 
 const normalizeKeywordValue = (value: string) => value.trim()
-const articleLanguageOptions = [
-  { value: 'ru', label: 'Русский' },
-  { value: 'kz', label: 'Казахский' },
-  { value: 'en', label: 'Английский' },
-]
+const articleLanguageOptions = getArticleLanguageOptions('ru').map((option) => ({
+  value: option.code,
+  label: option.label,
+}))
 
 type AuthorForm = {
   id?: number
@@ -620,7 +620,7 @@ export default function EditorPublishedArticleEditPage() {
               </select>
             ) : (
               <div className="form-hint">
-                {articleLanguageOptions.find((option) => option.value === article.article_language)?.label || 'Не указан'}
+                {getArticleLanguageLabel(article.article_language, 'ru') || 'Не указан'}
               </div>
             )}
           </div>

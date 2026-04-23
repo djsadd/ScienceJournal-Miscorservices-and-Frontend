@@ -1,6 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ApiError, api } from '../api/client'
+import { getArticleLanguageLabel, getArticleLanguageOptions } from '../shared/articleLanguages'
 import { useLanguage } from '../shared/LanguageContext'
 
 type Keyword = { id?: number; ru: string; kz: string; en: string }
@@ -73,11 +74,9 @@ const pageCopy: Record<LocaleKey, any> = {
     articleLanguage: {
       label: 'Язык статьи',
       hint: 'Выберите основной язык рукописи. Это поле будет сохранено в карточке статьи.',
-      options: {
-        ru: { title: 'Русский', subtitle: 'Для рукописей на русском языке' },
-        kz: { title: 'Қазақша', subtitle: 'Қазақ тіліндегі қолжазбалар үшін' },
-        en: { title: 'English', subtitle: 'For manuscripts written in English' },
-      },
+      searchPlaceholder: 'Начните вводить язык или код, например English / en',
+      selected: 'Выбранный язык',
+      empty: 'Ничего не найдено',
     },
     keywords: {
       label: 'Выберите ключевые слова',
@@ -208,11 +207,9 @@ const pageCopy: Record<LocaleKey, any> = {
     articleLanguage: {
       label: 'Article language',
       hint: 'Select the primary manuscript language. This value will be saved in the article record.',
-      options: {
-        ru: { title: 'Russian', subtitle: 'For manuscripts written in Russian' },
-        kz: { title: 'Kazakh', subtitle: 'For manuscripts written in Kazakh' },
-        en: { title: 'English', subtitle: 'For manuscripts written in English' },
-      },
+      searchPlaceholder: 'Start typing a language or code, e.g. German / de',
+      selected: 'Selected language',
+      empty: 'Nothing found',
     },
     keywords: {
       label: 'Select keywords',
@@ -339,11 +336,9 @@ const pageCopy: Record<LocaleKey, any> = {
     articleLanguage: {
       label: 'Мақала тілі',
       hint: 'Қолжазбаның негізгі тілін таңдаңыз. Бұл мән мақала карточкасында сақталады.',
-      options: {
-        ru: { title: 'Русский', subtitle: 'Орыс тіліндегі қолжазбалар үшін' },
-        kz: { title: 'Қазақша', subtitle: 'Қазақ тіліндегі қолжазбалар үшін' },
-        en: { title: 'English', subtitle: 'Ағылшын тіліндегі қолжазбалар үшін' },
-      },
+      searchPlaceholder: 'Тілді немесе кодты енгізіңіз, мысалы Turkish / tr',
+      selected: 'Таңдалған тіл',
+      empty: 'Ештеңе табылмады',
     },
     keywords: {
       label: 'Кілт сөздерді таңдаңыз',
@@ -466,7 +461,8 @@ export function AuthorsSubmissionPage() {
   const [titles, setTitles] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
   const [abstracts, setAbstracts] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
   const [articleType, setArticleType] = useState<ArticleType | ''>('')
-  const [articleLanguage, setArticleLanguage] = useState<Lang>(locale)
+  const [articleLanguage, setArticleLanguage] = useState<string>(locale)
+  const [articleLanguageQuery, setArticleLanguageQuery] = useState('')
   const [comments, setComments] = useState('')
   void setComments
   const [generativeAiInfo, setGenerativeAiInfo] = useState('')
@@ -500,6 +496,18 @@ export function AuthorsSubmissionPage() {
   const navigate = useNavigate()
   const articleTypeOptions: ArticleType[] = ['original', 'review']
   const langLabels: Record<Lang, string> = t.formLanguages
+  const articleLanguageOptions = useMemo(() => getArticleLanguageOptions(locale), [locale])
+  const filteredArticleLanguageOptions = useMemo(() => {
+    const query = articleLanguageQuery.trim().toLowerCase()
+    const source = query
+      ? articleLanguageOptions.filter((option) => option.searchText.includes(query))
+      : articleLanguageOptions
+    return source.slice(0, query ? 12 : 9)
+  }, [articleLanguageOptions, articleLanguageQuery])
+  const selectedArticleLanguageLabel = useMemo(
+    () => getArticleLanguageLabel(articleLanguage, locale) ?? articleLanguage.toUpperCase(),
+    [articleLanguage, locale],
+  )
 
   const getApiErrorMessage = (error: unknown) => {
     if (error instanceof ApiError) {
@@ -892,27 +900,44 @@ export function AuthorsSubmissionPage() {
 
           <div className="form-field">
             <label className="form-label">{t.articleLanguage.label}</label>
-            <div className="article-language-picker" role="radiogroup" aria-label={t.articleLanguage.label}>
-              {(['ru', 'kz', 'en'] as Lang[]).map((code) => {
-                const option = t.articleLanguage.options[code]
-                const isActive = articleLanguage === code
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    role="radio"
-                    aria-checked={isActive}
-                    className={`article-language-card ${isActive ? 'article-language-card--active' : ''}`}
-                    onClick={() => setArticleLanguage(code)}
-                  >
-                    <span className="article-language-card__top">
-                      <span className="article-language-card__title">{option.title}</span>
-                      <span className="article-language-card__code">{code.toUpperCase()}</span>
-                    </span>
-                    <span className="article-language-card__subtitle">{option.subtitle}</span>
-                  </button>
-                )
-              })}
+            <div className="article-language-picker">
+              <div className="article-language-selected">
+                <span className="article-language-selected__label">{t.articleLanguage.selected}</span>
+                <div className="article-language-selected__value">
+                  <span>{selectedArticleLanguageLabel}</span>
+                  <span className="article-language-card__code">{articleLanguage.toUpperCase()}</span>
+                </div>
+              </div>
+              <input
+                className="text-input"
+                value={articleLanguageQuery}
+                onChange={(e) => setArticleLanguageQuery(e.target.value)}
+                placeholder={t.articleLanguage.searchPlaceholder}
+              />
+              <div className="article-language-list" role="listbox" aria-label={t.articleLanguage.label}>
+                {filteredArticleLanguageOptions.length > 0 ? (
+                  filteredArticleLanguageOptions.map((option) => {
+                    const isActive = articleLanguage === option.code
+                    return (
+                      <button
+                        key={option.code}
+                        type="button"
+                        role="option"
+                        aria-selected={isActive}
+                        className={`article-language-card ${isActive ? 'article-language-card--active' : ''}`}
+                        onClick={() => setArticleLanguage(option.code)}
+                      >
+                        <span className="article-language-card__top">
+                          <span className="article-language-card__title">{option.label}</span>
+                          <span className="article-language-card__code">{option.code.toUpperCase()}</span>
+                        </span>
+                      </button>
+                    )
+                  })
+                ) : (
+                  <div className="article-language-empty">{t.articleLanguage.empty}</div>
+                )}
+              </div>
             </div>
             <p className="form-hint">{t.articleLanguage.hint}</p>
           </div>
@@ -1339,7 +1364,7 @@ export function AuthorsSubmissionPage() {
                   <div className="table__row"><div className="table__cell">{t.confirm.articleTitle}</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.title_ru) || (confirmLang === 'kz' && pendingPayload.title_kz) || (confirmLang === 'en' && pendingPayload.title_en) || t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.abstract}</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.abstract_ru) || (confirmLang === 'kz' && pendingPayload.abstract_kz) || (confirmLang === 'en' && pendingPayload.abstract_en) || t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.articleType}</div><div className="table__cell">{articleType ? t.articleTypes[articleType] : t.common.notAvailable}</div></div>
-                  <div className="table__row"><div className="table__cell">{t.confirm.articleLanguage}</div><div className="table__cell">{pendingPayload.article_language ? t.articleLanguage.options[pendingPayload.article_language as Lang]?.title ?? pendingPayload.article_language : t.common.notAvailable}</div></div>
+                  <div className="table__row"><div className="table__cell">{t.confirm.articleLanguage}</div><div className="table__cell">{pendingPayload.article_language ? getArticleLanguageLabel(pendingPayload.article_language, locale) ?? pendingPayload.article_language : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.keywords}</div><div className="table__cell">{selectedKeywords.length ? selectedKeywords.map((kw) => confirmLang === 'ru' ? kw.ru : confirmLang === 'kz' ? kw.kz : kw.en).filter(Boolean).join(', ') : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.responsibleAuthor}</div><div className="table__cell">{(() => { const responsible = authorList.find((a) => a.id === pendingPayload.responsible_user_id); if (!responsible) return pendingPayload.responsible_user_id ?? t.common.notAvailable; const name = [responsible.prefix, responsible.firstName, responsible.middleName, responsible.lastName].filter(Boolean).join(' '); return `${name} (${responsible.email})`; })()}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.authors}</div><div className="table__cell">{authorList.length ? authorList.map((a) => [a.prefix, a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')).join('; ') : t.common.notAvailable}</div></div>
