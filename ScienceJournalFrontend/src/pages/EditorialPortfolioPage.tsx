@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client'
-import type { Article, ArticleStatus, PagedResponse } from '../shared/types'
 import { formatArticleStatus } from '../shared/labels'
+import type { Article, ArticleStatus, PagedResponse } from '../shared/types'
 
 type Filters = {
   status?: string
@@ -14,12 +14,13 @@ type Filters = {
 
 const DEFAULT_PAGE_SIZE = 10
 const CACHE_TTL_MS = 60_000
+const MAX_VISIBLE_PAGES = 5
 
 const keyOf = (params: Record<string, unknown>) =>
   Object.entries(params)
-    .filter(([, v]) => v !== undefined && v !== '')
+    .filter(([, value]) => value !== undefined && value !== '')
     .sort(([a], [b]) => (a > b ? 1 : -1))
-    .map(([k, v]) => `${k}=${v}`)
+    .map(([key, value]) => `${key}=${value}`)
     .join('&')
 
 const memoryCache = new Map<string, { at: number; data: PagedResponse<Article> }>()
@@ -51,77 +52,71 @@ export default function EditorialPortfolioPage() {
       .getArticleStatuses<string[]>({ scope: 'unassigned' })
       .then((statuses) => {
         if (!mounted) return
-        const next = (Array.isArray(statuses) ? statuses : []).filter((s): s is ArticleStatus => typeof s === 'string')
+        const next = (Array.isArray(statuses) ? statuses : []).filter(
+          (status): status is ArticleStatus => typeof status === 'string',
+        )
         if (next.length > 0) setStatusOptions(next)
       })
       .catch(() => {})
+
     return () => {
       mounted = false
     }
   }, [])
 
-  const params = useMemo(
-    () => {
-      const statusParam: ArticleStatus | 'all' = !filters.status ? 'all' : (filters.status as ArticleStatus)
-      return {
+  const params = useMemo(() => {
+    const statusParam: ArticleStatus | 'all' = !filters.status ? 'all' : (filters.status as ArticleStatus)
+    return {
       author_name: filters.author_name,
       keywords: filters.keywords,
       search: filters.search,
       year: filters.year === '' ? undefined : filters.year,
       article_type: filters.article_type === '' ? undefined : filters.article_type,
-      // When "Все статусы" selected (empty string), send explicit status=all
       status: statusParam,
       page,
       page_size: pageSize,
-      }
-    },
-    [filters, page, pageSize]
-  )
+    }
+  }, [filters, page, pageSize])
 
   useEffect(() => {
     let cancelled = false
+
     const run = async () => {
       setLoading(true)
       setError(null)
+
       const cacheKey = keyOf(params)
       const cached = memoryCache.get(cacheKey)
       if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
         setData(cached.data)
-        // Debug: log cached response to console
-        try { console.log('[EditorialPortfolio] Using cached data. Params:', params, 'Data:', cached.data) } catch {}
         setLoading(false)
         return
       }
+
       try {
-        // Debug: log request params
-        try { console.log('[EditorialPortfolio] Fetching with params:', params) } catch {}
-        const res = await api.getUnassignedArticles<PagedResponse<Article>>(params)
-        if (!cancelled) {
-          setData(res)
-          memoryCache.set(cacheKey, { at: Date.now(), data: res })
-        }
-        // Debug: log fresh response
-        try { console.log('[EditorialPortfolio] API response:', res) } catch {}
+        const response = await api.getUnassignedArticles<PagedResponse<Article>>(params)
+        if (cancelled) return
+        setData(response)
+        memoryCache.set(cacheKey, { at: Date.now(), data: response })
       } catch (e: any) {
         const message = e?.bodyJson?.detail || e?.message || 'Failed to load'
         if (!cancelled) setError(String(message))
-        try { console.error('[EditorialPortfolio] API error:', e) } catch {}
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
-    const t = setTimeout(run, params.search ? 350 : 0)
+    const timeout = setTimeout(run, params.search ? 350 : 0)
     return () => {
       cancelled = true
-      clearTimeout(t)
+      clearTimeout(timeout)
     }
   }, [params])
 
   const onInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setPage(1)
-    setFilters((f) => ({ ...f, [name]: value }))
+    setFilters((prev) => ({ ...prev, [name]: value }))
   }
 
   const clearFilters = () => {
@@ -129,6 +124,17 @@ export default function EditorialPortfolioPage() {
     setPage(1)
     setPageSize(DEFAULT_PAGE_SIZE)
   }
+
+  const pagination = data?.pagination
+  const currentPage = pagination?.page ?? page
+  const totalPages = Math.max(1, pagination?.total_pages ?? 1)
+  const windowStart = Math.max(1, currentPage - Math.floor(MAX_VISIBLE_PAGES / 2))
+  const windowEnd = Math.min(totalPages, windowStart + MAX_VISIBLE_PAGES - 1)
+  const visibleStart = Math.max(1, windowEnd - MAX_VISIBLE_PAGES + 1)
+  const visiblePages = Array.from(
+    { length: windowEnd - visibleStart + 1 },
+    (_, index) => visibleStart + index,
+  )
 
   return (
     <div className="app-container app-container--wide editorial-portfolio">
@@ -145,19 +151,44 @@ export default function EditorialPortfolioPage() {
           <div className="filters filters--sticky">
             <div className="filter-group">
               <label className="filter-label">Автор</label>
-              <input className="search" name="author_name" value={filters.author_name ?? ''} onChange={onInput} placeholder="Автор" />
+              <input
+                className="search"
+                name="author_name"
+                value={filters.author_name ?? ''}
+                onChange={onInput}
+                placeholder="Автор"
+              />
             </div>
             <div className="filter-group">
               <label className="filter-label">Поиск</label>
-              <input className="search" name="search" value={filters.search ?? ''} onChange={onInput} placeholder="Заголовок/аннотация" />
+              <input
+                className="search"
+                name="search"
+                value={filters.search ?? ''}
+                onChange={onInput}
+                placeholder="Заголовок/аннотация"
+              />
             </div>
             <div className="filter-group">
               <label className="filter-label">Ключевые слова</label>
-              <input className="search" name="keywords" value={filters.keywords ?? ''} onChange={onInput} placeholder="Ключевые слова" />
+              <input
+                className="search"
+                name="keywords"
+                value={filters.keywords ?? ''}
+                onChange={onInput}
+                placeholder="Ключевые слова"
+              />
             </div>
             <div className="filter-group">
               <label className="filter-label">Год</label>
-              <input className="search" name="year" type="number" value={filters.year ?? ''} onChange={onInput} placeholder="Год" />
+              <input
+                className="search"
+                name="year"
+                type="number"
+                value={filters.year ?? ''}
+                onChange={onInput}
+                placeholder="Год"
+              />
             </div>
             <div className="filter-group">
               <label className="filter-label">Тип статьи</label>
@@ -171,18 +202,22 @@ export default function EditorialPortfolioPage() {
               <label className="filter-label">Статус</label>
               <select className="chip-select" name="status" value={filters.status ?? ''} onChange={onInput}>
                 <option value="">Все статусы</option>
-                {statusOptions.map((s) => (
-                  <option key={s} value={s}>{formatArticleStatus(s, 'ru')}</option>
+                {statusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {formatArticleStatus(status, 'ru')}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="filter-group filter-group--actions">
-              <button className="button button--ghost button--compact" onClick={clearFilters}>Сбросить</button>
+              <button className="button button--ghost button--compact" onClick={clearFilters}>
+                Сбросить
+              </button>
             </div>
           </div>
 
-          {error && <div className="alert error">Ошибка: {error}</div>}
-          {loading && <div className="loading">Загрузка...</div>}
+          {error ? <div className="alert error">Ошибка: {error}</div> : null}
+          {loading ? <div className="loading">Загрузка...</div> : null}
 
           <div className="table table--portfolio">
             <div className="table__head">
@@ -193,44 +228,85 @@ export default function EditorialPortfolioPage() {
               <span>Файлы</span>
             </div>
             <div className="table__body">
-              {data?.items.map((a) => (
-                <div className="table__row" key={a.id}>
+              {data?.items.map((article) => (
+                <div className="table__row" key={article.id}>
                   <div className="table__cell table__cell--title">
-                    <div className="table__title">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
-                    <div className="table__meta">DOI: {a.doi || '—'}</div>
+                    <div className="table__title">
+                      {article.title_ru || article.title_en || article.title_kz || 'Без заголовка'}
+                    </div>
+                    <div className="table__meta">DOI: {article.doi || '—'}</div>
                   </div>
-                  <div className="table__cell">{a.article_type}</div>
-                  <div className="table__cell">{formatArticleStatus(a.status, 'ru')}</div>
-                  <div className="table__cell">{a.authors.map((x) => `${x.last_name} ${x.first_name}`).join(', ') || '—'}</div>
+                  <div className="table__cell">{article.article_type}</div>
+                  <div className="table__cell">{formatArticleStatus(article.status, 'ru')}</div>
+                  <div className="table__cell">
+                    {article.authors.map((author) => `${author.last_name} ${author.first_name}`).join(', ') || '—'}
+                  </div>
                   <div className="table__cell table__cell--actions">
                     <div className="actions">
-                      <a className="button button--primary button--compact" href={`/cabinet/editorial2/${String(a.id)}`}>Посмотреть</a>
+                      <a className="button button--primary button--compact" href={`/cabinet/editorial2/${String(article.id)}`}>
+                        Посмотреть
+                      </a>
                     </div>
                   </div>
                 </div>
               ))}
-              {!loading && data && data.items.length === 0 && <div className="table__empty">Нет результатов</div>}
+              {!loading && data && data.items.length === 0 ? <div className="table__empty">Нет результатов</div> : null}
             </div>
           </div>
 
           <div className="table__footer">
             <div className="pagination">
               <button
+                type="button"
                 className="button button--ghost button--compact"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                onClick={() => setPage(1)}
+                aria-label="Первая страница"
               >
-                Назад
+                «
+              </button>
+              <button
+                type="button"
+                className="button button--ghost button--compact"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                aria-label="Предыдущая страница"
+              >
+                ‹
               </button>
               <span className="pagination__meta">
-                Стр. {data?.pagination.page ?? page} из {data?.pagination.total_pages ?? '—'} (всего {data?.pagination.total_count ?? '—'})
+                Стр. {currentPage} из {pagination?.total_pages ?? '—'} (всего {pagination?.total_count ?? '—'})
               </span>
+              <div className="pagination__pages" aria-label="Список страниц">
+                {visiblePages.map((pageNumber) => (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    className={`button button--ghost button--compact pagination__page ${pageNumber === currentPage ? 'pagination__page--active' : ''}`}
+                    aria-current={pageNumber === currentPage ? 'page' : undefined}
+                    onClick={() => setPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+              </div>
               <button
+                type="button"
                 className="button button--ghost button--compact"
-                disabled={!data?.pagination.has_next}
-                onClick={() => setPage((p) => p + 1)}
+                disabled={!pagination?.has_next}
+                onClick={() => setPage((prev) => prev + 1)}
+                aria-label="Следующая страница"
               >
-                Вперед
+                ›
+              </button>
+              <button
+                type="button"
+                className="button button--ghost button--compact"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage(totalPages)}
+                aria-label="Последняя страница"
+              >
+                »
               </button>
               <select
                 className="chip-select"

@@ -3735,11 +3735,31 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .pagination__meta {
   color: #4c5160;
   font-weight: 600;
+}
+
+.pagination__pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.pagination__page {
+  min-width: 2.2rem;
+  justify-content: center;
+}
+
+.pagination__page--active {
+  background: #7a1237;
+  color: #ffffff;
+  border-color: #7a1237;
+  box-shadow: 0 8px 18px rgba(122, 18, 55, 0.15);
 }
 
 .view-toggle {
