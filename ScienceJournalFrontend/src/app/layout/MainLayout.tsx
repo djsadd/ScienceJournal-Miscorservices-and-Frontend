@@ -1,5 +1,5 @@
 ﻿import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import logo from '../../assets/logo.svg'
 import { api } from '../../api/client'
@@ -15,6 +15,7 @@ type LangKey = 'ru' | 'en' | 'kz'
 
 type SidebarCopy = {
   roleOptions: Record<RoleKey, string>
+  roleSwitcherLabel: string
   nav: Record<
     RoleKey,
     {
@@ -45,6 +46,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       layout: 'Вёрстальщик',
       admin: 'Администратор',
     },
+    roleSwitcherLabel: 'Выбор роли',
     nav: {
       author: [
         {
@@ -152,6 +154,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       layout: 'Designer',
       admin: 'Administrator',
     },
+    roleSwitcherLabel: 'Role switcher',
     nav: {
       author: [
         {
@@ -259,6 +262,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       layout: 'Дизайнер',
       admin: 'Әкімші',
     },
+    roleSwitcherLabel: 'Рөлді таңдау',
     nav: {
       author: [
         {
@@ -371,6 +375,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   })
   const [availableRoles, setAvailableRoles] = useState<RoleKey[]>(allRoles)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
+  const roleMenuRef = useRef<HTMLDivElement | null>(null)
   const [isDesktopViewport, setIsDesktopViewport] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true
     return window.matchMedia('(min-width: 960px)').matches
@@ -386,6 +392,13 @@ export function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate()
   const { lang, setLang } = useLanguage()
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), [])
+  const handleRoleChange = useCallback((role: RoleKey) => {
+    setActiveRole(role)
+    setIsRoleMenuOpen(false)
+    try {
+      window.localStorage.setItem('activeRole', role)
+    } catch {}
+  }, [])
   const [unreadCount, setUnreadCount] = useState<number>(0)
   const [lowVision, setLowVision] = useState<boolean>(() => {
     try {
@@ -476,6 +489,21 @@ export function MainLayout({ children }: MainLayoutProps) {
     } catch {}
   }, [isDesktopViewport, isSidebarHidden])
 
+  useEffect(() => {
+    setIsRoleMenuOpen(false)
+  }, [activeRole, isDesktopViewport])
+
+  useEffect(() => {
+    if (!isRoleMenuOpen) return
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!roleMenuRef.current?.contains(event.target as Node)) {
+        setIsRoleMenuOpen(false)
+      }
+    }
+    window.addEventListener('mousedown', handlePointerDown)
+    return () => window.removeEventListener('mousedown', handlePointerDown)
+  }, [isRoleMenuOpen])
+
   const locale: LangKey = ['ru', 'en', 'kz'].includes(lang) ? (lang as LangKey) : 'ru'
   const copy = sidebarCopy[locale]
   const sections = useMemo(() => copy.nav[activeRole], [activeRole, copy])
@@ -504,24 +532,6 @@ export function MainLayout({ children }: MainLayoutProps) {
               <div className="brand-subtitle">{copy.brandSubtitle}</div>
             </div>
           </Link>
-        </div>
-
-        <div className="role-switch">
-          {availableRoles.map((role) => (
-            <button
-              key={role}
-              type="button"
-              className={`role-chip ${activeRole === role ? 'role-chip--active' : ''}`}
-              onClick={() => {
-                setActiveRole(role)
-                try {
-                  window.localStorage.setItem('activeRole', role)
-                } catch {}
-              }}
-            >
-              {copy.roleOptions[role]}
-            </button>
-          ))}
         </div>
 
         <div className="sidebar__lang">
@@ -663,7 +673,46 @@ export function MainLayout({ children }: MainLayoutProps) {
               )}
             </svg>
           </button>
-          <span className="mobile-shell-role">{copy.roleOptions[activeRole]}</span>
+          <div
+            ref={roleMenuRef}
+            className={`header-role-switch ${isRoleMenuOpen ? 'header-role-switch--open' : ''}`}
+          >
+            <button
+              type="button"
+              className="mobile-shell-role mobile-shell-role--button"
+              aria-haspopup="listbox"
+              aria-expanded={isRoleMenuOpen}
+              aria-label={copy.roleSwitcherLabel}
+              title={copy.roleSwitcherLabel}
+              onClick={() => setIsRoleMenuOpen((prev) => !prev)}
+            >
+              <span>{copy.roleOptions[activeRole]}</span>
+              <svg
+                className="mobile-shell-role__chevron"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {isRoleMenuOpen ? (
+              <div className="header-role-switch__menu" role="listbox" aria-label={copy.roleSwitcherLabel}>
+                {availableRoles.map((role) => (
+                  <button
+                    key={role}
+                    type="button"
+                    className={`header-role-switch__option ${activeRole === role ? 'header-role-switch__option--active' : ''}`}
+                    aria-selected={activeRole === role}
+                    onClick={() => handleRoleChange(role)}
+                  >
+                    {copy.roleOptions[role]}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <button
             type="button"
             className={`button button--contrast mobile-accessibility ${lowVision ? 'button--active' : ''}`}
