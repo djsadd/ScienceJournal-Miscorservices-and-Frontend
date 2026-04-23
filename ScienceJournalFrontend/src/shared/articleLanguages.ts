@@ -43,9 +43,9 @@ const localeMap: Record<UiLocale, string> = {
 
 const fallbackLabels: Record<string, string> = {
   en: 'English',
-  ru: 'Russian',
-  kk: 'Kazakh',
-  kz: 'Kazakh',
+  ru: 'Русский',
+  kk: 'Қазақша',
+  kz: 'Қазақша',
   zh: 'Chinese',
   ar: 'Arabic',
   de: 'German',
@@ -57,24 +57,93 @@ const fallbackLabels: Record<string, string> = {
   ko: 'Korean',
 }
 
-const getDisplayName = (code: string, locale: UiLocale) => {
+const selfLabels: Record<string, string> = {
+  ru: 'Русский',
+  kk: 'Қазақша',
+  kz: 'Қазақша',
+  en: 'English',
+  de: 'Deutsch',
+  fr: 'Français',
+  es: 'Español',
+  pt: 'Português',
+  it: 'Italiano',
+  tr: 'Türkçe',
+  zh: '中文',
+  ar: 'العربية',
+  ja: '日本語',
+  ko: '한국어',
+  uk: 'Українська',
+  pl: 'Polski',
+}
+
+const getAutonymLocale = (code: string) => {
+  if (code === 'kz') return 'kk'
+  return code
+}
+
+const toDisplayLabel = (value: string) => {
+  if (!value) return value
+  return value.charAt(0).toLocaleUpperCase() + value.slice(1)
+}
+
+const getLocalizedName = (code: string, locale: UiLocale) => {
   try {
     const displayNames = new Intl.DisplayNames([localeMap[locale]], { type: 'language' })
-    return displayNames.of(code) || fallbackLabels[code] || code.toUpperCase()
+    return displayNames.of(code) || null
   } catch {
-    return fallbackLabels[code] || code.toUpperCase()
+    return null
   }
 }
+
+const getDisplayName = (code: string, locale: UiLocale) => {
+  const normalizedCode = code.toLowerCase()
+  if (selfLabels[normalizedCode]) return selfLabels[normalizedCode]
+
+  try {
+    const displayNames = new Intl.DisplayNames([getAutonymLocale(normalizedCode)], { type: 'language' })
+    const autonym = displayNames.of(normalizedCode)
+    if (autonym && autonym.toLowerCase() !== normalizedCode) return toDisplayLabel(autonym)
+  } catch {
+    // Fallback handled below.
+  }
+
+  const localizedName = getLocalizedName(normalizedCode, locale)
+  if (localizedName && localizedName.toLowerCase() !== normalizedCode) return toDisplayLabel(localizedName)
+
+  return fallbackLabels[normalizedCode] || normalizedCode.toUpperCase()
+}
+
+const hasReadableLabel = (option: ArticleLanguageOption) => option.label.toLowerCase() !== option.code.toLowerCase()
+
+const preferredOrder = ['ru', 'kk', 'kz', 'en'] as const
 
 export const getArticleLanguageOptions = (locale: UiLocale): ArticleLanguageOption[] =>
   ISO_639_1_CODES.map((code) => {
     const label = getDisplayName(code, locale)
+    const localizedName = getLocalizedName(code, locale)
+    const searchTokens = [label, localizedName, code.toUpperCase(), code].filter(Boolean)
     return {
       code,
       label,
-      searchText: `${label} ${code}`.toLowerCase(),
+      searchText: searchTokens.join(' ').toLowerCase(),
     }
-  }).sort((a, b) => a.label.localeCompare(b.label, localeMap[locale]))
+  }).sort((a, b) => {
+    const aPreferredIndex = preferredOrder.indexOf(a.code as (typeof preferredOrder)[number])
+    const bPreferredIndex = preferredOrder.indexOf(b.code as (typeof preferredOrder)[number])
+
+    if (aPreferredIndex !== -1 || bPreferredIndex !== -1) {
+      if (aPreferredIndex === -1) return 1
+      if (bPreferredIndex === -1) return -1
+      return aPreferredIndex - bPreferredIndex
+    }
+
+    const aReadable = hasReadableLabel(a)
+    const bReadable = hasReadableLabel(b)
+
+    if (aReadable !== bReadable) return aReadable ? -1 : 1
+
+    return a.label.localeCompare(b.label, localeMap[locale])
+  })
 
 export const getArticleLanguageLabel = (code: string | null | undefined, locale: UiLocale) => {
   if (!code) return null
