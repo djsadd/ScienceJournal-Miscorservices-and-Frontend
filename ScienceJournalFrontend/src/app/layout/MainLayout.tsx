@@ -578,26 +578,6 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="sidebar__lang">
           <div className="sidebar__control-group">
             <div className="sidebar__control-head">
-              <span className="sidebar__control-label">{copy.langLabel}</span>
-            </div>
-            <div className="sidebar__lang-row">
-              {languageOptions.map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  className={`sidebar-lang-icon ${lang === code ? 'sidebar-lang-icon--active' : ''}`}
-                  onClick={() => setLang(code)}
-                  aria-label={`Switch to ${copy.languageNames[code]}`}
-                  aria-pressed={lang === code}
-                >
-                  <span className="sidebar-lang-icon__code">{code.toUpperCase()}</span>
-                  <span className="sidebar-lang-icon__label">{copy.languageNames[code]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="sidebar__control-group sidebar__control-group--contrast">
-            <div className="sidebar__control-head">
               <div>
                 <div className="sidebar__control-label">{copy.accessibilityLabel}</div>
                 <div className="sidebar__control-hint">{copy.accessibilityHint}</div>
@@ -738,45 +718,62 @@ export function MainLayout({ children }: MainLayoutProps) {
               )}
             </svg>
           </button>
-          <div
-            ref={roleMenuRef}
-            className={`header-role-switch ${isRoleMenuOpen ? 'header-role-switch--open' : ''}`}
-          >
-            <button
-              type="button"
-              className="mobile-shell-role mobile-shell-role--button"
-              aria-haspopup="listbox"
-              aria-expanded={isRoleMenuOpen}
-              aria-label={copy.roleSwitcherLabel}
-              title={copy.roleSwitcherLabel}
-              onClick={() => setIsRoleMenuOpen((prev) => !prev)}
+          <div className="header-controls">
+            <div
+              ref={roleMenuRef}
+              className={`header-role-switch ${isRoleMenuOpen ? 'header-role-switch--open' : ''}`}
             >
-              <span>{copy.roleOptions[activeRole]}</span>
-              <svg
-                className="mobile-shell-role__chevron"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
+              <button
+                type="button"
+                className="mobile-shell-role mobile-shell-role--button"
+                aria-haspopup="listbox"
+                aria-expanded={isRoleMenuOpen}
+                aria-label={copy.roleSwitcherLabel}
+                title={copy.roleSwitcherLabel}
+                onClick={() => setIsRoleMenuOpen((prev) => !prev)}
               >
-                <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            {isRoleMenuOpen ? (
-              <div className="header-role-switch__menu" role="listbox" aria-label={copy.roleSwitcherLabel}>
-                {availableRoles.map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    className={`header-role-switch__option ${activeRole === role ? 'header-role-switch__option--active' : ''}`}
-                    aria-selected={activeRole === role}
-                    onClick={() => handleRoleChange(role)}
-                  >
-                    {copy.roleOptions[role]}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+                <span>{copy.roleOptions[activeRole]}</span>
+                <svg
+                  className="mobile-shell-role__chevron"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {isRoleMenuOpen ? (
+                <div className="header-role-switch__menu" role="listbox" aria-label={copy.roleSwitcherLabel}>
+                  {availableRoles.map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      className={`header-role-switch__option ${activeRole === role ? 'header-role-switch__option--active' : ''}`}
+                      aria-selected={activeRole === role}
+                      onClick={() => handleRoleChange(role)}
+                    >
+                      {copy.roleOptions[role]}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="header-lang-switch" role="group" aria-label={copy.langLabel}>
+              {languageOptions.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`header-lang-switch__option ${lang === code ? 'header-lang-switch__option--active' : ''}`}
+                  onClick={() => setLang(code)}
+                  aria-label={`Switch to ${copy.languageNames[code]}`}
+                  aria-pressed={lang === code}
+                  title={copy.languageNames[code]}
+                >
+                  {code.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
           <button
             type="button"

@@ -168,6 +168,9 @@ button {
 .low-vision .role-chip--active { background: #00ff00; }
 .low-vision .sidebar-toggle { background: #000; color: #fff; border: 2px solid #000; }
 .low-vision .mobile-shell-role { border: 2px solid #000; background: #ffff00; color: #000; }
+.low-vision .header-lang-switch { border: 2px solid #000; background: #fff; }
+.low-vision .header-lang-switch__option { background: #ffff00; color: #000; }
+.low-vision .header-lang-switch__option--active { background: #00ff00; color: #000; }
 .low-vision .header-role-switch__menu { border: 2px solid #000; background: #fff; }
 .low-vision .header-role-switch__option { border: 2px solid #000; background: #ffff00; color: #000; }
 .low-vision .header-role-switch__option--active { background: #00ff00; color: #000; }

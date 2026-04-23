@@ -1751,16 +1751,13 @@
 
 .sidebar__lang {
   width: 100%;
-  padding: 0.7rem;
-  border-radius: 16px;
+  padding: 0.55rem;
+  border-radius: 14px;
   border: 1px solid #ebe4ec;
-  background:
-    radial-gradient(circle at top right, rgba(122, 18, 55, 0.06), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #fcf9fb 100%);
+  background: #ffffff;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  gap: 0.45rem;
 }
 
 .sidebar__control-group {
@@ -2081,6 +2078,15 @@
   padding: 0.65rem 1rem 0;
 }
 
+.header-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 0;
+}
+
 .sidebar-toggle {
   display: inline-flex;
   width: 2.9rem;
@@ -2117,10 +2123,10 @@
 .mobile-shell-role {
   display: inline-flex;
   align-items: center;
-  padding: 0.38rem 0.7rem;
+  padding: 0.4rem 0.72rem;
   border-radius: 999px;
-  background: #f7eef3;
-  border: 1px solid #ead5df;
+  background: #ffffff;
+  border: 1px solid #dde2eb;
   font-weight: 600;
   font-size: 0.84rem;
   color: #2b2f3c;
@@ -2133,9 +2139,8 @@
 }
 
 .mobile-shell-role--button:hover {
-  background: #ffffff;
-  border-color: #d7c2d0;
-  box-shadow: 0 8px 18px rgba(122, 18, 55, 0.08);
+  border-color: #cfd6e2;
+  box-shadow: 0 6px 16px rgba(25, 32, 48, 0.08);
 }
 
 .mobile-shell-role__chevron {
@@ -2148,8 +2153,8 @@
 .header-role-switch {
   position: relative;
   display: inline-flex;
-  flex: 1;
   justify-content: center;
+  min-width: 0;
 }
 
 .header-role-switch--open .mobile-shell-role__chevron {
@@ -2171,6 +2176,41 @@
   flex-direction: column;
   gap: 0.3rem;
   z-index: 15;
+}
+
+.header-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem;
+  border-radius: 999px;
+  border: 1px solid #dde2eb;
+  background: #ffffff;
+  gap: 0.15rem;
+}
+
+.header-lang-switch__option {
+  min-width: 2.4rem;
+  height: 2rem;
+  padding: 0 0.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #68707f;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.header-lang-switch__option:hover {
+  background: #f4f6fa;
+  color: #2b2f3c;
+}
+
+.header-lang-switch__option--active {
+  background: #7a1237;
+  color: #ffffff;
 }
 
 .header-role-switch__option {
@@ -3928,12 +3968,17 @@
 
   .header-role-switch {
     justify-content: flex-start;
+    flex: 1;
   }
 
   .header-role-switch__menu {
     left: 0;
     transform: none;
     min-width: min(240px, calc(100vw - 3rem));
+  }
+
+  .header-controls {
+    justify-content: flex-start;
   }
 
   .topbar {
