@@ -10,7 +10,7 @@ const typeMap = {
     review: 'Review article',
   },
   kz: {
-    original: 'Оригинальная мақала',
+    original: 'Түпнұсқа мақала',
     review: 'Шолу мақаласы',
   },
 } as const

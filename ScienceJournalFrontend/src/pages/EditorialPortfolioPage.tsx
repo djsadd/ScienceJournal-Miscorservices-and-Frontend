@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+
 import { api } from '../api/client'
-import { formatArticleStatus } from '../shared/labels'
+import { useLanguage } from '../shared/LanguageContext'
+import { formatArticleStatus, formatArticleType, type Lang } from '../shared/labels'
 import type { Article, ArticleStatus, PagedResponse } from '../shared/types'
 
 type Filters = {
@@ -10,6 +12,43 @@ type Filters = {
   article_type?: 'original' | 'review' | ''
   keywords?: string
   search?: string
+}
+
+type PortfolioCopy = {
+  eyebrow: string
+  title: string
+  author: string
+  authorPlaceholder: string
+  search: string
+  searchPlaceholder: string
+  keywords: string
+  keywordsPlaceholder: string
+  year: string
+  yearPlaceholder: string
+  articleType: string
+  articleTypePlaceholder: string
+  status: string
+  allStatuses: string
+  reset: string
+  results: string
+  titleColumn: string
+  typeColumn: string
+  statusColumn: string
+  authorsColumn: string
+  actionsColumn: string
+  untitled: string
+  view: string
+  empty: string
+  loading: string
+  error: string
+  page: string
+  of: string
+  total: string
+  firstPage: string
+  previousPage: string
+  nextPage: string
+  lastPage: string
+  pages: string
 }
 
 const DEFAULT_PAGE_SIZE = 10
@@ -37,7 +76,122 @@ const FALLBACK_STATUS_OPTIONS: ArticleStatus[] = [
   'withdrawn',
 ]
 
+const copy: Record<Lang, PortfolioCopy> = {
+  ru: {
+    eyebrow: 'Редактор',
+    title: 'Редакционный портфель',
+    author: 'Автор',
+    authorPlaceholder: 'Автор',
+    search: 'Поиск',
+    searchPlaceholder: 'Заголовок или аннотация',
+    keywords: 'Ключевые слова',
+    keywordsPlaceholder: 'Ключевые слова',
+    year: 'Год',
+    yearPlaceholder: 'Год',
+    articleType: 'Тип статьи',
+    articleTypePlaceholder: 'Все типы',
+    status: 'Статус',
+    allStatuses: 'Все статусы',
+    reset: 'Сбросить',
+    results: 'Результаты',
+    titleColumn: 'Название',
+    typeColumn: 'Тип',
+    statusColumn: 'Статус',
+    authorsColumn: 'Авторы',
+    actionsColumn: 'Действия',
+    untitled: 'Без заголовка',
+    view: 'Посмотреть',
+    empty: 'Нет результатов',
+    loading: 'Загрузка...',
+    error: 'Ошибка',
+    page: 'Стр.',
+    of: 'из',
+    total: 'всего',
+    firstPage: 'Первая страница',
+    previousPage: 'Предыдущая страница',
+    nextPage: 'Следующая страница',
+    lastPage: 'Последняя страница',
+    pages: 'Список страниц',
+  },
+  en: {
+    eyebrow: 'Editor',
+    title: 'Editorial portfolio',
+    author: 'Author',
+    authorPlaceholder: 'Author',
+    search: 'Search',
+    searchPlaceholder: 'Title or abstract',
+    keywords: 'Keywords',
+    keywordsPlaceholder: 'Keywords',
+    year: 'Year',
+    yearPlaceholder: 'Year',
+    articleType: 'Article type',
+    articleTypePlaceholder: 'All types',
+    status: 'Status',
+    allStatuses: 'All statuses',
+    reset: 'Reset',
+    results: 'Results',
+    titleColumn: 'Title',
+    typeColumn: 'Type',
+    statusColumn: 'Status',
+    authorsColumn: 'Authors',
+    actionsColumn: 'Actions',
+    untitled: 'Untitled',
+    view: 'Open',
+    empty: 'No results',
+    loading: 'Loading...',
+    error: 'Error',
+    page: 'Page',
+    of: 'of',
+    total: 'total',
+    firstPage: 'First page',
+    previousPage: 'Previous page',
+    nextPage: 'Next page',
+    lastPage: 'Last page',
+    pages: 'Page list',
+  },
+  kz: {
+    eyebrow: 'Редактор',
+    title: 'Редакциялық портфель',
+    author: 'Автор',
+    authorPlaceholder: 'Автор',
+    search: 'Іздеу',
+    searchPlaceholder: 'Тақырып немесе аңдатпа',
+    keywords: 'Түйінді сөздер',
+    keywordsPlaceholder: 'Түйінді сөздер',
+    year: 'Жыл',
+    yearPlaceholder: 'Жыл',
+    articleType: 'Мақала түрі',
+    articleTypePlaceholder: 'Барлық түрі',
+    status: 'Күйі',
+    allStatuses: 'Барлық күйлер',
+    reset: 'Тазарту',
+    results: 'Нәтижелер',
+    titleColumn: 'Атауы',
+    typeColumn: 'Түрі',
+    statusColumn: 'Күйі',
+    authorsColumn: 'Авторлар',
+    actionsColumn: 'Әрекеттер',
+    untitled: 'Тақырыпсыз',
+    view: 'Ашу',
+    empty: 'Нәтиже жоқ',
+    loading: 'Жүктелуде...',
+    error: 'Қате',
+    page: 'Бет',
+    of: '/',
+    total: 'барлығы',
+    firstPage: 'Бірінші бет',
+    previousPage: 'Алдыңғы бет',
+    nextPage: 'Келесі бет',
+    lastPage: 'Соңғы бет',
+    pages: 'Беттер тізімі',
+  },
+}
+
 export default function EditorialPortfolioPage() {
+  const { lang } = useLanguage()
+  const locale: Lang = ['ru', 'en', 'kz'].includes(lang) ? (lang as Lang) : 'ru'
+  const t = copy[locale]
+
   const [filters, setFilters] = useState<Filters>({ status: undefined })
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -48,6 +202,7 @@ export default function EditorialPortfolioPage() {
 
   useEffect(() => {
     let mounted = true
+
     api
       .getArticleStatuses<string[]>({ scope: 'unassigned' })
       .then((statuses) => {
@@ -140,9 +295,8 @@ export default function EditorialPortfolioPage() {
     <div className="app-container app-container--wide editorial-portfolio">
       <section className="section-header">
         <div>
-          <p className="eyebrow">Редактор</p>
-          <h1 className="page-title">Редакционный портфель</h1>
-          <p className="subtitle">Секция с реальными данными из API.</p>
+          <p className="eyebrow">{t.eyebrow}</p>
+          <h1 className="page-title">{t.title}</h1>
         </div>
       </section>
 
@@ -150,107 +304,115 @@ export default function EditorialPortfolioPage() {
         <div className="panel panel--floating">
           <div className="filters filters--sticky">
             <div className="filter-group">
-              <label className="filter-label">Автор</label>
+              <label className="filter-label">{t.author}</label>
               <input
                 className="search"
                 name="author_name"
                 value={filters.author_name ?? ''}
                 onChange={onInput}
-                placeholder="Автор"
+                placeholder={t.authorPlaceholder}
               />
             </div>
             <div className="filter-group">
-              <label className="filter-label">Поиск</label>
+              <label className="filter-label">{t.search}</label>
               <input
                 className="search"
                 name="search"
                 value={filters.search ?? ''}
                 onChange={onInput}
-                placeholder="Заголовок/аннотация"
+                placeholder={t.searchPlaceholder}
               />
             </div>
             <div className="filter-group">
-              <label className="filter-label">Ключевые слова</label>
+              <label className="filter-label">{t.keywords}</label>
               <input
                 className="search"
                 name="keywords"
                 value={filters.keywords ?? ''}
                 onChange={onInput}
-                placeholder="Ключевые слова"
+                placeholder={t.keywordsPlaceholder}
               />
             </div>
             <div className="filter-group">
-              <label className="filter-label">Год</label>
+              <label className="filter-label">{t.year}</label>
               <input
                 className="search"
                 name="year"
                 type="number"
                 value={filters.year ?? ''}
                 onChange={onInput}
-                placeholder="Год"
+                placeholder={t.yearPlaceholder}
               />
             </div>
             <div className="filter-group">
-              <label className="filter-label">Тип статьи</label>
+              <label className="filter-label">{t.articleType}</label>
               <select className="chip-select" name="article_type" value={filters.article_type ?? ''} onChange={onInput}>
-                <option value="">Тип</option>
-                <option value="original">original</option>
-                <option value="review">review</option>
+                <option value="">{t.articleTypePlaceholder}</option>
+                <option value="original">{formatArticleType('original', locale)}</option>
+                <option value="review">{formatArticleType('review', locale)}</option>
               </select>
             </div>
             <div className="filter-group">
-              <label className="filter-label">Статус</label>
+              <label className="filter-label">{t.status}</label>
               <select className="chip-select" name="status" value={filters.status ?? ''} onChange={onInput}>
-                <option value="">Все статусы</option>
+                <option value="">{t.allStatuses}</option>
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
-                    {formatArticleStatus(status, 'ru')}
+                    {formatArticleStatus(status, locale)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="filter-group filter-group--actions">
               <button className="button button--ghost button--compact" onClick={clearFilters}>
-                Сбросить
+                {t.reset}
               </button>
             </div>
           </div>
 
-          {error ? <div className="alert error">Ошибка: {error}</div> : null}
-          {loading ? <div className="loading">Загрузка...</div> : null}
+          {error ? (
+            <div className="alert error">
+              {t.error}: {error}
+            </div>
+          ) : null}
+          {loading ? <div className="loading">{t.loading}</div> : null}
+
+          <div className="portfolio-transition" aria-hidden="true">
+            <span>{t.results}</span>
+          </div>
 
           <div className="table table--portfolio">
             <div className="table__head">
-              <span>Название</span>
-              <span>Тип</span>
-              <span>Статус</span>
-              <span>Авторы</span>
-              <span>Файлы</span>
+              <span>{t.titleColumn}</span>
+              <span>{t.typeColumn}</span>
+              <span>{t.statusColumn}</span>
+              <span>{t.authorsColumn}</span>
+              <span>{t.actionsColumn}</span>
             </div>
             <div className="table__body">
               {data?.items.map((article) => (
                 <div className="table__row" key={article.id}>
                   <div className="table__cell table__cell--title">
                     <div className="table__title">
-                      {article.title_ru || article.title_en || article.title_kz || 'Без заголовка'}
+                      {article.title_ru || article.title_en || article.title_kz || t.untitled}
                     </div>
                     <div className="table__meta">DOI: {article.doi || '—'}</div>
                   </div>
-                  <div className="table__cell">{article.article_type}</div>
-                  <div className="table__cell">{formatArticleStatus(article.status, 'ru')}</div>
+                  <div className="table__cell">{formatArticleType(String(article.article_type || ''), locale)}</div>
+                  <div className="table__cell">{formatArticleStatus(article.status, locale)}</div>
                   <div className="table__cell">
                     {article.authors.map((author) => `${author.last_name} ${author.first_name}`).join(', ') || '—'}
                   </div>
                   <div className="table__cell table__cell--actions">
                     <div className="actions">
                       <a className="button button--primary button--compact" href={`/cabinet/editorial2/${String(article.id)}`}>
-                        Посмотреть
+                        {t.view}
                       </a>
                     </div>
                   </div>
                 </div>
               ))}
-              {!loading && data && data.items.length === 0 ? <div className="table__empty">Нет результатов</div> : null}
+              {!loading && data && data.items.length === 0 ? <div className="table__empty">{t.empty}</div> : null}
             </div>
           </div>
 
@@ -261,7 +423,7 @@ export default function EditorialPortfolioPage() {
                 className="button button--ghost button--compact"
                 disabled={currentPage <= 1}
                 onClick={() => setPage(1)}
-                aria-label="Первая страница"
+                aria-label={t.firstPage}
               >
                 «
               </button>
@@ -270,14 +432,14 @@ export default function EditorialPortfolioPage() {
                 className="button button--ghost button--compact"
                 disabled={currentPage <= 1}
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                aria-label="Предыдущая страница"
+                aria-label={t.previousPage}
               >
                 ‹
               </button>
               <span className="pagination__meta">
-                Стр. {currentPage} из {pagination?.total_pages ?? '—'} (всего {pagination?.total_count ?? '—'})
+                {t.page} {currentPage} {t.of} {pagination?.total_pages ?? '—'} ({t.total} {pagination?.total_count ?? '—'})
               </span>
-              <div className="pagination__pages" aria-label="Список страниц">
+              <div className="pagination__pages" aria-label={t.pages}>
                 {visiblePages.map((pageNumber) => (
                   <button
                     key={pageNumber}
@@ -295,7 +457,7 @@ export default function EditorialPortfolioPage() {
                 className="button button--ghost button--compact"
                 disabled={!pagination?.has_next}
                 onClick={() => setPage((prev) => prev + 1)}
-                aria-label="Следующая страница"
+                aria-label={t.nextPage}
               >
                 ›
               </button>
@@ -304,7 +466,7 @@ export default function EditorialPortfolioPage() {
                 className="button button--ghost button--compact"
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage(totalPages)}
-                aria-label="Последняя страница"
+                aria-label={t.lastPage}
               >
                 »
               </button>
