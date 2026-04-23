@@ -151,6 +151,19 @@ button {
 .low-vision .sidebar__link { min-height: 44px; padding: 10px 12px; border: 2px solid #000; background: #ffff00; color: #000; }
 .low-vision .sidebar__link--active { background: #00ff00 !important; }
 .low-vision .sidebar__tag { background: #000; color: #fff; border: 2px solid #000; }
+.low-vision .sidebar__lang { border: 2px solid #000; background: #fff !important; }
+.low-vision .sidebar__control-label,
+.low-vision .sidebar__control-hint { color: #000 !important; }
+.low-vision .sidebar__control-status { border: 2px solid #000; background: #fff; color: #000; }
+.low-vision .sidebar__control-status--active { background: #00ff00; }
+.low-vision .sidebar-lang-icon { min-height: 52px; border: 2px solid #000; background: #ffff00; color: #000; }
+.low-vision .sidebar-lang-icon--active { background: #00ff00; color: #000; }
+.low-vision .sidebar-accessibility-toggle { border: 2px solid #000; background: #ffff00; color: #000; }
+.low-vision .sidebar-accessibility-toggle--active { background: #00ff00; }
+.low-vision .sidebar-accessibility-toggle__icon { border: 2px solid #000; background: #000; color: #fff; }
+.low-vision .sidebar-accessibility-toggle__switch { background: #fff; border: 2px solid #000; }
+.low-vision .sidebar-accessibility-toggle--active .sidebar-accessibility-toggle__switch { background: #000; }
+.low-vision .sidebar-accessibility-toggle__thumb { background: #fff; box-shadow: none; }
 .low-vision .role-chip { min-height: 40px; border: 2px solid #000; background: #ffff00; }
 .low-vision .role-chip--active { background: #00ff00; }
 .low-vision .sidebar-toggle { background: #000; color: #fff; border: 2px solid #000; }

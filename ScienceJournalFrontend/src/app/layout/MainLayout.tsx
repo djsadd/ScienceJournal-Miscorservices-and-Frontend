@@ -16,6 +16,11 @@ type LangKey = 'ru' | 'en' | 'kz'
 type SidebarCopy = {
   roleOptions: Record<RoleKey, string>
   roleSwitcherLabel: string
+  languageNames: Record<LangKey, string>
+  accessibilityLabel: string
+  accessibilityHint: string
+  accessibilityOn: string
+  accessibilityOff: string
   nav: Record<
     RoleKey,
     {
@@ -47,6 +52,15 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       admin: 'Администратор',
     },
     roleSwitcherLabel: 'Выбор роли',
+    languageNames: {
+      ru: 'Рус',
+      en: 'Eng',
+      kz: 'Қаз',
+    },
+    accessibilityLabel: 'Версия для слабовидящих',
+    accessibilityHint: 'Повышенный контраст и более заметные элементы интерфейса',
+    accessibilityOn: 'Включена',
+    accessibilityOff: 'Выключена',
     nav: {
       author: [
         {
@@ -155,6 +169,15 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       admin: 'Administrator',
     },
     roleSwitcherLabel: 'Role switcher',
+    languageNames: {
+      ru: 'Rus',
+      en: 'Eng',
+      kz: 'Kaz',
+    },
+    accessibilityLabel: 'Accessible mode',
+    accessibilityHint: 'Higher contrast and more prominent interface elements',
+    accessibilityOn: 'Enabled',
+    accessibilityOff: 'Disabled',
     nav: {
       author: [
         {
@@ -263,6 +286,15 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       admin: 'Әкімші',
     },
     roleSwitcherLabel: 'Рөлді таңдау',
+    languageNames: {
+      ru: 'Орыс',
+      en: 'Ағыл',
+      kz: 'Қаз',
+    },
+    accessibilityLabel: 'Нашар көретіндер режимі',
+    accessibilityHint: 'Жоғары контраст және интерфейстің айқынырақ элементтері',
+    accessibilityOn: 'Қосулы',
+    accessibilityOff: 'Өшірулі',
     nav: {
       author: [
         {
@@ -544,38 +576,62 @@ export function MainLayout({ children }: MainLayoutProps) {
         </div>
 
         <div className="sidebar__lang">
-          <div className="sidebar__lang-row">
-            {languageOptions.map((code) => (
-              <button
-                key={code}
-                type="button"
-                className={`sidebar-lang-icon ${lang === code ? 'sidebar-lang-icon--active' : ''}`}
-                onClick={() => setLang(code)}
-                aria-label={`Switch to ${code.toUpperCase()}`}
-              >
-                {code.toUpperCase()}
-              </button>
-            ))}
+          <div className="sidebar__control-group">
+            <div className="sidebar__control-head">
+              <span className="sidebar__control-label">{copy.langLabel}</span>
+            </div>
+            <div className="sidebar__lang-row">
+              {languageOptions.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`sidebar-lang-icon ${lang === code ? 'sidebar-lang-icon--active' : ''}`}
+                  onClick={() => setLang(code)}
+                  aria-label={`Switch to ${copy.languageNames[code]}`}
+                  aria-pressed={lang === code}
+                >
+                  <span className="sidebar-lang-icon__code">{code.toUpperCase()}</span>
+                  <span className="sidebar-lang-icon__label">{copy.languageNames[code]}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="sidebar__accessibility">
-            <button
-              type="button"
-              className={`button button--contrast ${lowVision ? 'button--active' : ''}`}
-              aria-pressed={lowVision}
-              aria-label={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
-              title={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
-              onClick={() => {
-                setLowVision((v) => {
-                  const next = !v
-                  try {
-                    localStorage.setItem('lowVision', next ? '1' : '0')
-                  } catch {}
-                  return next
-                })
-              }}
-            >
-              Aa
-            </button>
+          <div className="sidebar__control-group sidebar__control-group--contrast">
+            <div className="sidebar__control-head">
+              <div>
+                <div className="sidebar__control-label">{copy.accessibilityLabel}</div>
+                <div className="sidebar__control-hint">{copy.accessibilityHint}</div>
+              </div>
+              <span className={`sidebar__control-status ${lowVision ? 'sidebar__control-status--active' : ''}`}>
+                {lowVision ? copy.accessibilityOn : copy.accessibilityOff}
+              </span>
+            </div>
+            <div className="sidebar__accessibility">
+              <button
+                type="button"
+                className={`sidebar-accessibility-toggle ${lowVision ? 'sidebar-accessibility-toggle--active' : ''}`}
+                aria-pressed={lowVision}
+                aria-label={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
+                title={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
+                onClick={() => {
+                  setLowVision((v) => {
+                    const next = !v
+                    try {
+                      localStorage.setItem('lowVision', next ? '1' : '0')
+                    } catch {}
+                    return next
+                  })
+                }}
+              >
+                <span className="sidebar-accessibility-toggle__icon" aria-hidden="true">Aa</span>
+                <span className="sidebar-accessibility-toggle__text">
+                  {copy.accessibilityLabel}
+                </span>
+                <span className="sidebar-accessibility-toggle__switch" aria-hidden="true">
+                  <span className="sidebar-accessibility-toggle__thumb" />
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
