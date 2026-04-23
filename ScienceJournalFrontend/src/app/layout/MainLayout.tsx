@@ -631,9 +631,37 @@ export function MainLayout({ children }: MainLayoutProps) {
             className="sidebar-toggle"
             aria-controls="cabinet-sidebar"
             aria-expanded={isSidebarVisible}
+            aria-label={sidebarToggleLabel}
+            title={sidebarToggleLabel}
             onClick={toggleSidebar}
           >
-            {sidebarToggleLabel}
+            <svg
+              className="sidebar-toggle__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <rect x="3.5" y="4.5" width="17" height="15" rx="3" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M9 6.75V17.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              {isSidebarVisible ? (
+                <path
+                  d="M14.75 9.25L11.75 12L14.75 14.75"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ) : (
+                <path
+                  d="M12.25 9.25L15.25 12L12.25 14.75"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+            </svg>
           </button>
           <span className="mobile-shell-role">{copy.roleOptions[activeRole]}</span>
           <button

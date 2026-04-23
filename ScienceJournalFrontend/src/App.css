@@ -1926,18 +1926,30 @@
 
 .sidebar-toggle {
   display: inline-flex;
-  border: 1px solid #dfe3ef;
-  border-radius: 12px;
-  background: #ffffff;
+  width: 2.9rem;
+  height: 2.9rem;
+  padding: 0;
+  border: 1px solid #d8ddea;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f8fc 100%);
   color: #7a1237;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.45rem 0.8rem;
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 10px 24px rgba(122, 18, 55, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+  transform: translateY(-1px);
+  border-color: #c89aae;
+  box-shadow: 0 14px 28px rgba(122, 18, 55, 0.14);
+}
+
+.sidebar-toggle__icon {
+  width: 1.3rem;
+  height: 1.3rem;
+  flex: 0 0 auto;
 }
 
 .sidebar-toggle:focus-visible {
@@ -3673,6 +3685,8 @@
 
   .sidebar-toggle {
     display: inline-flex;
+    width: 2.7rem;
+    height: 2.7rem;
   }
 
   .mobile-shell-role {
