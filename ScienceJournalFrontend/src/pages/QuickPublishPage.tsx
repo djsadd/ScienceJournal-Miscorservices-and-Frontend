@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
+import { useLanguage } from '../shared/LanguageContext'
+import { getArticleLanguageOptions } from '../shared/articleLanguages'
 import type { Article, Author, Keyword } from '../shared/types'
 import { Alert } from '../shared/components/Alert'
 import './QuickPublishPage.css'
@@ -13,6 +15,7 @@ interface FormData {
   abstract_ru: string
   abstract_en: string
   abstract_kz: string
+  articleLanguage: string
   doi: string
   articleType: 'original' | 'review'
   layoutFileId: string
@@ -37,6 +40,7 @@ export default function QuickPublishPage() {
     created_at?: string
   }
 
+  const { lang: locale } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -87,6 +91,7 @@ export default function QuickPublishPage() {
     abstract_ru: '',
     abstract_en: '',
     abstract_kz: '',
+    articleLanguage: locale === 'kz' ? 'kk' : locale,
     doi: '',
     articleType: 'original',
     layoutFileId: '',
@@ -94,6 +99,8 @@ export default function QuickPublishPage() {
     authorInfoFileId: '',
     generativeAiInfo: '',
   })
+
+  const articleLanguageOptions = getArticleLanguageOptions(locale)
 
   const getTitleForLang = (lang: Lang) =>
     lang === 'ru' ? form.title_ru : lang === 'kz' ? form.title_kz : form.title_en
@@ -253,6 +260,7 @@ export default function QuickPublishPage() {
         abstract_kz: form.abstract_kz || undefined,
         abstract_en: form.abstract_en || undefined,
         abstract_ru: form.abstract_ru || undefined,
+        article_language: form.articleLanguage || undefined,
         doi: form.doi || undefined,
         article_type: form.articleType,
         layout_file_id: layoutFileId,
@@ -283,6 +291,7 @@ export default function QuickPublishPage() {
         abstract_ru: '',
         abstract_en: '',
         abstract_kz: '',
+        articleLanguage: locale === 'kz' ? 'kk' : locale,
         doi: '',
         articleType: 'original',
         layoutFileId: '',
@@ -464,6 +473,21 @@ export default function QuickPublishPage() {
           </div>
 
           <div className="form-grid form-grid--cols-3">
+            <div className="form-field">
+              <label className="form-label">Язык статьи</label>
+              <select
+                className="chip-select"
+                value={form.articleLanguage}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, articleLanguage: e.target.value })}
+              >
+                {articleLanguageOptions.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {option.label} ({option.code.toUpperCase()})
+                  </option>
+                ))}
+              </select>
+              <p className="form-hint">Выберите основной язык рукописи. Это значение будет сохранено в карточке статьи.</p>
+            </div>
             <div className="form-field">
               <label className="form-label">DOI</label>
               <input

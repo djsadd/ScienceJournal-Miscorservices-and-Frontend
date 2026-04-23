@@ -296,6 +296,7 @@ export const api = {
     abstract_kz?: string
     abstract_en?: string
     abstract_ru?: string
+    article_language?: string
     doi?: string
     article_type?: 'original' | 'review'
     layout_file_id?: string
