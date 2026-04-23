@@ -70,6 +70,15 @@ const pageCopy: Record<LocaleKey, any> = {
     articleTypeLabel: 'Выберите тип статьи',
     articleTypePlaceholder: '---------',
     articleTypes: { original: 'Оригинальная статья', review: 'Обзорная статья' },
+    articleLanguage: {
+      label: 'Язык статьи',
+      hint: 'Выберите основной язык рукописи. Это поле будет сохранено в карточке статьи.',
+      options: {
+        ru: { title: 'Русский', subtitle: 'Для рукописей на русском языке' },
+        kz: { title: 'Қазақша', subtitle: 'Қазақ тіліндегі қолжазбалар үшін' },
+        en: { title: 'English', subtitle: 'For manuscripts written in English' },
+      },
+    },
     keywords: {
       label: 'Выберите ключевые слова',
       empty: 'Ключевые слова пока не добавлены.',
@@ -148,6 +157,7 @@ const pageCopy: Record<LocaleKey, any> = {
       articleTitle: 'Название статьи',
       abstract: 'Аннотация',
       articleType: 'Тип статьи',
+      articleLanguage: 'Язык статьи',
       keywords: 'Ключевые слова',
       responsibleAuthor: 'Ответственный автор',
       authors: 'Авторы',
@@ -195,6 +205,15 @@ const pageCopy: Record<LocaleKey, any> = {
     articleTypeLabel: 'Select article type',
     articleTypePlaceholder: '---------',
     articleTypes: { original: 'Original article', review: 'Review article' },
+    articleLanguage: {
+      label: 'Article language',
+      hint: 'Select the primary manuscript language. This value will be saved in the article record.',
+      options: {
+        ru: { title: 'Russian', subtitle: 'For manuscripts written in Russian' },
+        kz: { title: 'Kazakh', subtitle: 'For manuscripts written in Kazakh' },
+        en: { title: 'English', subtitle: 'For manuscripts written in English' },
+      },
+    },
     keywords: {
       label: 'Select keywords',
       empty: 'No keywords added yet.',
@@ -269,6 +288,7 @@ const pageCopy: Record<LocaleKey, any> = {
       articleTitle: 'Article title',
       abstract: 'Abstract',
       articleType: 'Article type',
+      articleLanguage: 'Article language',
       keywords: 'Keywords',
       responsibleAuthor: 'Responsible author',
       authors: 'Authors',
@@ -316,6 +336,15 @@ const pageCopy: Record<LocaleKey, any> = {
     articleTypeLabel: 'Мақала түрін таңдаңыз',
     articleTypePlaceholder: '---------',
     articleTypes: { original: 'Түпнұсқа мақала', review: 'Шолу мақаласы' },
+    articleLanguage: {
+      label: 'Мақала тілі',
+      hint: 'Қолжазбаның негізгі тілін таңдаңыз. Бұл мән мақала карточкасында сақталады.',
+      options: {
+        ru: { title: 'Русский', subtitle: 'Орыс тіліндегі қолжазбалар үшін' },
+        kz: { title: 'Қазақша', subtitle: 'Қазақ тіліндегі қолжазбалар үшін' },
+        en: { title: 'English', subtitle: 'Ағылшын тіліндегі қолжазбалар үшін' },
+      },
+    },
     keywords: {
       label: 'Кілт сөздерді таңдаңыз',
       empty: 'Кілт сөздер әлі қосылмады.',
@@ -390,6 +419,7 @@ const pageCopy: Record<LocaleKey, any> = {
       articleTitle: 'Мақала атауы',
       abstract: 'Аңдатпа',
       articleType: 'Мақала түрі',
+      articleLanguage: 'Мақала тілі',
       keywords: 'Кілт сөздер',
       responsibleAuthor: 'Жауапты автор',
       authors: 'Авторлар',
@@ -436,6 +466,7 @@ export function AuthorsSubmissionPage() {
   const [titles, setTitles] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
   const [abstracts, setAbstracts] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
   const [articleType, setArticleType] = useState<ArticleType | ''>('')
+  const [articleLanguage, setArticleLanguage] = useState<Lang>(locale)
   const [comments, setComments] = useState('')
   void setComments
   const [generativeAiInfo, setGenerativeAiInfo] = useState('')
@@ -772,6 +803,7 @@ export function AuthorsSubmissionPage() {
                   abstract_kz: abstracts.kz || null,
                   abstract_en: abstracts.en || null,
                   abstract_ru: abstracts.ru || null,
+                  article_language: articleLanguage,
 
                   doi: null,
                   status: 'draft',
@@ -856,6 +888,33 @@ export function AuthorsSubmissionPage() {
               ))}
             </select>
             {errors.articleType ? (<p className="form-hint" style={{ color: 'red' }}>{errors.articleType}</p>) : null}
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">{t.articleLanguage.label}</label>
+            <div className="article-language-picker" role="radiogroup" aria-label={t.articleLanguage.label}>
+              {(['ru', 'kz', 'en'] as Lang[]).map((code) => {
+                const option = t.articleLanguage.options[code]
+                const isActive = articleLanguage === code
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive}
+                    className={`article-language-card ${isActive ? 'article-language-card--active' : ''}`}
+                    onClick={() => setArticleLanguage(code)}
+                  >
+                    <span className="article-language-card__top">
+                      <span className="article-language-card__title">{option.title}</span>
+                      <span className="article-language-card__code">{code.toUpperCase()}</span>
+                    </span>
+                    <span className="article-language-card__subtitle">{option.subtitle}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="form-hint">{t.articleLanguage.hint}</p>
           </div>
 
           <div className="form-field form-field--article-file">
@@ -1280,6 +1339,7 @@ export function AuthorsSubmissionPage() {
                   <div className="table__row"><div className="table__cell">{t.confirm.articleTitle}</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.title_ru) || (confirmLang === 'kz' && pendingPayload.title_kz) || (confirmLang === 'en' && pendingPayload.title_en) || t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.abstract}</div><div className="table__cell">{(confirmLang === 'ru' && pendingPayload.abstract_ru) || (confirmLang === 'kz' && pendingPayload.abstract_kz) || (confirmLang === 'en' && pendingPayload.abstract_en) || t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.articleType}</div><div className="table__cell">{articleType ? t.articleTypes[articleType] : t.common.notAvailable}</div></div>
+                  <div className="table__row"><div className="table__cell">{t.confirm.articleLanguage}</div><div className="table__cell">{pendingPayload.article_language ? t.articleLanguage.options[pendingPayload.article_language as Lang]?.title ?? pendingPayload.article_language : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.keywords}</div><div className="table__cell">{selectedKeywords.length ? selectedKeywords.map((kw) => confirmLang === 'ru' ? kw.ru : confirmLang === 'kz' ? kw.kz : kw.en).filter(Boolean).join(', ') : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.responsibleAuthor}</div><div className="table__cell">{(() => { const responsible = authorList.find((a) => a.id === pendingPayload.responsible_user_id); if (!responsible) return pendingPayload.responsible_user_id ?? t.common.notAvailable; const name = [responsible.prefix, responsible.firstName, responsible.middleName, responsible.lastName].filter(Boolean).join(' '); return `${name} (${responsible.email})`; })()}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.authors}</div><div className="table__cell">{authorList.length ? authorList.map((a) => [a.prefix, a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')).join('; ') : t.common.notAvailable}</div></div>
