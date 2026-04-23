@@ -367,6 +367,13 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
 const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
 const isRoleKey = (value: string): value is RoleKey => allRoles.includes(value as RoleKey)
 const languageOptions: Lang[] = ['ru', 'en', 'kz']
+const roleLandingPage: Record<RoleKey, string> = {
+  author: '/cabinet/submissions',
+  editor: '/cabinet/editorial2',
+  reviewer: '/cabinet/reviews',
+  layout: '/cabinet/layout',
+  admin: '/cabinet/admin/users',
+}
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [activeRole, setActiveRole] = useState<RoleKey>(() => {
@@ -395,10 +402,12 @@ export function MainLayout({ children }: MainLayoutProps) {
   const handleRoleChange = useCallback((role: RoleKey) => {
     setActiveRole(role)
     setIsRoleMenuOpen(false)
+    closeSidebar()
     try {
       window.localStorage.setItem('activeRole', role)
     } catch {}
-  }, [])
+    navigate(roleLandingPage[role])
+  }, [closeSidebar, navigate])
   const [unreadCount, setUnreadCount] = useState<number>(0)
   const [lowVision, setLowVision] = useState<boolean>(() => {
     try {
