@@ -17,10 +17,6 @@ type SidebarCopy = {
   roleOptions: Record<RoleKey, string>
   roleSwitcherLabel: string
   languageNames: Record<LangKey, string>
-  accessibilityLabel: string
-  accessibilityHint: string
-  accessibilityOn: string
-  accessibilityOff: string
   nav: Record<
     RoleKey,
     {
@@ -57,10 +53,6 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       en: 'Eng',
       kz: 'Қаз',
     },
-    accessibilityLabel: 'Версия для слабовидящих',
-    accessibilityHint: 'Повышенный контраст и более заметные элементы интерфейса',
-    accessibilityOn: 'Включена',
-    accessibilityOff: 'Выключена',
     nav: {
       author: [
         {
@@ -153,7 +145,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     logout: 'Выйти',
     langLabel: 'Язык',
     brandTitle: 'Известия университета "Туран-Астана"',
-    brandSubtitle: 'Science Journal - Department of Digital Transformation',
+    brandSubtitle: '',
     brandAlt: 'Логотип журнала',
     mobileMenuOpen: 'Меню',
     mobileMenuClose: 'Закрыть меню',
@@ -174,10 +166,6 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       en: 'Eng',
       kz: 'Kaz',
     },
-    accessibilityLabel: 'Accessible mode',
-    accessibilityHint: 'Higher contrast and more prominent interface elements',
-    accessibilityOn: 'Enabled',
-    accessibilityOff: 'Disabled',
     nav: {
       author: [
         {
@@ -270,7 +258,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     logout: 'Logout',
     langLabel: 'Language',
     brandTitle: 'Bulletin of Turan-Astana University',
-    brandSubtitle: 'Science Journal - Department of Digital Transformation',
+    brandSubtitle: '',
     brandAlt: 'Science Journal',
     mobileMenuOpen: 'Menu',
     mobileMenuClose: 'Close menu',
@@ -291,10 +279,6 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       en: 'Ағыл',
       kz: 'Қаз',
     },
-    accessibilityLabel: 'Нашар көретіндер режимі',
-    accessibilityHint: 'Жоғары контраст және интерфейстің айқынырақ элементтері',
-    accessibilityOn: 'Қосулы',
-    accessibilityOff: 'Өшірулі',
     nav: {
       author: [
         {
@@ -387,7 +371,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     logout: 'Шығу',
     langLabel: 'Тіл',
     brandTitle: '«Туран-Астана» университетінің хабаршысы',
-    brandSubtitle: 'Science Journal - Цифрлық трансформация департаменті',
+    brandSubtitle: '',
     brandAlt: 'Журнал логотипы',
     mobileMenuOpen: 'Мәзір',
     mobileMenuClose: 'Мәзірді жабу',
@@ -570,49 +554,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             </div>
             <div>
               <div className="brand-title">{copy.brandTitle}</div>
-              <div className="brand-subtitle">{copy.brandSubtitle}</div>
+              {copy.brandSubtitle ? <div className="brand-subtitle">{copy.brandSubtitle}</div> : null}
             </div>
           </Link>
-        </div>
-
-        <div className="sidebar__lang">
-          <div className="sidebar__control-group">
-            <div className="sidebar__control-head">
-              <div>
-                <div className="sidebar__control-label">{copy.accessibilityLabel}</div>
-                <div className="sidebar__control-hint">{copy.accessibilityHint}</div>
-              </div>
-              <span className={`sidebar__control-status ${lowVision ? 'sidebar__control-status--active' : ''}`}>
-                {lowVision ? copy.accessibilityOn : copy.accessibilityOff}
-              </span>
-            </div>
-            <div className="sidebar__accessibility">
-              <button
-                type="button"
-                className={`sidebar-accessibility-toggle ${lowVision ? 'sidebar-accessibility-toggle--active' : ''}`}
-                aria-pressed={lowVision}
-                aria-label={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
-                title={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
-                onClick={() => {
-                  setLowVision((v) => {
-                    const next = !v
-                    try {
-                      localStorage.setItem('lowVision', next ? '1' : '0')
-                    } catch {}
-                    return next
-                  })
-                }}
-              >
-                <span className="sidebar-accessibility-toggle__icon" aria-hidden="true">Aa</span>
-                <span className="sidebar-accessibility-toggle__text">
-                  {copy.accessibilityLabel}
-                </span>
-                <span className="sidebar-accessibility-toggle__switch" aria-hidden="true">
-                  <span className="sidebar-accessibility-toggle__thumb" />
-                </span>
-              </button>
-            </div>
-          </div>
         </div>
 
         <nav className="sidebar__nav">
@@ -802,7 +746,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             </div>
             <div>
               <div className="brand-title">{copy.brandTitle}</div>
-              <div className="brand-subtitle">{copy.brandSubtitle}</div>
+              {copy.brandSubtitle ? <div className="brand-subtitle">{copy.brandSubtitle}</div> : null}
             </div>
           </div>
           <div className="footer__meta">
