@@ -77,6 +77,10 @@ class ReviewOut(ReviewBase):
         orm_mode = True
 
 
+class ReviewListItem(ReviewOut):
+    article_title: Optional[str] = None
+
+
 class ReviewAssignmentOut(BaseModel):
     """Compact summary for article-level listing of reviewer assignments."""
     id: int
@@ -134,3 +138,17 @@ class RequestResubmission(BaseModel):
     Можно (опционально) обновить дедлайн для рецензента.
     """
     deadline: Optional[datetime] = None
+
+
+class PaginationOut(BaseModel):
+    total_count: int
+    page: int
+    page_size: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+
+class ReviewListResponse(BaseModel):
+    items: List[ReviewListItem]
+    pagination: PaginationOut

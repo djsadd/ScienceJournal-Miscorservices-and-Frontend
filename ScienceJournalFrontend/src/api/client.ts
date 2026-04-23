@@ -334,7 +334,7 @@ export const api = {
     request<T>(`/articles/${articleId}/antiplagiarism`, 'POST', { json: body }),
   // Reviews
   getReviewById: <T>(reviewId: number | string) => request<T>(`/reviews/${reviewId}`, 'GET'),
-  getMyReviews: <T>() => request<T>('/reviews/my-reviews', 'GET'),
+  getMyReviews: <T>(params?: { page?: number; page_size?: number }) => request<T>('/reviews/my-reviews', 'GET', { params }),
   getReviewDetail: <T>(reviewId: number | string) => request<T>(`/reviews/${reviewId}/detail`, 'GET'),
   updateReview: <T>(reviewId: number | string, body: unknown) => request<T>(`/reviews/${reviewId}`, 'PATCH', { json: body }),
   // Request resubmission for a review (editor role required)

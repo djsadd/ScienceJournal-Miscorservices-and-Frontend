@@ -140,6 +140,7 @@ export interface JournalData {
 export interface ReviewItem {
   id: number
   article_id: number
+  article_title?: string | null
   reviewer_id: number
   comments: string | null
   recommendation: 'accept' | 'minor_revision' | 'major_revision' | 'reject' | string
@@ -155,6 +156,11 @@ export interface ReviewItem {
   deadline: string | null
   created_at: string
   updated_at: string
+}
+
+export interface ReviewListResponse {
+  items: ReviewItem[]
+  pagination: Pagination
 }
 
 // API: Detailed review response `/reviews/{review_id}/detail`

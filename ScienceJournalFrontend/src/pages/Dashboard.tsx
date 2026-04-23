@@ -240,8 +240,8 @@ export function Dashboard() {
 
         // Reviewer: my reviews
         tasks.push(
-          api.get<any[]>('/reviews/my-reviews').then((items) => {
-            if (mounted) setReviewItems(items ?? [])
+          api.getMyReviews<{ items?: any[] }>({ page: 1, page_size: 20 }).then((res) => {
+            if (mounted) setReviewItems(Array.isArray(res?.items) ? res.items : [])
           }),
         )
 

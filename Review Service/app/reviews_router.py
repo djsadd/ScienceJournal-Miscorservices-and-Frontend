@@ -14,6 +14,35 @@ def get_db():
     finally:
         db.close()
 
+
+def _fetch_article_titles(article_ids: list[int]) -> dict[int, str]:
+    unique_ids = list(dict.fromkeys(article_ids))
+    if not unique_ids:
+        return {}
+
+    api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+    api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
+    shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+    titles: dict[int, str] = {}
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            for article_id in unique_ids:
+                resp = client.get(
+                    f"{api_gateway}{api_prefix}/articles/internal/{article_id}/reviewer-detail",
+                    headers={"X-Service-Secret": shared_secret},
+                )
+                if resp.status_code != 200:
+                    continue
+                article = resp.json() or {}
+                title = article.get("title_ru") or article.get("title_kz") or article.get("title_en")
+                if isinstance(title, str) and title.strip():
+                    titles[article_id] = title.strip()
+    except Exception:
+        return {}
+
+    return titles
+
 # ----------------------------
 # JWT dependency
 # ----------------------------
@@ -284,18 +313,73 @@ def request_resubmission(
 # ----------------------------
 # GET REVIEWS BY REVIEWER (рецензент видит свои задания)
 # ----------------------------
-@router.get("/my-reviews", response_model=List[schemas.ReviewOut])
-def get_my_reviews(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+@router.get("/my-reviews", response_model=schemas.ReviewListResponse)
+def get_my_reviews(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    page: int = 1,
+    page_size: int = 10,
+):
     """
     Получение списка всех рецензий, назначенных текущему пользователю.
     Роли не проверяются; фильтрация только по идентификатору пользователя.
     """
-    
-    reviews = db.query(models.Review).filter(
+    if page < 1:
+        raise HTTPException(status_code=400, detail="Page must be >= 1")
+    if page_size < 1 or page_size > 100:
+        raise HTTPException(status_code=400, detail="Page size must be between 1 and 100")
+
+    query = db.query(models.Review).filter(
         models.Review.reviewer_id == current_user["user_id"]
-    ).all()
-    
-    return reviews
+    )
+
+    total_count = query.count()
+    total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 0
+    offset = (page - 1) * page_size
+
+    reviews = (
+        query
+        .order_by(models.Review.created_at.desc(), models.Review.id.desc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    article_titles = _fetch_article_titles([review.article_id for review in reviews])
+    items = []
+    for review in reviews:
+        items.append({
+            "id": review.id,
+            "article_id": review.article_id,
+            "reviewer_id": review.reviewer_id,
+            "comments": review.comments,
+            "recommendation": review.recommendation,
+            "status": review.status,
+            "importance_applicability": review.importance_applicability,
+            "novelty_application": review.novelty_application,
+            "originality": review.originality,
+            "innovation_product": review.innovation_product,
+            "results_significance": review.results_significance,
+            "coherence": review.coherence,
+            "style_quality": review.style_quality,
+            "editorial_compliance": review.editorial_compliance,
+            "deadline": review.deadline,
+            "created_at": review.created_at,
+            "updated_at": review.updated_at,
+            "article_title": article_titles.get(review.article_id),
+        })
+
+    return {
+        "items": items,
+        "pagination": {
+            "total_count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        },
+    }
 
 
 # ----------------------------
