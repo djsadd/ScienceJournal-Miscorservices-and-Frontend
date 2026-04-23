@@ -462,7 +462,6 @@ export function AuthorsSubmissionPage() {
   const [abstracts, setAbstracts] = useState<Record<Lang, string>>({ ru: '', kz: '', en: '' })
   const [articleType, setArticleType] = useState<ArticleType | ''>('')
   const [articleLanguage, setArticleLanguage] = useState<string>(locale)
-  const [articleLanguageQuery, setArticleLanguageQuery] = useState('')
   const [comments, setComments] = useState('')
   void setComments
   const [generativeAiInfo, setGenerativeAiInfo] = useState('')
@@ -497,17 +496,6 @@ export function AuthorsSubmissionPage() {
   const articleTypeOptions: ArticleType[] = ['original', 'review']
   const langLabels: Record<Lang, string> = t.formLanguages
   const articleLanguageOptions = useMemo(() => getArticleLanguageOptions(locale), [locale])
-  const filteredArticleLanguageOptions = useMemo(() => {
-    const query = articleLanguageQuery.trim().toLowerCase()
-    const source = query
-      ? articleLanguageOptions.filter((option) => option.searchText.includes(query))
-      : articleLanguageOptions
-    return source.slice(0, query ? 12 : 9)
-  }, [articleLanguageOptions, articleLanguageQuery])
-  const selectedArticleLanguageLabel = useMemo(
-    () => getArticleLanguageLabel(articleLanguage, locale) ?? articleLanguage.toUpperCase(),
-    [articleLanguage, locale],
-  )
 
   const getApiErrorMessage = (error: unknown) => {
     if (error instanceof ApiError) {
@@ -900,45 +888,17 @@ export function AuthorsSubmissionPage() {
 
           <div className="form-field">
             <label className="form-label">{t.articleLanguage.label}</label>
-            <div className="article-language-picker">
-              <div className="article-language-selected">
-                <span className="article-language-selected__label">{t.articleLanguage.selected}</span>
-                <div className="article-language-selected__value">
-                  <span>{selectedArticleLanguageLabel}</span>
-                  <span className="article-language-card__code">{articleLanguage.toUpperCase()}</span>
-                </div>
-              </div>
-              <input
-                className="text-input"
-                value={articleLanguageQuery}
-                onChange={(e) => setArticleLanguageQuery(e.target.value)}
-                placeholder={t.articleLanguage.searchPlaceholder}
-              />
-              <div className="article-language-list" role="listbox" aria-label={t.articleLanguage.label}>
-                {filteredArticleLanguageOptions.length > 0 ? (
-                  filteredArticleLanguageOptions.map((option) => {
-                    const isActive = articleLanguage === option.code
-                    return (
-                      <button
-                        key={option.code}
-                        type="button"
-                        role="option"
-                        aria-selected={isActive}
-                        className={`article-language-card ${isActive ? 'article-language-card--active' : ''}`}
-                        onClick={() => setArticleLanguage(option.code)}
-                      >
-                        <span className="article-language-card__top">
-                          <span className="article-language-card__title">{option.label}</span>
-                          <span className="article-language-card__code">{option.code.toUpperCase()}</span>
-                        </span>
-                      </button>
-                    )
-                  })
-                ) : (
-                  <div className="article-language-empty">{t.articleLanguage.empty}</div>
-                )}
-              </div>
-            </div>
+            <select
+              className="chip-select"
+              value={articleLanguage}
+              onChange={(e) => setArticleLanguage(e.target.value)}
+            >
+              {articleLanguageOptions.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label} ({option.code.toUpperCase()})
+                </option>
+              ))}
+            </select>
             <p className="form-hint">{t.articleLanguage.hint}</p>
           </div>
 
