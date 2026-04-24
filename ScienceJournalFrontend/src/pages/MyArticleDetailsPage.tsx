@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { getCountryLabel, type CountryValue } from '../shared/countries'
 import { toApiFilesUrl } from '../shared/url'
 
 interface ApiKeyword {
@@ -20,7 +21,7 @@ interface ApiAuthor {
   last_name: string
   phone: string
   address: string
-  country: string
+  country: CountryValue
   affiliation1: string
   affiliation2: string
   affiliation3: string
@@ -185,7 +186,7 @@ export function MyArticleDetailsPage() {
           lastName: a.last_name,
           phone: a.phone ?? '',
           address: a.address ?? '',
-          country: a.country,
+          country: getCountryLabel(a.country),
           affiliation1: a.affiliation1,
           affiliation2: a.affiliation2 ?? '',
           affiliation3: a.affiliation3 ?? '',
@@ -654,10 +655,10 @@ export function MyArticleDetailsPage() {
                         <span>{a.affiliation1}</span>
                         {a.affiliation2 ? <span className="dot">·</span> : null}
                         {a.affiliation2 ? <span>{a.affiliation2}</span> : null}
-                        {a.country ? (
+                        {getCountryLabel(a.country) ? (
                           <>
                             <span className="dot">·</span>
-                            <span>{a.country}</span>
+                            <span>{getCountryLabel(a.country)}</span>
                           </>
                         ) : null}
                       </div>
@@ -712,7 +713,7 @@ export function MyArticleDetailsPage() {
                                 lastName: a.last_name,
                                 phone: a.phone ?? '',
                                 address: a.address ?? '',
-                                country: a.country,
+                                country: getCountryLabel(a.country),
                                 affiliation1: a.affiliation1,
                                 affiliation2: a.affiliation2 ?? '',
                                 affiliation3: a.affiliation3 ?? '',
@@ -1209,7 +1210,7 @@ export function MyArticleDetailsPage() {
                         lastName: created.last_name,
                         phone: created.phone ?? '',
                         address: created.address ?? '',
-                        country: created.country,
+                        country: getCountryLabel(created.country),
                         affiliation1: created.affiliation1,
                         affiliation2: created.affiliation2 ?? '',
                         affiliation3: created.affiliation3 ?? '',

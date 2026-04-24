@@ -2,6 +2,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { getArticleLanguageLabel, getArticleLanguageOptions } from '../shared/articleLanguages'
+import { getCountryLabel } from '../shared/countries'
 import { toApiFilesUrl } from '../shared/url'
 
 interface ApiKeyword {
@@ -139,7 +140,7 @@ const mapApiAuthorToForm = (author: ApiAuthor): AuthorForm => ({
   lastName: author.last_name,
   phone: author.phone ?? '',
   address: author.address ?? '',
-  country: author.country,
+  country: getCountryLabel(author.country),
   affiliation1: author.affiliation1,
   affiliation2: author.affiliation2 ?? '',
   affiliation3: author.affiliation3 ?? '',
@@ -808,10 +809,10 @@ export default function EditorPublishedArticleEditPage() {
                         <span>{a.affiliation1}</span>
                         {a.affiliation2 ? <span className="dot">·</span> : null}
                         {a.affiliation2 ? <span>{a.affiliation2}</span> : null}
-                        {a.country ? (
+                        {getCountryLabel(a.country) ? (
                           <>
                             <span className="dot">·</span>
-                            <span>{a.country}</span>
+                            <span>{getCountryLabel(a.country)}</span>
                           </>
                         ) : null}
                       </div>

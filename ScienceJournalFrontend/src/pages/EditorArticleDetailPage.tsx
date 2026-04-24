@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { toApiFilesUrl } from '../shared/url'
 import { formatArticleStatus, formatArticleType } from '../shared/labels'
+import { getCountryLabel, type CountryValue } from '../shared/countries'
 import ConfirmModal from '../shared/components/ConfirmModal'
 import Toast from '../shared/components/Toast'
 import CollapsibleSection from '../shared/components/CollapsibleSection'
@@ -24,7 +25,7 @@ interface AuthorOut {
   last_name: string
   phone?: string | null
   address?: string | null
-  country?: string | null
+  country?: CountryValue
   affiliation1?: string | null
   affiliation2?: string | null
   affiliation3?: string | null
@@ -900,7 +901,7 @@ export default function EditorArticleDetailPage() {
                 <div><strong>Email:</strong> {selectedAuthor.email}</div>
                 <div><strong>Телефон:</strong> {selectedAuthor.phone || '—'}</div>
                 <div><strong>Адрес:</strong> {selectedAuthor.address || '—'}</div>
-                <div><strong>Страна:</strong> {selectedAuthor.country || '—'}</div>
+                <div><strong>Страна:</strong> {getCountryLabel(selectedAuthor.country) || '—'}</div>
                 <div style={{ gridColumn: '1 / -1' }}><strong>Аффилиация(и):</strong><br/>{[selectedAuthor.affiliation1, selectedAuthor.affiliation2, selectedAuthor.affiliation3].filter(Boolean).join('; ') || '—'}</div>
                 <div><strong>Контактный автор:</strong> {selectedAuthor.is_corresponding ? 'Да' : 'Нет'}</div>
                 <div><strong>ORCID:</strong> {selectedAuthor.orcid || '—'}</div>
