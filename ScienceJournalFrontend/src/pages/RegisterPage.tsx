@@ -491,9 +491,12 @@ export function RegisterPage() {
 
               <label className="form-field">
                 <span className="form-label">{reviewerScienceTitle}</span>
-                <div className="auth-row auth-row--wrap">
+                <div className="choice-chips">
                   {reviewerScienceFieldOptions.map((field) => (
-                    <label className="checkbox" key={field}>
+                    <label
+                      className={`choice-chip${reviewerScienceFields.includes(field) ? ' choice-chip--active' : ''}`}
+                      key={field}
+                    >
                       <input
                         type="checkbox"
                         checked={reviewerScienceFields.includes(field)}
@@ -508,7 +511,7 @@ export function RegisterPage() {
                           clearFieldError('reviewerScienceOther')
                         }}
                       />
-                      <span>{reviewerScienceFieldLabels[field]}</span>
+                      <span className="choice-chip__label">{reviewerScienceFieldLabels[field]}</span>
                     </label>
                   ))}
                 </div>
@@ -516,7 +519,7 @@ export function RegisterPage() {
                 {reviewerScienceFields.includes('other') && (
                   <>
                     <input
-                      className={getInputClassName('reviewerScienceOther')}
+                      className={`${getInputClassName('reviewerScienceOther')} choice-chip__other-input`}
                       type="text"
                       placeholder={reviewerScienceOtherLabel}
                       value={reviewerScienceOther}

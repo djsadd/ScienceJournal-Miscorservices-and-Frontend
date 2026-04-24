@@ -447,9 +447,12 @@ export function ProfilePage() {
             <div className="profile-field">
               <div className="profile-label">{t.reviewerScienceTitle}</div>
               <div className="profile-language-editor">
-                <div className="auth-row auth-row--wrap">
+                <div className="choice-chips">
                   {reviewerScienceFieldOptions.map((field) => (
-                    <label className="checkbox" key={field}>
+                    <label
+                      className={`choice-chip${reviewerScienceFields.includes(field) ? ' choice-chip--active' : ''}`}
+                      key={field}
+                    >
                       <input
                         type="checkbox"
                         checked={reviewerScienceFields.includes(field)}
@@ -462,14 +465,14 @@ export function ProfilePage() {
                         }}
                         disabled={saving}
                       />
-                      <span>{reviewerScienceFieldLabels[l][field]}</span>
+                      <span className="choice-chip__label">{reviewerScienceFieldLabels[l][field]}</span>
                     </label>
                   ))}
                 </div>
                 <div className="form-hint">{t.reviewerScienceHint}</div>
                 {reviewerScienceFields.includes('other') && (
                   <input
-                    className="text-input"
+                    className="text-input choice-chip__other-input"
                     type="text"
                     placeholder={t.reviewerScienceOtherLabel}
                     value={reviewerScienceOther}
