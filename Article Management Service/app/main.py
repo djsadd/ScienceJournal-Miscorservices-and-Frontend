@@ -11,6 +11,7 @@ from starlette.responses import Response
 
 from app.articles_router import router as articles_router
 from app.volumes_router import router as volumes_router
+from app.countries_router import router as countries_router
 from app.database import Base, engine
 from app import models  # register models for metadata
 from alembic.config import Config
@@ -104,3 +105,4 @@ def on_startup():
 
 app.include_router(articles_router)
 app.include_router(volumes_router)
+app.include_router(countries_router)

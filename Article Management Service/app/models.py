@@ -80,7 +80,7 @@ class Author(Base):
     last_name = Column(String, nullable=False)
     phone = Column(String, nullable=True)
     address = Column(String, nullable=True)
-    country = Column(String, nullable=False)
+    country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
     affiliation1 = Column(String, nullable=False)
     affiliation2 = Column(String, nullable=True)
     affiliation3 = Column(String, nullable=True)
@@ -90,6 +90,16 @@ class Author(Base):
     researcher_id = Column(String, nullable=True)
 
     articles = relationship("Article", secondary=article_authors, back_populates="authors")
+    country = relationship("Country")
+
+
+class Country(Base):
+    __tablename__ = "countries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    alpha_2 = Column(String(2), nullable=False, unique=True)
+    alpha_3 = Column(String(3), nullable=False, unique=True)
 
 
 class Keyword(Base):

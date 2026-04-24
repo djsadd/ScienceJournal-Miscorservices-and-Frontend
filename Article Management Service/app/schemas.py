@@ -35,6 +35,16 @@ class KeywordOut(KeywordCreate):
         orm_mode = True
 
 
+class CountryOut(BaseModel):
+    id: int
+    name: str
+    alpha_2: str
+    alpha_3: str
+
+    class Config:
+        orm_mode = True
+
+
 class AuthorQuickCreate(BaseModel):
     """Simplified author creation for quick publish (editors only)"""
     first_name: str
@@ -49,7 +59,7 @@ class AuthorCreate(BaseModel):
     last_name: str
     phone: Optional[str] = None
     address: Optional[str] = None
-    country: str
+    country_id: int
     affiliation1: str
     affiliation2: Optional[str] = None
     affiliation3: Optional[str] = None
@@ -67,7 +77,7 @@ class AuthorUpdate(BaseModel):
     last_name: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
-    country: Optional[str] = None
+    country_id: Optional[int] = None
     affiliation1: Optional[str] = None
     affiliation2: Optional[str] = None
     affiliation3: Optional[str] = None
@@ -77,8 +87,23 @@ class AuthorUpdate(BaseModel):
     researcher_id: Optional[str] = None
 
 
-class AuthorOut(AuthorCreate):
+class AuthorOut(BaseModel):
     id: int
+    email: str
+    prefix: Optional[str] = None
+    first_name: str
+    patronymic: Optional[str] = None
+    last_name: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    country: CountryOut
+    affiliation1: str
+    affiliation2: Optional[str] = None
+    affiliation3: Optional[str] = None
+    is_corresponding: bool = False
+    orcid: Optional[str] = None
+    scopus_author_id: Optional[str] = None
+    researcher_id: Optional[str] = None
 
     class Config:
         orm_mode = True

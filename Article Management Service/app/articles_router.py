@@ -808,11 +808,15 @@ def create_author(
     if isinstance(author, schemas.AuthorQuickCreate):
         # Generate a temporary email from name
         email = f"{author.first_name.lower()}.{author.last_name.lower()}@temp.local"
+        # Get Kazakhstan country id
+        kazakhstan = db.query(models.Country).filter(models.Country.alpha_3 == 'KAZ').first()
+        if not kazakhstan:
+            raise HTTPException(status_code=500, detail="Kazakhstan country not found in database")
         author_dict = {
             'email': email,
             'first_name': author.first_name,
             'last_name': author.last_name,
-            'country': 'Kazakhstan',
+            'country_id': kazakhstan.id,
             'affiliation1': 'Unknown',
             'prefix': None,
             'patronymic': None,
