@@ -803,7 +803,6 @@ export default function EditorArticleDetailPage() {
             ) : (
               <div className="table">
                 <div className="table__head">
-                  <span>ID</span>
                   <span>Создано</span>
                   <span>К-во авторов</span>
                   <span>К-во ключ. слов</span>
@@ -1063,7 +1062,6 @@ export default function EditorArticleDetailPage() {
                         <div className="table__cell">{r.organization ?? '—'}</div>
                         <div className="table__cell">{formatReviewerScience(r)}</div>
                         <div className="table__cell">{r.preferred_language?.toUpperCase?.() ?? '—'}</div>
-                        <div className="table__cell">{r.id}</div>
                         <div className="table__cell">{r.is_active == null ? '—' : r.is_active ? 'Да' : 'Нет'}</div>
                         <div className="table__cell table__cell--actions reviewer-modal__actions">
                           {isAssigned ? (
