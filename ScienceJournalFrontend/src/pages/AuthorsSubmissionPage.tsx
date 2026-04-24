@@ -2,6 +2,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { ApiError, api } from '../api/client'
 import { getArticleLanguageLabel, getArticleLanguageOptions } from '../shared/articleLanguages'
+import { useEffect } from 'react'
+import { getCountryLabel, type CountryValue } from '../shared/countries'
 import { useLanguage } from '../shared/LanguageContext'
 
 type Keyword = { id?: number; ru: string; kz: string; en: string }
@@ -18,7 +20,7 @@ type AuthorApi = {
   last_name: string
   phone?: string | null
   address?: string | null
-  country: string
+  country: CountryValue
   affiliation1: string
   affiliation2?: string | null
   affiliation3?: string | null
@@ -26,6 +28,13 @@ type AuthorApi = {
   orcid?: string | null
   scopus_author_id?: string | null
   researcher_id?: string | null
+}
+
+type CountryOption = {
+  id: number
+  name: string
+  alpha_2: string
+  alpha_3: string
 }
 
 type FileOut = {
@@ -136,6 +145,22 @@ const pageCopy: Record<LocaleKey, any> = {
         affiliation2: 'Аффилиация 2',
         affiliation3: 'Аффилиация 3',
         corresponding: 'Соответствующий автор',
+      },
+      placeholders: {
+        email: 'author@example.com',
+        prefix: 'Например: Dr., Prof.',
+        firstName: 'Например: Айгуль',
+        middleName: 'Например: Сериковна',
+        lastName: 'Например: Нурланова',
+        phone: '+7 777 123 45 67',
+        address: 'Город, улица, дом',
+        country: 'Выберите страну',
+        affiliation1: 'Например: Казахский национальный университет имени аль-Фараби',
+        affiliation2: 'Дополнительная организация или подразделение',
+        affiliation3: 'Дополнительная организация или лаборатория',
+        orcid: '0000-0000-0000-0000',
+        scopusId: 'Например: 57212345678',
+        researcherId: 'Например: A-1234-2019',
       },
       save: 'Сохранить автора',
     },
@@ -266,6 +291,22 @@ const pageCopy: Record<LocaleKey, any> = {
         affiliation3: 'Affiliation 3',
         corresponding: 'Corresponding author',
       },
+      placeholders: {
+        email: 'author@example.com',
+        prefix: 'Example: Dr., Prof.',
+        firstName: 'Example: Aigerim',
+        middleName: 'Example: Serikovna',
+        lastName: 'Example: Nurlanova',
+        phone: '+7 777 123 45 67',
+        address: 'City, street, building',
+        country: 'Select a country',
+        affiliation1: 'Example: Al-Farabi Kazakh National University',
+        affiliation2: 'Additional organization or department',
+        affiliation3: 'Additional organization or laboratory',
+        orcid: '0000-0000-0000-0000',
+        scopusId: 'Example: 57212345678',
+        researcherId: 'Example: A-1234-2019',
+      },
       save: 'Save author',
     },
     common: {
@@ -395,6 +436,22 @@ const pageCopy: Record<LocaleKey, any> = {
         affiliation3: 'Аффилиация 3',
         corresponding: 'Байланыс авторы',
       },
+      placeholders: {
+        email: 'author@example.com',
+        prefix: 'Мысалы: Dr., Prof.',
+        firstName: 'Мысалы: Айгерім',
+        middleName: 'Мысалы: Серікқызы',
+        lastName: 'Мысалы: Нұрланова',
+        phone: '+7 777 123 45 67',
+        address: 'Қала, көше, үй',
+        country: 'Елді таңдаңыз',
+        affiliation1: 'Мысалы: Әл-Фараби атындағы Қазақ ұлттық университеті',
+        affiliation2: 'Қосымша ұйым немесе бөлімше',
+        affiliation3: 'Қосымша ұйым немесе зертхана',
+        orcid: '0000-0000-0000-0000',
+        scopusId: 'Мысалы: 57212345678',
+        researcherId: 'Мысалы: A-1234-2019',
+      },
       save: 'Авторды сақтау',
     },
     common: {
@@ -492,10 +549,34 @@ export function AuthorsSubmissionPage() {
   const [confirmLang, setConfirmLang] = useState<Lang>('ru')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [countries, setCountries] = useState<CountryOption[]>([])
   const navigate = useNavigate()
   const articleTypeOptions: ArticleType[] = ['original', 'review']
   const langLabels: Record<Lang, string> = t.formLanguages
   const articleLanguageOptions = useMemo(() => getArticleLanguageOptions(locale), [locale])
+  const countryOptions = useMemo(
+    () => [...countries].sort((a, b) => a.name.localeCompare(b.name, locale === 'kz' ? 'kk' : locale)),
+    [countries, locale],
+  )
+
+  useEffect(() => {
+    let active = true
+
+    const loadCountries = async () => {
+      try {
+        const items = await api.get<CountryOption[]>('/countries')
+        if (active) setCountries(items)
+      } catch (error) {
+        console.error('Failed to load countries', error)
+      }
+    }
+
+    void loadCountries()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const getApiErrorMessage = (error: unknown) => {
     if (error instanceof ApiError) {
@@ -605,7 +686,7 @@ export function AuthorsSubmissionPage() {
     lastName: a.last_name,
     phone: a.phone ?? '',
     address: a.address ?? '',
-    country: a.country,
+    country: getCountryLabel(a.country),
     affiliation1: a.affiliation1,
     affiliation2: a.affiliation2 ?? '',
     affiliation3: a.affiliation3 ?? '',
@@ -616,7 +697,7 @@ export function AuthorsSubmissionPage() {
   })
 
   const saveAuthor = async () => {
-    if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()) return
+    if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim()) return
     try {
       const payload = {
         email: authorForm.email.trim(),
@@ -626,7 +707,7 @@ export function AuthorsSubmissionPage() {
         last_name: authorForm.lastName.trim(),
         phone: authorForm.phone.trim() || null,
         address: authorForm.address.trim() || null,
-        country: authorForm.country.trim(),
+        country_id: Number(authorForm.country),
         affiliation1: authorForm.affiliation1.trim(),
         affiliation2: authorForm.affiliation2.trim() || null,
         affiliation3: authorForm.affiliation3.trim() || null,
@@ -1235,47 +1316,54 @@ export function AuthorsSubmissionPage() {
               <div className="author-grid">
                 <div className="form-field">
                   <label className="form-label">Email *</label>
-                  <input className="text-input" value={authorForm.email} onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))} />
+                  <input className="text-input" value={authorForm.email} onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))} placeholder={t.authors.placeholders.email} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.prefix}</label>
-                  <input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} />
+                  <input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} placeholder={t.authors.placeholders.prefix} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.firstName}</label>
-                  <input className="text-input" value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} />
+                  <input className="text-input" value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} placeholder={t.authors.placeholders.firstName} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.middleName}</label>
-                  <input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} />
+                  <input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} placeholder={t.authors.placeholders.middleName} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.lastName}</label>
-                  <input className="text-input" value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} />
+                  <input className="text-input" value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} placeholder={t.authors.placeholders.lastName} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.phone}</label>
-                  <input className="text-input" value={authorForm.phone} onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))} />
+                  <input className="text-input" value={authorForm.phone} onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))} placeholder={t.authors.placeholders.phone} />
                 </div>
                 <div className="form-field form-field--span-2">
                   <label className="form-label">{t.authors.fields.address}</label>
-                  <input className="text-input" value={authorForm.address} onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))} />
+                  <input className="text-input" value={authorForm.address} onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))} placeholder={t.authors.placeholders.address} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.country}</label>
-                  <input className="text-input" value={authorForm.country} onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))} />
+                  <select className="text-input" value={authorForm.country} onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))}>
+                    <option value="">{t.authors.placeholders.country}</option>
+                    {countryOptions.map((country) => (
+                      <option key={country.id} value={String(country.id)}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.affiliation1}</label>
-                  <textarea className="text-input" rows={3} value={authorForm.affiliation1} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))} />
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation1} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))} placeholder={t.authors.placeholders.affiliation1} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.affiliation2}</label>
-                  <textarea className="text-input" rows={3} value={authorForm.affiliation2} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))} />
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation2} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))} placeholder={t.authors.placeholders.affiliation2} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.affiliation3}</label>
-                  <textarea className="text-input" rows={3} value={authorForm.affiliation3} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))} />
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation3} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))} placeholder={t.authors.placeholders.affiliation3} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.corresponding}</label>
@@ -1286,21 +1374,21 @@ export function AuthorsSubmissionPage() {
                 </div>
                 <div className="form-field">
                   <label className="form-label">ORCID</label>
-                  <input className="text-input" value={authorForm.orcid} onChange={(e) => setAuthorForm((p) => ({ ...p, orcid: e.target.value }))} />
+                  <input className="text-input" value={authorForm.orcid} onChange={(e) => setAuthorForm((p) => ({ ...p, orcid: e.target.value }))} placeholder={t.authors.placeholders.orcid} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">Scopus Author ID</label>
-                  <input className="text-input" value={authorForm.scopusId} onChange={(e) => setAuthorForm((p) => ({ ...p, scopusId: e.target.value }))} />
+                  <input className="text-input" value={authorForm.scopusId} onChange={(e) => setAuthorForm((p) => ({ ...p, scopusId: e.target.value }))} placeholder={t.authors.placeholders.scopusId} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">Researcher ID</label>
-                  <input className="text-input" value={authorForm.researcherId} onChange={(e) => setAuthorForm((p) => ({ ...p, researcherId: e.target.value }))} />
+                  <input className="text-input" value={authorForm.researcherId} onChange={(e) => setAuthorForm((p) => ({ ...p, researcherId: e.target.value }))} placeholder={t.authors.placeholders.researcherId} />
                 </div>
               </div>
             </div>
             <div className="modal__footer author-modal__footer">
               <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>{t.common.cancel}</button>
-              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}>{t.authors.save}</button>
+              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim()}>{t.authors.save}</button>
             </div>
           </div>
         </div>
