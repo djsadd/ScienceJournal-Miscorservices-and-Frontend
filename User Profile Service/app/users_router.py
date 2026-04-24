@@ -53,6 +53,34 @@ def normalize_reviewer_science_other(value: str | None) -> str | None:
     normalized = value.strip()
     return normalized or None
 
+
+def normalize_string_list(value: list[str] | None) -> list[str]:
+    if not value:
+        return []
+    normalized: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        candidate = item.strip()
+        if not candidate or candidate in normalized:
+            continue
+        normalized.append(candidate)
+    return normalized
+
+
+def normalize_orcid(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized:
+        return None
+    normalized = normalized.removeprefix("https://orcid.org/").removeprefix("http://orcid.org/")
+    normalized = normalized.upper()
+    import re
+    if not re.fullmatch(r"\d{4}-\d{4}-\d{4}-[\dX]{4}", normalized):
+        raise HTTPException(status_code=400, detail="Invalid ORCID format")
+    return normalized
+
 def get_db():
     db = database.SessionLocal()
     try:
@@ -114,6 +142,8 @@ def create_profile(profile: schemas.UserProfileCreate, db: Session = Depends(get
         raise HTTPException(status_code=400, detail="Profile already exists")
     payload = profile.dict()
     payload["preferred_language"] = normalize_preferred_language(payload.get("preferred_language")) or schemas.Language.en.value
+    payload["academic_degrees"] = normalize_string_list(payload.get("academic_degrees"))
+    payload["orcid"] = normalize_orcid(payload.get("orcid"))
     payload["reviewer_science_fields"] = normalize_reviewer_science_fields(payload.get("reviewer_science_fields"))
     payload["reviewer_science_other"] = normalize_reviewer_science_other(payload.get("reviewer_science_other"))
     new_profile = models.UserProfile(**payload)
@@ -180,6 +210,8 @@ def get_reviewers(
                 "organization": reviewer.organization,
                 "roles": reviewer.roles or [],
                 "preferred_language": reviewer.preferred_language,
+                "academic_degrees": reviewer.academic_degrees or [],
+                "orcid": reviewer.orcid,
                 "reviewer_science_fields": reviewer.reviewer_science_fields or [],
                 "reviewer_science_other": reviewer.reviewer_science_other,
                 "is_active": reviewer.is_active,
@@ -254,6 +286,23 @@ def update_profile_roles_internal(
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     profile.roles = payload.roles or ["author"]
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.patch("/me/details", response_model=schemas.UserProfileOut)
+async def update_my_details(
+    payload: schemas.UserAcademicProfileUpdate,
+    current=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current["user_id"]
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    profile.academic_degrees = normalize_string_list(payload.academic_degrees)
+    profile.orcid = normalize_orcid(payload.orcid)
     db.commit()
     db.refresh(profile)
     return profile

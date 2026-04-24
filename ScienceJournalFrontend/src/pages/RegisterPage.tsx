@@ -26,6 +26,7 @@ type RegisterField =
   | 'lastName'
   | 'username'
   | 'email'
+  | 'orcid'
   | 'password'
   | 'confirm'
   | 'reviewLanguages'
@@ -52,6 +53,7 @@ const reviewerScienceFieldOptions: ReviewerScienceField[] = [
 ]
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const orcidPattern = /^(\d{4}-){3}[\dX]{4}$/i
 const usernamePattern = /^[A-Za-z0-9._-]{3,}$/
 const hasLetterPattern = /\p{L}/u
 const hasNumberPattern = /\d/
@@ -64,6 +66,9 @@ export function RegisterPage() {
   const [username, setUsername] = useState('')
   const [organization, setOrganization] = useState('')
   const [institution, setInstitution] = useState('')
+  const [academicDegrees, setAcademicDegrees] = useState<string[]>([])
+  const [degreeDraft, setDegreeDraft] = useState('')
+  const [orcid, setOrcid] = useState('')
   const [role, setRole] = useState<RegisterRole>('author')
   const [reviewLanguages, setReviewLanguages] = useState<ReviewLanguage[]>([])
   const [reviewerScienceFields, setReviewerScienceFields] = useState<ReviewerScienceField[]>([])
@@ -131,8 +136,7 @@ export function RegisterPage() {
             other: 'Иное',
           }
 
-  const reviewerScienceTitle =
-    lang === 'en' ? 'Science fields' : lang === 'kz' ? 'Ғылым бағыттары' : 'Направление наук'
+  const reviewerScienceTitle = lang === 'en' ? 'Science fields' : lang === 'kz' ? 'Ғылым бағыттары' : 'Направление наук'
   const reviewerScienceHint =
     lang === 'en'
       ? 'Select one or several fields. If you choose Other, fill in the text field.'
@@ -141,6 +145,10 @@ export function RegisterPage() {
         : 'Можно выбрать одно или несколько направлений. Если выбрано "Иное", заполните поле.'
   const reviewerScienceOtherLabel =
     lang === 'en' ? 'Specify other field' : lang === 'kz' ? 'Өзге бағытты нақтылаңыз' : 'Укажите иное направление'
+  const degreeTitle = lang === 'en' ? 'Academic degrees' : lang === 'kz' ? 'Ғылыми дәрежелер' : 'Учёная степень'
+  const degreePlaceholder =
+    lang === 'en' ? 'For example: Candidate of Sciences' : lang === 'kz' ? 'Мысалы: ғылым кандидаты' : 'Например: кандидат наук'
+  const addLabel = lang === 'en' ? 'Add' : lang === 'kz' ? 'Қосу' : 'Добавить'
 
   const toggleReviewLanguage = (language: ReviewLanguage) => {
     setReviewLanguages((current) =>
@@ -152,6 +160,17 @@ export function RegisterPage() {
     setReviewerScienceFields((current) =>
       current.includes(field) ? current.filter((item) => item !== field) : [...current, field],
     )
+  }
+
+  const addAcademicDegree = () => {
+    const value = degreeDraft.trim()
+    if (!value) return
+    setAcademicDegrees((current) => (current.includes(value) ? current : [...current, value]))
+    setDegreeDraft('')
+  }
+
+  const removeAcademicDegree = (degree: string) => {
+    setAcademicDegrees((current) => current.filter((item) => item !== degree))
   }
 
   const getInputClassName = (field: RegisterField) =>
@@ -172,6 +191,11 @@ export function RegisterPage() {
         const value = email.trim()
         if (!value) return t.errors.requiredField
         return emailPattern.test(value) ? undefined : t.errors.invalidEmail
+      }
+      case 'orcid': {
+        const value = orcid.trim()
+        if (!value) return undefined
+        return orcidPattern.test(value) ? undefined : 'Введите ORCID в формате 0000-0000-0000-0000'
       }
       case 'password':
         if (!password) return t.errors.requiredField
@@ -211,7 +235,7 @@ export function RegisterPage() {
 
   const validateForm = () => {
     const nextErrors: RegisterFieldErrors = {}
-    const fields: RegisterField[] = ['firstName', 'lastName', 'username', 'email', 'password', 'confirm', 'acceptTerms']
+    const fields: RegisterField[] = ['firstName', 'lastName', 'username', 'email', 'orcid', 'password', 'confirm', 'acceptTerms']
 
     if (role === 'reviewer') {
       fields.push('reviewLanguages', 'reviewerScienceFields')
@@ -222,9 +246,7 @@ export function RegisterPage() {
 
     fields.forEach((field) => {
       const message = validateField(field)
-      if (message) {
-        nextErrors[field] = message
-      }
+      if (message) nextErrors[field] = message
     })
 
     return nextErrors
@@ -239,35 +261,23 @@ export function RegisterPage() {
     })
   }
 
-  const clearFormError = () => {
-    setError((current) => (current ? null : current))
-  }
+  const clearFormError = () => setError((current) => (current ? null : current))
 
   const extractApiErrorMessage = (apiError: ApiError) => {
     const body = apiError.bodyJson
     if (body && typeof body === 'object') {
       if ('detail' in body) {
         const detail = (body as { detail?: unknown }).detail
-        if (typeof detail === 'string' && detail.trim()) {
-          return detail
-        }
-        if (Array.isArray(detail)) {
-          const joined = detail
-            .map((item) => {
-              if (typeof item === 'string') return item
-              if (item && typeof item === 'object' && 'msg' in item) return String((item as { msg?: unknown }).msg)
-              return null
-            })
-            .filter(Boolean)
-            .join(', ')
-          if (joined) return joined
+        if (typeof detail === 'string' && detail.trim()) return detail
+        if (detail && typeof detail === 'object' && 'message' in detail) {
+          const message = (detail as { message?: unknown }).message
+          if (typeof message === 'string' && message.trim()) return message
         }
       }
       if ('message' in body && typeof (body as { message?: unknown }).message === 'string') {
         return String((body as { message?: string }).message)
       }
     }
-
     return apiError.bodyText || t.errors.registrationFailed
   }
 
@@ -285,8 +295,7 @@ export function RegisterPage() {
     setSubmitting(true)
     try {
       setError(null)
-
-      const payload = {
+      await api.post('/auth/register', {
         username: username.trim(),
         email: email.trim(),
         password,
@@ -295,6 +304,8 @@ export function RegisterPage() {
         last_name: lastName.trim(),
         organization: organization.trim(),
         institution: institution.trim(),
+        academic_degrees: academicDegrees,
+        orcid: orcid.trim() || undefined,
         role,
         ...(role === 'reviewer'
           ? {
@@ -305,9 +316,7 @@ export function RegisterPage() {
           : {}),
         accept_terms: acceptTerms,
         notify_status: notifyStatus,
-      }
-
-      await api.post('/auth/register', payload)
+      })
       navigate('/login')
     } catch (caught) {
       console.error('Register error:', caught)
@@ -336,6 +345,7 @@ export function RegisterPage() {
               {error}
             </Alert>
           )}
+
           <div className="grid grid-2 auth-grid">
             <label className="form-field">
               <span className="form-label">{t.fields.firstName.label}</span>
@@ -349,9 +359,8 @@ export function RegisterPage() {
                   clearFormError()
                   clearFieldError('firstName')
                 }}
-                aria-invalid={Boolean(fieldErrors.firstName)}
               />
-              {fieldErrors.firstName ? <span className="form-error-text">{fieldErrors.firstName}</span> : null}
+              {fieldErrors.firstName && <span className="form-error-text">{fieldErrors.firstName}</span>}
             </label>
             <label className="form-field">
               <span className="form-label">{t.fields.lastName.label}</span>
@@ -365,9 +374,8 @@ export function RegisterPage() {
                   clearFormError()
                   clearFieldError('lastName')
                 }}
-                aria-invalid={Boolean(fieldErrors.lastName)}
               />
-              {fieldErrors.lastName ? <span className="form-error-text">{fieldErrors.lastName}</span> : null}
+              {fieldErrors.lastName && <span className="form-error-text">{fieldErrors.lastName}</span>}
             </label>
           </div>
 
@@ -383,37 +391,18 @@ export function RegisterPage() {
                 clearFormError()
                 clearFieldError('username')
               }}
-              aria-invalid={Boolean(fieldErrors.username)}
             />
-            {fieldErrors.username ? <span className="form-error-text">{fieldErrors.username}</span> : null}
+            {fieldErrors.username && <span className="form-error-text">{fieldErrors.username}</span>}
           </label>
 
           <div className="grid grid-2 auth-grid">
             <label className="form-field">
               <span className="form-label">{t.fields.organization.label}</span>
-              <input
-                className="text-input"
-                type="text"
-                placeholder={t.fields.organization.placeholder}
-                value={organization}
-                onChange={(e) => {
-                  setOrganization(e.target.value)
-                  clearFormError()
-                }}
-              />
+              <input className="text-input" type="text" placeholder={t.fields.organization.placeholder} value={organization} onChange={(e) => setOrganization(e.target.value)} />
             </label>
             <label className="form-field">
               <span className="form-label">{t.fields.institution.label}</span>
-              <input
-                className="text-input"
-                type="text"
-                placeholder={t.fields.institution.placeholder}
-                value={institution}
-                onChange={(e) => {
-                  setInstitution(e.target.value)
-                  clearFormError()
-                }}
-              />
+              <input className="text-input" type="text" placeholder={t.fields.institution.placeholder} value={institution} onChange={(e) => setInstitution(e.target.value)} />
             </label>
           </div>
 
@@ -429,10 +418,61 @@ export function RegisterPage() {
                 clearFormError()
                 clearFieldError('email')
               }}
-              aria-invalid={Boolean(fieldErrors.email)}
             />
-            {fieldErrors.email ? <span className="form-error-text">{fieldErrors.email}</span> : null}
+            {fieldErrors.email && <span className="form-error-text">{fieldErrors.email}</span>}
           </label>
+
+          <label className="form-field">
+            <span className="form-label">ORCID</span>
+            <input
+              className={getInputClassName('orcid')}
+              type="text"
+              placeholder="0000-0000-0000-0000"
+              value={orcid}
+              onChange={(e) => {
+                setOrcid(e.target.value)
+                clearFormError()
+                clearFieldError('orcid')
+              }}
+            />
+            {fieldErrors.orcid && <span className="form-error-text">{fieldErrors.orcid}</span>}
+          </label>
+
+          <div className="form-field">
+            <span className="form-label">{degreeTitle}</span>
+            <div className="chip-editor">
+              <div className="chip-editor__input-row">
+                <input
+                  className="text-input"
+                  type="text"
+                  placeholder={degreePlaceholder}
+                  value={degreeDraft}
+                  onChange={(e) => setDegreeDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addAcademicDegree()
+                    }
+                  }}
+                />
+                <button type="button" className="button button--secondary button--compact" onClick={addAcademicDegree}>
+                  {addLabel}
+                </button>
+              </div>
+              {academicDegrees.length > 0 && (
+                <div className="chip-list">
+                  {academicDegrees.map((degree) => (
+                    <span className="chip-list__item" key={degree}>
+                      <span>{degree}</span>
+                      <button type="button" className="chip-list__remove" onClick={() => removeAcademicDegree(degree)}>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           <label className="form-field">
             <span className="form-label">{t.fields.role.label}</span>
@@ -484,28 +524,21 @@ export function RegisterPage() {
                   ))}
                 </div>
                 <span className="form-hint">{t.fields.reviewLanguages.hint}</span>
-                {fieldErrors.reviewLanguages ? (
-                  <span className="form-error-text">{fieldErrors.reviewLanguages}</span>
-                ) : null}
+                {fieldErrors.reviewLanguages && <span className="form-error-text">{fieldErrors.reviewLanguages}</span>}
               </label>
 
               <label className="form-field">
                 <span className="form-label">{reviewerScienceTitle}</span>
                 <div className="choice-chips">
                   {reviewerScienceFieldOptions.map((field) => (
-                    <label
-                      className={`choice-chip${reviewerScienceFields.includes(field) ? ' choice-chip--active' : ''}`}
-                      key={field}
-                    >
+                    <label className={`choice-chip${reviewerScienceFields.includes(field) ? ' choice-chip--active' : ''}`} key={field}>
                       <input
                         type="checkbox"
                         checked={reviewerScienceFields.includes(field)}
                         onChange={() => {
                           const willDisableOther = field === 'other' && reviewerScienceFields.includes('other')
                           toggleReviewerScienceField(field)
-                          if (willDisableOther) {
-                            setReviewerScienceOther('')
-                          }
+                          if (willDisableOther) setReviewerScienceOther('')
                           clearFormError()
                           clearFieldError('reviewerScienceFields')
                           clearFieldError('reviewerScienceOther')
@@ -517,27 +550,20 @@ export function RegisterPage() {
                 </div>
                 <span className="form-hint">{reviewerScienceHint}</span>
                 {reviewerScienceFields.includes('other') && (
-                  <>
-                    <input
-                      className={`${getInputClassName('reviewerScienceOther')} choice-chip__other-input`}
-                      type="text"
-                      placeholder={reviewerScienceOtherLabel}
-                      value={reviewerScienceOther}
-                      onChange={(e) => {
-                        setReviewerScienceOther(e.target.value)
-                        clearFormError()
-                        clearFieldError('reviewerScienceOther')
-                      }}
-                      aria-invalid={Boolean(fieldErrors.reviewerScienceOther)}
-                    />
-                    {fieldErrors.reviewerScienceOther ? (
-                      <span className="form-error-text">{fieldErrors.reviewerScienceOther}</span>
-                    ) : null}
-                  </>
+                  <input
+                    className={`${getInputClassName('reviewerScienceOther')} choice-chip__other-input`}
+                    type="text"
+                    placeholder={reviewerScienceOtherLabel}
+                    value={reviewerScienceOther}
+                    onChange={(e) => {
+                      setReviewerScienceOther(e.target.value)
+                      clearFormError()
+                      clearFieldError('reviewerScienceOther')
+                    }}
+                  />
                 )}
-                {fieldErrors.reviewerScienceFields ? (
-                  <span className="form-error-text">{fieldErrors.reviewerScienceFields}</span>
-                ) : null}
+                {fieldErrors.reviewerScienceOther && <span className="form-error-text">{fieldErrors.reviewerScienceOther}</span>}
+                {fieldErrors.reviewerScienceFields && <span className="form-error-text">{fieldErrors.reviewerScienceFields}</span>}
               </label>
             </>
           )}
@@ -556,10 +582,9 @@ export function RegisterPage() {
                   clearFieldError('password')
                   clearFieldError('confirm')
                 }}
-                aria-invalid={Boolean(fieldErrors.password)}
               />
               <span className="form-hint">{t.fields.password.hint}</span>
-              {fieldErrors.password ? <span className="form-error-text">{fieldErrors.password}</span> : null}
+              {fieldErrors.password && <span className="form-error-text">{fieldErrors.password}</span>}
             </label>
             <label className="form-field">
               <span className="form-label">{t.fields.confirm.label}</span>
@@ -573,39 +598,22 @@ export function RegisterPage() {
                   clearFormError()
                   clearFieldError('confirm')
                 }}
-                aria-invalid={Boolean(fieldErrors.confirm)}
               />
-              {fieldErrors.confirm ? <span className="form-error-text">{fieldErrors.confirm}</span> : null}
+              {fieldErrors.confirm && <span className="form-error-text">{fieldErrors.confirm}</span>}
             </label>
           </div>
 
           <div className="auth-row auth-row--wrap">
             <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={acceptTerms}
-                onChange={(e) => {
-                  setAcceptTerms(e.target.checked)
-                  clearFormError()
-                  clearFieldError('acceptTerms')
-                }}
-                aria-invalid={Boolean(fieldErrors.acceptTerms)}
-              />
+              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
               <span>{t.fields.accept}</span>
             </label>
             <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={notifyStatus}
-                onChange={(e) => {
-                  setNotifyStatus(e.target.checked)
-                  clearFormError()
-                }}
-              />
+              <input type="checkbox" checked={notifyStatus} onChange={(e) => setNotifyStatus(e.target.checked)} />
               <span>{t.fields.notify}</span>
             </label>
           </div>
-          {fieldErrors.acceptTerms ? <span className="form-error-text">{fieldErrors.acceptTerms}</span> : null}
+          {fieldErrors.acceptTerms && <span className="form-error-text">{fieldErrors.acceptTerms}</span>}
 
           <button type="submit" className="button button--primary auth-submit" disabled={submitting}>
             {submitting ? t.submitBusy : t.submitIdle}
@@ -628,33 +636,23 @@ export function RegisterPage() {
         </div>
 
         <div className="auth-steps">
-          <div className="auth-step">
-            <span className="auth-step__number">1</span>
-            <div>
-              <div className="auth-step__title">{t.steps[0].title}</div>
-              <div className="auth-step__text">{t.steps[0].text}</div>
+          {t.steps.map((step, index) => (
+            <div className="auth-step" key={step.title}>
+              <span className="auth-step__number">{index + 1}</span>
+              <div>
+                <div className="auth-step__title">{step.title}</div>
+                <div className="auth-step__text">{step.text}</div>
+              </div>
             </div>
-          </div>
-          <div className="auth-step">
-            <span className="auth-step__number">2</span>
-            <div>
-              <div className="auth-step__title">{t.steps[1].title}</div>
-              <div className="auth-step__text">{t.steps[1].text}</div>
-            </div>
-          </div>
-          <div className="auth-step">
-            <span className="auth-step__number">3</span>
-            <div>
-              <div className="auth-step__title">{t.steps[2].title}</div>
-              <div className="auth-step__text">{t.steps[2].text}</div>
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="auth-meta">
-          <div className="auth-meta__item">{t.meta[0]}</div>
-          <div className="auth-meta__item">{t.meta[1]}</div>
-          <div className="auth-meta__item">{t.meta[2]}</div>
+          {t.meta.map((item) => (
+            <div className="auth-meta__item" key={item}>
+              {item}
+            </div>
+          ))}
         </div>
       </section>
     </div>

@@ -35,6 +35,8 @@ interface MeResponse {
   phone?: string | null
   roles?: string[]
   preferred_language?: PreferredLanguage | null
+  academic_degrees?: string[]
+  orcid?: string | null
   reviewer_science_fields?: ReviewerScienceField[]
   reviewer_science_other?: string | null
 }
@@ -56,6 +58,9 @@ type ProfileCopy = {
   reviewerScienceHint: string
   reviewerScienceTitle: string
   reviewerScienceOtherLabel: string
+  academicTitle: string
+  degreePlaceholder: string
+  addDegree: string
   fields: {
     username: string
     email: string
@@ -69,6 +74,7 @@ type ProfileCopy = {
     profileId: string
     roles: string
     preferredLanguage: string
+    orcid: string
   }
 }
 
@@ -82,14 +88,17 @@ const profileCopy: Record<Lang, ProfileCopy> = {
     no: 'Нет',
     enabled: 'Включены',
     disabled: 'Выключены',
-    save: 'Сохранить настройки рецензента',
+    save: 'Сохранить профиль',
     saving: 'Сохранение...',
-    saveSuccess: 'Настройки рецензента обновлены',
-    saveError: 'Не удалось обновить настройки рецензента',
+    saveSuccess: 'Профиль обновлен',
+    saveError: 'Не удалось обновить профиль',
     reviewerLanguageHint: 'Настройка доступна для рецензента и используется при подборе рукописей.',
     reviewerScienceHint: 'Можно выбрать одно или несколько направлений. Если выбрано "Иное", заполните поле.',
     reviewerScienceTitle: 'Направления наук',
     reviewerScienceOtherLabel: 'Укажите иное направление',
+    academicTitle: 'Учёные данные',
+    degreePlaceholder: 'Например: кандидат наук',
+    addDegree: 'Добавить',
     fields: {
       username: 'Имя пользователя',
       email: 'Email',
@@ -103,6 +112,7 @@ const profileCopy: Record<Lang, ProfileCopy> = {
       profileId: 'ID профиля',
       roles: 'Роли',
       preferredLanguage: 'Язык рецензирования',
+      orcid: 'ORCID',
     },
   },
   en: {
@@ -114,14 +124,17 @@ const profileCopy: Record<Lang, ProfileCopy> = {
     no: 'No',
     enabled: 'Enabled',
     disabled: 'Disabled',
-    save: 'Save reviewer settings',
+    save: 'Save profile',
     saving: 'Saving...',
-    saveSuccess: 'Reviewer settings updated',
-    saveError: 'Failed to update reviewer settings',
+    saveSuccess: 'Profile updated',
+    saveError: 'Failed to update profile',
     reviewerLanguageHint: 'This setting is available to reviewers and is used for manuscript matching.',
     reviewerScienceHint: 'Select one or several fields. If you choose Other, fill in the text field.',
     reviewerScienceTitle: 'Science fields',
     reviewerScienceOtherLabel: 'Specify other field',
+    academicTitle: 'Academic details',
+    degreePlaceholder: 'For example: Candidate of Sciences',
+    addDegree: 'Add',
     fields: {
       username: 'Username',
       email: 'Email',
@@ -135,6 +148,7 @@ const profileCopy: Record<Lang, ProfileCopy> = {
       profileId: 'Profile ID',
       roles: 'Roles',
       preferredLanguage: 'Review language',
+      orcid: 'ORCID',
     },
   },
   kz: {
@@ -146,14 +160,17 @@ const profileCopy: Record<Lang, ProfileCopy> = {
     no: 'Жоқ',
     enabled: 'Қосулы',
     disabled: 'Сөндірулі',
-    save: 'Рецензент баптауларын сақтау',
+    save: 'Профильді сақтау',
     saving: 'Сақталуда...',
-    saveSuccess: 'Рецензент баптаулары жаңартылды',
-    saveError: 'Рецензент баптауларын жаңарту мүмкін болмады',
+    saveSuccess: 'Профиль жаңартылды',
+    saveError: 'Профильді жаңарту мүмкін болмады',
     reviewerLanguageHint: 'Бұл баптау рецензентке қолжетімді және қолжазбаларды іріктеуде қолданылады.',
     reviewerScienceHint: 'Бір немесе бірнеше бағытты таңдаңыз. Егер "Өзге" таңдалса, мәтінді толтырыңыз.',
     reviewerScienceTitle: 'Ғылым бағыттары',
     reviewerScienceOtherLabel: 'Өзге бағытты нақтылаңыз',
+    academicTitle: 'Ғылыми деректер',
+    degreePlaceholder: 'Мысалы: ғылым кандидаты',
+    addDegree: 'Қосу',
     fields: {
       username: 'Пайдаланушы аты',
       email: 'Email',
@@ -167,6 +184,7 @@ const profileCopy: Record<Lang, ProfileCopy> = {
       profileId: 'Профиль ID',
       roles: 'Рөлдер',
       preferredLanguage: 'Рецензия тілі',
+      orcid: 'ORCID',
     },
   },
 }
@@ -243,6 +261,8 @@ const reviewerScienceFieldLabels: Record<Lang, Record<ReviewerScienceField, stri
   },
 }
 
+const orcidPattern = /^(\d{4}-){3}[\dX]{4}$/i
+
 export function ProfilePage() {
   const { lang } = useLanguage()
   const l: Lang = (['ru', 'en', 'kz'] as const).includes(lang) ? lang : 'ru'
@@ -251,6 +271,9 @@ export function ProfilePage() {
   const [preferredLanguage, setPreferredLanguage] = useState<PreferredLanguage>('ru')
   const [reviewerScienceFields, setReviewerScienceFields] = useState<ReviewerScienceField[]>([])
   const [reviewerScienceOther, setReviewerScienceOther] = useState('')
+  const [academicDegrees, setAcademicDegrees] = useState<string[]>([])
+  const [degreeDraft, setDegreeDraft] = useState('')
+  const [orcid, setOrcid] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -266,6 +289,8 @@ export function ProfilePage() {
         setPreferredLanguage((me.preferred_language as PreferredLanguage | null) || 'ru')
         setReviewerScienceFields(me.reviewer_science_fields || [])
         setReviewerScienceOther(me.reviewer_science_other || '')
+        setAcademicDegrees(me.academic_degrees || [])
+        setOrcid(me.orcid || '')
       } catch (caught) {
         console.error(caught)
         if (mounted) setError(t.error)
@@ -290,20 +315,43 @@ export function ProfilePage() {
     )
   }
 
-  const handleSaveReviewerSettings = async () => {
-    if (!isReviewer || saving) return
+  const addAcademicDegree = () => {
+    const value = degreeDraft.trim()
+    if (!value) return
+    setAcademicDegrees((current) => (current.includes(value) ? current : [...current, value]))
+    setDegreeDraft('')
+  }
+
+  const removeAcademicDegree = (degree: string) => {
+    setAcademicDegrees((current) => current.filter((item) => item !== degree))
+  }
+
+  const handleSaveProfile = async () => {
+    if (saving) return
+    if (orcid.trim() && !orcidPattern.test(orcid.trim())) {
+      setSaveMessage('Введите ORCID в формате 0000-0000-0000-0000')
+      return
+    }
     setSaving(true)
     setSaveMessage(null)
     try {
-      await api.updateMyLanguage(preferredLanguage)
-      await api.updateMyReviewerScience({
-        reviewer_science_fields: reviewerScienceFields,
-        reviewer_science_other: reviewerScienceFields.includes('other') ? reviewerScienceOther.trim() : null,
+      await api.updateMyProfileDetails({
+        academic_degrees: academicDegrees,
+        orcid: orcid.trim() || null,
       })
+      if (isReviewer) {
+        await api.updateMyLanguage(preferredLanguage)
+        await api.updateMyReviewerScience({
+          reviewer_science_fields: reviewerScienceFields,
+          reviewer_science_other: reviewerScienceFields.includes('other') ? reviewerScienceOther.trim() : null,
+        })
+      }
       setData((current) =>
         current
           ? {
               ...current,
+              academic_degrees: academicDegrees,
+              orcid: orcid.trim() || null,
               preferred_language: preferredLanguage,
               reviewer_science_fields: reviewerScienceFields,
               reviewer_science_other: reviewerScienceFields.includes('other') ? reviewerScienceOther.trim() : null,
@@ -340,9 +388,7 @@ export function ProfilePage() {
           <div>
             <p className="eyebrow">{t.header.eyebrow}</p>
             <h1 className="page-title">{t.header.title}</h1>
-            <p className="subtitle" style={{ color: '#d00' }}>
-              {error}
-            </p>
+            <p className="subtitle" style={{ color: '#d00' }}>{error}</p>
           </div>
         </section>
       </div>
@@ -371,47 +417,18 @@ export function ProfilePage() {
             <div className="profile-meta">{data?.organization || data?.institution || '—'}</div>
           </div>
         </div>
+
         <div className="profile-grid">
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.username}</div>
-            <div className="profile-value">{data?.username}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.email}</div>
-            <div className="profile-value">{data?.email}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.organization}</div>
-            <div className="profile-value">{data?.organization || '—'}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.institution}</div>
-            <div className="profile-value">{data?.institution || '—'}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.role}</div>
-            <div className="profile-value">{data ? roleLabelMap[l][data.role] : ''}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.active}</div>
-            <div className="profile-value">{data?.is_active ? t.yes : t.no}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.acceptedTerms}</div>
-            <div className="profile-value">{data?.accept_terms ? t.yes : t.no}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.notifications}</div>
-            <div className="profile-value">{data?.notify_status ? t.enabled : t.disabled}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.phone}</div>
-            <div className="profile-value">{data?.phone || '—'}</div>
-          </div>
-          <div className="profile-field">
-            <div className="profile-label">{t.fields.profileId}</div>
-            <div className="profile-value">{data?.profile_id ?? '—'}</div>
-          </div>
+          <div className="profile-field"><div className="profile-label">{t.fields.username}</div><div className="profile-value">{data?.username}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.email}</div><div className="profile-value">{data?.email}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.organization}</div><div className="profile-value">{data?.organization || '—'}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.institution}</div><div className="profile-value">{data?.institution || '—'}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.role}</div><div className="profile-value">{data ? roleLabelMap[l][data.role] : ''}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.active}</div><div className="profile-value">{data?.is_active ? t.yes : t.no}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.acceptedTerms}</div><div className="profile-value">{data?.accept_terms ? t.yes : t.no}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.notifications}</div><div className="profile-value">{data?.notify_status ? t.enabled : t.disabled}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.phone}</div><div className="profile-value">{data?.phone || '—'}</div></div>
+          <div className="profile-field"><div className="profile-label">{t.fields.profileId}</div><div className="profile-value">{data?.profile_id ?? '—'}</div></div>
           <div className="profile-field">
             <div className="profile-label">{t.fields.roles}</div>
             <div className="profile-tags">
@@ -422,16 +439,54 @@ export function ProfilePage() {
               ))}
             </div>
           </div>
+
+          <div className="profile-field">
+            <div className="profile-label">{t.academicTitle}</div>
+            <div className="profile-language-editor">
+              <label className="form-field" style={{ marginBottom: 0 }}>
+                <span className="form-label">{t.fields.orcid}</span>
+                <input className="text-input" type="text" placeholder="0000-0000-0000-0000" value={orcid} onChange={(e) => setOrcid(e.target.value)} />
+              </label>
+              <div className="chip-editor">
+                <div className="chip-editor__input-row">
+                  <input
+                    className="text-input"
+                    type="text"
+                    placeholder={t.degreePlaceholder}
+                    value={degreeDraft}
+                    onChange={(e) => setDegreeDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addAcademicDegree()
+                      }
+                    }}
+                  />
+                  <button type="button" className="button button--secondary button--compact" onClick={addAcademicDegree}>
+                    {t.addDegree}
+                  </button>
+                </div>
+                {academicDegrees.length > 0 && (
+                  <div className="chip-list">
+                    {academicDegrees.map((degree) => (
+                      <span className="chip-list__item" key={degree}>
+                        <span>{degree}</span>
+                        <button type="button" className="chip-list__remove" onClick={() => removeAcademicDegree(degree)}>
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="profile-field">
             <div className="profile-label">{t.fields.preferredLanguage}</div>
             {isReviewer ? (
               <div className="profile-language-editor">
-                <select
-                  className="text-input"
-                  value={preferredLanguage}
-                  onChange={(event) => setPreferredLanguage(event.target.value as PreferredLanguage)}
-                  disabled={saving}
-                >
+                <select className="text-input" value={preferredLanguage} onChange={(e) => setPreferredLanguage(e.target.value as PreferredLanguage)} disabled={saving}>
                   <option value="ru">{languageLabelMap[l].ru}</option>
                   <option value="en">{languageLabelMap[l].en}</option>
                   <option value="kz">{languageLabelMap[l].kz}</option>
@@ -449,19 +504,14 @@ export function ProfilePage() {
               <div className="profile-language-editor">
                 <div className="choice-chips">
                   {reviewerScienceFieldOptions.map((field) => (
-                    <label
-                      className={`choice-chip${reviewerScienceFields.includes(field) ? ' choice-chip--active' : ''}`}
-                      key={field}
-                    >
+                    <label className={`choice-chip${reviewerScienceFields.includes(field) ? ' choice-chip--active' : ''}`} key={field}>
                       <input
                         type="checkbox"
                         checked={reviewerScienceFields.includes(field)}
                         onChange={() => {
                           const willDisableOther = field === 'other' && reviewerScienceFields.includes('other')
                           toggleReviewerScienceField(field)
-                          if (willDisableOther) {
-                            setReviewerScienceOther('')
-                          }
+                          if (willDisableOther) setReviewerScienceOther('')
                         }}
                         disabled={saving}
                       />
@@ -471,32 +521,19 @@ export function ProfilePage() {
                 </div>
                 <div className="form-hint">{t.reviewerScienceHint}</div>
                 {reviewerScienceFields.includes('other') && (
-                  <input
-                    className="text-input choice-chip__other-input"
-                    type="text"
-                    placeholder={t.reviewerScienceOtherLabel}
-                    value={reviewerScienceOther}
-                    onChange={(event) => setReviewerScienceOther(event.target.value)}
-                    disabled={saving}
-                  />
-                )}
-                <button
-                  type="button"
-                  className="button button--secondary"
-                  onClick={handleSaveReviewerSettings}
-                  disabled={saving}
-                >
-                  {saving ? t.saving : t.save}
-                </button>
-                {saveMessage && (
-                  <div className="form-hint" style={{ color: saveMessage === t.saveSuccess ? '#18794e' : '#d00' }}>
-                    {saveMessage}
-                  </div>
+                  <input className="text-input choice-chip__other-input" type="text" placeholder={t.reviewerScienceOtherLabel} value={reviewerScienceOther} onChange={(e) => setReviewerScienceOther(e.target.value)} disabled={saving} />
                 )}
               </div>
             </div>
           )}
         </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <button type="button" className="button button--secondary" onClick={handleSaveProfile} disabled={saving}>
+            {saving ? t.saving : t.save}
+          </button>
+        </div>
+        {saveMessage && <div className="form-hint" style={{ color: saveMessage === t.saveSuccess ? '#18794e' : '#d00' }}>{saveMessage}</div>}
       </div>
     </div>
   )

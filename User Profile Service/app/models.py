@@ -26,6 +26,8 @@ class UserProfile(Base):
     is_collegium_member = Column(Boolean, default=False)
     # Предпочтительный язык пользователя (для подбора рецензентов / локализации)
     preferred_language = Column(String, nullable=False, default=Language.en.value)
+    academic_degrees = Column(ARRAY(String), nullable=False, default=[])
+    orcid = Column(String, nullable=True)
     reviewer_science_fields = Column(ARRAY(String), nullable=False, default=[])
     reviewer_science_other = Column(String, nullable=True)
 

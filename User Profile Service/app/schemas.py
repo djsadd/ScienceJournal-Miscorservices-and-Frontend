@@ -15,6 +15,8 @@ class UserProfileBase(BaseModel):
     organization: str | None = None
     roles: List[str] = ["author"]
     preferred_language: str = Language.en.value
+    academic_degrees: List[str] = []
+    orcid: str | None = None
     reviewer_science_fields: List[str] = []
     reviewer_science_other: str | None = None
     is_council_member: bool = False
@@ -44,6 +46,11 @@ class UserRolesOut(BaseModel):
 class ReviewerScienceUpdate(BaseModel):
     reviewer_science_fields: List[str]
     reviewer_science_other: str | None = None
+
+
+class UserAcademicProfileUpdate(BaseModel):
+    academic_degrees: List[str] = []
+    orcid: str | None = None
 
 
 class UserRolesUpdate(BaseModel):
@@ -83,6 +90,8 @@ class ReviewerFullInfo(BaseModel):
     organization: str | None = None
     roles: List[str] = []
     preferred_language: str
+    academic_degrees: List[str] = []
+    orcid: str | None = None
     reviewer_science_fields: List[str] = []
     reviewer_science_other: str | None = None
     is_active: bool | None = None

@@ -163,6 +163,37 @@ def normalize_reviewer_science_other(value: str | None) -> str | None:
     normalized = value.strip()
     return normalized or None
 
+
+def normalize_string_list(value: list[str] | None) -> list[str]:
+    if not value:
+        return []
+    normalized: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        candidate = item.strip()
+        if not candidate or candidate in normalized:
+            continue
+        normalized.append(candidate)
+    return normalized
+
+
+def normalize_orcid(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized:
+        return None
+    normalized = normalized.removeprefix("https://orcid.org/").removeprefix("http://orcid.org/")
+    normalized = normalized.upper()
+    import re
+    if not re.fullmatch(r"\d{4}-\d{4}-\d{4}-[\dX]{4}", normalized):
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Некорректный ORCID", "fields": {"orcid": "Введите ORCID в формате 0000-0000-0000-0000"}},
+        )
+    return normalized
+
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     existing_username = db.query(models.User).filter(models.User.username == user.username).first()
@@ -182,6 +213,8 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         )
 
     normalized_preferred_language = normalize_preferred_language(user.preferred_language)
+    normalized_academic_degrees = normalize_string_list(user.academic_degrees)
+    normalized_orcid = normalize_orcid(user.orcid)
     normalized_reviewer_science_fields = normalize_reviewer_science_fields(user.reviewer_science_fields)
     normalized_reviewer_science_other = normalize_reviewer_science_other(user.reviewer_science_other)
 
@@ -248,6 +281,8 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
             "roles": [new_user.role],
             "organization": new_user.organization,
             "preferred_language": normalized_preferred_language or "en",
+            "academic_degrees": normalized_academic_degrees,
+            "orcid": normalized_orcid,
             "reviewer_science_fields": normalized_reviewer_science_fields,
             "reviewer_science_other": normalized_reviewer_science_other,
             "phone": None,
@@ -449,6 +484,8 @@ def get_user_full_info(
         "profile_id": None,
         "phone": None,
         "preferred_language": None,
+        "academic_degrees": [],
+        "orcid": None,
         "reviewer_science_fields": [],
         "reviewer_science_other": None,
         "roles": [user.role],
@@ -463,6 +500,8 @@ def get_user_full_info(
                 user_info["profile_id"] = profile_data.get("id")
                 user_info["phone"] = profile_data.get("phone")
                 user_info["preferred_language"] = profile_data.get("preferred_language")
+                user_info["academic_degrees"] = profile_data.get("academic_degrees", [])
+                user_info["orcid"] = profile_data.get("orcid")
                 user_info["reviewer_science_fields"] = profile_data.get("reviewer_science_fields", [])
                 user_info["reviewer_science_other"] = profile_data.get("reviewer_science_other")
                 user_info["roles"] = profile_data.get("roles", [user.role])
@@ -548,6 +587,8 @@ def get_all_users(
                 "notify_status": user.notify_status,
                 "phone": profile.get("phone"),
                 "preferred_language": profile.get("preferred_language"),
+                "academic_degrees": profile.get("academic_degrees", []),
+                "orcid": profile.get("orcid"),
                 "reviewer_science_fields": profile.get("reviewer_science_fields", []),
                 "reviewer_science_other": profile.get("reviewer_science_other"),
                 "roles": profile.get("roles", [user.role]),
@@ -618,6 +659,8 @@ def get_admin_user_detail(
         "notify_status": user.notify_status,
         "phone": profile.get("phone"),
         "preferred_language": profile.get("preferred_language"),
+        "academic_degrees": profile.get("academic_degrees", []),
+        "orcid": profile.get("orcid"),
         "reviewer_science_fields": profile.get("reviewer_science_fields", []),
         "reviewer_science_other": profile.get("reviewer_science_other"),
         "roles": profile.get("roles", [user.role]),

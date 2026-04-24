@@ -1050,6 +1050,51 @@
   margin-top: 0.35rem;
 }
 
+.chip-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.chip-editor__input-row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.chip-editor__input-row .text-input {
+  flex: 1;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip-list__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #d9deea;
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.chip-list__remove {
+  border: 0;
+  background: transparent;
+  color: #7a1237;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-size: 1rem;
+}
+
 .auth-submit {
   width: 100%;
   margin-top: 0.25rem;

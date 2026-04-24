@@ -315,6 +315,8 @@ export const api = {
   getAdminUserDetail: <T>(userId: number | string) => request<T>(`/auth/admin/users/${userId}`, 'GET'),
   updateMyLanguage: <T>(preferredLanguage: 'ru' | 'en' | 'kz') =>
     request<T>('/users/me/language', 'PATCH', { params: { preferred_language: preferredLanguage } }),
+  updateMyProfileDetails: <T>(body: { academic_degrees: string[]; orcid?: string | null }) =>
+    request<T>('/users/me/details', 'PATCH', { json: body }),
   updateMyReviewerScience: <T>(body: { reviewer_science_fields: string[]; reviewer_science_other?: string | null }) =>
     request<T>('/users/me/reviewer-science', 'PATCH', { json: body }),
   getAdminUserStats: <T>() => request<T>('/auth/admin/users/stats', 'GET'),
