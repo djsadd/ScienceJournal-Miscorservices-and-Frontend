@@ -3568,13 +3568,13 @@
   align-items: center;
 }
 
-/* Reviewers selection table: 7 columns (name, email, org, lang, id, active, actions) */
+/* Reviewers selection table: 8 columns (name, email, org, science, lang, id, active, actions) */
 .table--reviewers .table__head {
-  grid-template-columns: minmax(180px, 1.5fr) minmax(180px, 1.25fr) minmax(180px, 1.2fr) 86px 72px 96px minmax(220px, 1.35fr);
+  grid-template-columns: minmax(180px, 1.35fr) minmax(180px, 1.1fr) minmax(160px, 1fr) minmax(220px, 1.35fr) 86px 72px 96px minmax(220px, 1.2fr);
 }
 
 .table--reviewers .table__row {
-  grid-template-columns: minmax(180px, 1.5fr) minmax(180px, 1.25fr) minmax(180px, 1.2fr) 86px 72px 96px minmax(220px, 1.35fr);
+  grid-template-columns: minmax(180px, 1.35fr) minmax(180px, 1.1fr) minmax(160px, 1fr) minmax(220px, 1.35fr) 86px 72px 96px minmax(220px, 1.2fr);
   align-items: start;
 }
 

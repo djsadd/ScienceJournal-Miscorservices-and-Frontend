@@ -189,6 +189,8 @@ export default function EditorArticleDetailPage() {
     organization?: string | null
     roles: string[]
     preferred_language: 'ru' | 'kz' | 'en'
+    reviewer_science_fields?: string[]
+    reviewer_science_other?: string | null
     is_active?: boolean | null
     // From Auth - Identity Service
     username?: string | null
@@ -247,6 +249,32 @@ export default function EditorArticleDetailPage() {
   const [resubmitting, setResubmitting] = useState(false)
   const [resubError, setResubError] = useState<string | null>(null)
   const [resubSuccess, setResubSuccess] = useState<string | null>(null)
+  const formatReviewerScience = (reviewer: ReviewerFullInfo) => {
+    const fieldLabels: Record<string, string> = {
+      economics: 'Экономика',
+      politology: 'Политология',
+      jurisprudence: 'Юриспруденция',
+      pedagogy: 'Педагогика',
+      philology: 'Филология',
+      psychology: 'Психология',
+      sociology: 'Социология',
+      management: 'Менеджмент',
+      philosophy: 'Философия',
+      cultural_studies: 'Культурология',
+      information_technology: 'Информационные технологии',
+      other: 'Иное',
+    }
+    const fields = (reviewer.reviewer_science_fields || [])
+      .map((item) => {
+        if (item === 'other' && reviewer.reviewer_science_other?.trim()) {
+          return `Иное: ${reviewer.reviewer_science_other.trim()}`
+        }
+        return fieldLabels[item] || item
+      })
+      .filter(Boolean)
+
+    return fields.length > 0 ? fields.join(', ') : 'Пусто'
+  }
   // Current user info for role-based gating
   const [me, setMe] = useState<{ role?: string; roles?: string[] } | null>(null)
   useEffect(() => {
@@ -1011,6 +1039,7 @@ export default function EditorArticleDetailPage() {
                   <span>Рецензент</span>
                   <span>Email</span>
                   <span>Организация</span>
+                  <span>Область науки</span>
                   <span>Язык</span>
                   <span>ID</span>
                   <span>Активен</span>
@@ -1032,6 +1061,7 @@ export default function EditorArticleDetailPage() {
                         </div>
                         <div className="table__cell">{r.email ?? '—'}</div>
                         <div className="table__cell">{r.organization ?? '—'}</div>
+                        <div className="table__cell">{formatReviewerScience(r)}</div>
                         <div className="table__cell">{r.preferred_language?.toUpperCase?.() ?? '—'}</div>
                         <div className="table__cell">{r.id}</div>
                         <div className="table__cell">{r.is_active == null ? '—' : r.is_active ? 'Да' : 'Нет'}</div>
