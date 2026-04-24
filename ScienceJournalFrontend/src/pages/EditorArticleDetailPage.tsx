@@ -1040,7 +1040,6 @@ export default function EditorArticleDetailPage() {
                   <span>Организация</span>
                   <span>Область науки</span>
                   <span>Язык</span>
-                  <span>ID</span>
                   <span>Активен</span>
                   <span>Действия</span>
                 </div>
