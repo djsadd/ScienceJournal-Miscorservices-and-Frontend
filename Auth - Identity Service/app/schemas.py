@@ -13,6 +13,8 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     role: str = "author"
     preferred_language: str | List[str] | None = None
+    reviewer_science_fields: List[str] | None = None
+    reviewer_science_other: str | None = None
     accept_terms: bool = False
     notify_status: bool = True
 
@@ -65,6 +67,8 @@ class UserFullInfo(BaseModel):
     profile_id: int | None = None
     phone: str | None = None
     preferred_language: str | None = None
+    reviewer_science_fields: list[str] = []
+    reviewer_science_other: str | None = None
     roles: list[str] = []
 
     class Config:
@@ -95,6 +99,8 @@ class AdminUserListItem(BaseModel):
     notify_status: bool
     phone: str | None = None
     preferred_language: str | None = None
+    reviewer_science_fields: list[str] = []
+    reviewer_science_other: str | None = None
     roles: list[str] = []
     profile_id: int | None = None
     is_council_member: bool | None = None

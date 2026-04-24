@@ -26,6 +26,8 @@ class UserProfile(Base):
     is_collegium_member = Column(Boolean, default=False)
     # Предпочтительный язык пользователя (для подбора рецензентов / локализации)
     preferred_language = Column(String, nullable=False, default=Language.en.value)
+    reviewer_science_fields = Column(ARRAY(String), nullable=False, default=[])
+    reviewer_science_other = Column(String, nullable=True)
 
     # связи
     articles = relationship("ArticleLink", back_populates="user")

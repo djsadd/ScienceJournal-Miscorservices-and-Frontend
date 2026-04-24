@@ -7,6 +7,20 @@ import { registerCopy } from '../shared/translations'
 
 type RegisterRole = 'author' | 'editor' | 'reviewer' | 'admin'
 type ReviewLanguage = 'ru' | 'en' | 'kz'
+type ReviewerScienceField =
+  | 'economics'
+  | 'politology'
+  | 'jurisprudence'
+  | 'pedagogy'
+  | 'philology'
+  | 'psychology'
+  | 'sociology'
+  | 'management'
+  | 'philosophy'
+  | 'cultural_studies'
+  | 'information_technology'
+  | 'other'
+
 type RegisterField =
   | 'firstName'
   | 'lastName'
@@ -15,10 +29,28 @@ type RegisterField =
   | 'password'
   | 'confirm'
   | 'reviewLanguages'
+  | 'reviewerScienceFields'
+  | 'reviewerScienceOther'
   | 'acceptTerms'
+
 type RegisterFieldErrors = Partial<Record<RegisterField, string>>
 
 const reviewLanguageOptions: ReviewLanguage[] = ['ru', 'en', 'kz']
+const reviewerScienceFieldOptions: ReviewerScienceField[] = [
+  'economics',
+  'politology',
+  'jurisprudence',
+  'pedagogy',
+  'philology',
+  'psychology',
+  'sociology',
+  'management',
+  'philosophy',
+  'cultural_studies',
+  'information_technology',
+  'other',
+]
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const usernamePattern = /^[A-Za-z0-9._-]{3,}$/
 const hasLetterPattern = /\p{L}/u
@@ -34,6 +66,8 @@ export function RegisterPage() {
   const [institution, setInstitution] = useState('')
   const [role, setRole] = useState<RegisterRole>('author')
   const [reviewLanguages, setReviewLanguages] = useState<ReviewLanguage[]>([])
+  const [reviewerScienceFields, setReviewerScienceFields] = useState<ReviewerScienceField[]>([])
+  const [reviewerScienceOther, setReviewerScienceOther] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -43,6 +77,7 @@ export function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<RegisterFieldErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
+
   const roleLabels = {
     author: t.fields.role.options.author,
     reviewer: t.fields.role.options.reviewer,
@@ -50,9 +85,72 @@ export function RegisterPage() {
     admin: lang === 'en' ? 'Administrator' : lang === 'kz' ? 'Әкімші' : 'Администратор',
   }
 
+  const reviewerScienceFieldLabels: Record<ReviewerScienceField, string> =
+    lang === 'en'
+      ? {
+          economics: 'Economics',
+          politology: 'Political science',
+          jurisprudence: 'Jurisprudence',
+          pedagogy: 'Pedagogy',
+          philology: 'Philology',
+          psychology: 'Psychology',
+          sociology: 'Sociology',
+          management: 'Management',
+          philosophy: 'Philosophy',
+          cultural_studies: 'Cultural studies',
+          information_technology: 'Information technology',
+          other: 'Other',
+        }
+      : lang === 'kz'
+        ? {
+            economics: 'Экономика',
+            politology: 'Саясаттану',
+            jurisprudence: 'Құқықтану',
+            pedagogy: 'Педагогика',
+            philology: 'Филология',
+            psychology: 'Психология',
+            sociology: 'Әлеуметтану',
+            management: 'Менеджмент',
+            philosophy: 'Философия',
+            cultural_studies: 'Мәдениеттану',
+            information_technology: 'Ақпараттық технологиялар',
+            other: 'Өзге',
+          }
+        : {
+            economics: 'Экономика',
+            politology: 'Политология',
+            jurisprudence: 'Юриспруденция',
+            pedagogy: 'Педагогика',
+            philology: 'Филология',
+            psychology: 'Психология',
+            sociology: 'Социология',
+            management: 'Менеджмент',
+            philosophy: 'Философия',
+            cultural_studies: 'Культурология',
+            information_technology: 'Информационные технологии',
+            other: 'Иное',
+          }
+
+  const reviewerScienceTitle =
+    lang === 'en' ? 'Science fields' : lang === 'kz' ? 'Ғылым бағыттары' : 'Направление наук'
+  const reviewerScienceHint =
+    lang === 'en'
+      ? 'Select one or several fields. If you choose Other, fill in the text field.'
+      : lang === 'kz'
+        ? 'Бір немесе бірнеше бағытты таңдаңыз. Егер "Өзге" таңдалса, мәтінді толтырыңыз.'
+        : 'Можно выбрать одно или несколько направлений. Если выбрано "Иное", заполните поле.'
+  const reviewerScienceOtherLabel =
+    lang === 'en' ? 'Specify other field' : lang === 'kz' ? 'Өзге бағытты нақтылаңыз' : 'Укажите иное направление'
+
   const toggleReviewLanguage = (language: ReviewLanguage) => {
     setReviewLanguages((current) =>
       current.includes(language) ? current.filter((item) => item !== language) : [...current, language],
+    )
+  }
+
+  const toggleReviewerScienceField = (field: ReviewerScienceField) => {
+    setReviewerScienceFields((current) =>
+      current.includes(field) ? current.filter((item) => item !== field) : [...current, field],
     )
   }
 
@@ -86,6 +184,24 @@ export function RegisterPage() {
       case 'reviewLanguages':
         if (role !== 'reviewer') return undefined
         return reviewLanguages.length > 0 ? undefined : t.errors.reviewLanguagesRequired ?? t.fields.reviewLanguages.hint
+      case 'reviewerScienceFields':
+        if (role !== 'reviewer') return undefined
+        return reviewerScienceFields.length > 0
+          ? undefined
+          : lang === 'en'
+            ? 'Select at least one science field'
+            : lang === 'kz'
+              ? 'Кемінде бір ғылым бағытын таңдаңыз'
+              : 'Выберите хотя бы одно направление наук'
+      case 'reviewerScienceOther':
+        if (role !== 'reviewer' || !reviewerScienceFields.includes('other')) return undefined
+        return reviewerScienceOther.trim()
+          ? undefined
+          : lang === 'en'
+            ? 'Fill in the Other field'
+            : lang === 'kz'
+              ? '"Өзге" өрісін толтырыңыз'
+              : 'Заполните поле "Иное"'
       case 'acceptTerms':
         return acceptTerms ? undefined : t.errors.acceptRequired
       default:
@@ -98,7 +214,10 @@ export function RegisterPage() {
     const fields: RegisterField[] = ['firstName', 'lastName', 'username', 'email', 'password', 'confirm', 'acceptTerms']
 
     if (role === 'reviewer') {
-      fields.push('reviewLanguages')
+      fields.push('reviewLanguages', 'reviewerScienceFields')
+      if (reviewerScienceFields.includes('other')) {
+        fields.push('reviewerScienceOther')
+      }
     }
 
     fields.forEach((field) => {
@@ -180,19 +299,20 @@ export function RegisterPage() {
         ...(role === 'reviewer'
           ? {
               preferred_language: reviewLanguages.length === 1 ? reviewLanguages[0] : reviewLanguages,
+              reviewer_science_fields: reviewerScienceFields,
+              reviewer_science_other: reviewerScienceFields.includes('other') ? reviewerScienceOther.trim() : undefined,
             }
           : {}),
         accept_terms: acceptTerms,
         notify_status: notifyStatus,
       }
 
-      const response = await api.post('/auth/register', payload)
-      console.log('Register response:', response)
+      await api.post('/auth/register', payload)
       navigate('/login')
-    } catch (error) {
-      console.error('Register error:', error)
-      if (error instanceof ApiError) {
-        setError(extractApiErrorMessage(error))
+    } catch (caught) {
+      console.error('Register error:', caught)
+      if (caught instanceof ApiError) {
+        setError(extractApiErrorMessage(caught))
       } else {
         setError(t.errors.networkFail)
       }
@@ -250,6 +370,7 @@ export function RegisterPage() {
               {fieldErrors.lastName ? <span className="form-error-text">{fieldErrors.lastName}</span> : null}
             </label>
           </div>
+
           <label className="form-field">
             <span className="form-label">{t.fields.username.label}</span>
             <input
@@ -266,6 +387,7 @@ export function RegisterPage() {
             />
             {fieldErrors.username ? <span className="form-error-text">{fieldErrors.username}</span> : null}
           </label>
+
           <div className="grid grid-2 auth-grid">
             <label className="form-field">
               <span className="form-label">{t.fields.organization.label}</span>
@@ -294,6 +416,7 @@ export function RegisterPage() {
               />
             </label>
           </div>
+
           <label className="form-field">
             <span className="form-label">{t.fields.email.label}</span>
             <input
@@ -310,6 +433,7 @@ export function RegisterPage() {
             />
             {fieldErrors.email ? <span className="form-error-text">{fieldErrors.email}</span> : null}
           </label>
+
           <label className="form-field">
             <span className="form-label">{t.fields.role.label}</span>
             <select
@@ -319,11 +443,15 @@ export function RegisterPage() {
                 const nextRole = e.target.value as RegisterRole
                 clearFormError()
                 setRole(nextRole)
+                if (nextRole !== 'reviewer') {
+                  setReviewerScienceFields([])
+                  setReviewerScienceOther('')
+                }
                 setFieldErrors((current) => {
-                  if (nextRole === 'reviewer') return current
-                  if (!current.reviewLanguages) return current
                   const next = { ...current }
                   delete next.reviewLanguages
+                  delete next.reviewerScienceFields
+                  delete next.reviewerScienceOther
                   return next
                 })
               }}
@@ -334,31 +462,83 @@ export function RegisterPage() {
               <option value="admin">{roleLabels.admin}</option>
             </select>
           </label>
+
           {role === 'reviewer' && (
-            <label className="form-field">
-              <span className="form-label">{t.fields.reviewLanguages.label}</span>
-              <div className="auth-row auth-row--wrap">
-                {reviewLanguageOptions.map((language) => (
-                  <label className="checkbox" key={language}>
+            <>
+              <label className="form-field">
+                <span className="form-label">{t.fields.reviewLanguages.label}</span>
+                <div className="auth-row auth-row--wrap">
+                  {reviewLanguageOptions.map((language) => (
+                    <label className="checkbox" key={language}>
+                      <input
+                        type="checkbox"
+                        checked={reviewLanguages.includes(language)}
+                        onChange={() => {
+                          toggleReviewLanguage(language)
+                          clearFormError()
+                          clearFieldError('reviewLanguages')
+                        }}
+                      />
+                      <span>{t.fields.reviewLanguages.options[language]}</span>
+                    </label>
+                  ))}
+                </div>
+                <span className="form-hint">{t.fields.reviewLanguages.hint}</span>
+                {fieldErrors.reviewLanguages ? (
+                  <span className="form-error-text">{fieldErrors.reviewLanguages}</span>
+                ) : null}
+              </label>
+
+              <label className="form-field">
+                <span className="form-label">{reviewerScienceTitle}</span>
+                <div className="auth-row auth-row--wrap">
+                  {reviewerScienceFieldOptions.map((field) => (
+                    <label className="checkbox" key={field}>
+                      <input
+                        type="checkbox"
+                        checked={reviewerScienceFields.includes(field)}
+                        onChange={() => {
+                          const willDisableOther = field === 'other' && reviewerScienceFields.includes('other')
+                          toggleReviewerScienceField(field)
+                          if (willDisableOther) {
+                            setReviewerScienceOther('')
+                          }
+                          clearFormError()
+                          clearFieldError('reviewerScienceFields')
+                          clearFieldError('reviewerScienceOther')
+                        }}
+                      />
+                      <span>{reviewerScienceFieldLabels[field]}</span>
+                    </label>
+                  ))}
+                </div>
+                <span className="form-hint">{reviewerScienceHint}</span>
+                {reviewerScienceFields.includes('other') && (
+                  <>
                     <input
-                      type="checkbox"
-                      checked={reviewLanguages.includes(language)}
-                      onChange={() => {
-                        toggleReviewLanguage(language)
+                      className={getInputClassName('reviewerScienceOther')}
+                      type="text"
+                      placeholder={reviewerScienceOtherLabel}
+                      value={reviewerScienceOther}
+                      onChange={(e) => {
+                        setReviewerScienceOther(e.target.value)
                         clearFormError()
-                        clearFieldError('reviewLanguages')
+                        clearFieldError('reviewerScienceOther')
                       }}
+                      aria-invalid={Boolean(fieldErrors.reviewerScienceOther)}
                     />
-                    <span>{t.fields.reviewLanguages.options[language]}</span>
-                  </label>
-                ))}
-              </div>
-              <span className="form-hint">{t.fields.reviewLanguages.hint}</span>
-              {fieldErrors.reviewLanguages ? (
-                <span className="form-error-text">{fieldErrors.reviewLanguages}</span>
-              ) : null}
-            </label>
+                    {fieldErrors.reviewerScienceOther ? (
+                      <span className="form-error-text">{fieldErrors.reviewerScienceOther}</span>
+                    ) : null}
+                  </>
+                )}
+                {fieldErrors.reviewerScienceFields ? (
+                  <span className="form-error-text">{fieldErrors.reviewerScienceFields}</span>
+                ) : null}
+              </label>
+            </>
           )}
+
           <div className="grid grid-2 auth-grid">
             <label className="form-field">
               <span className="form-label">{t.fields.password.label}</span>

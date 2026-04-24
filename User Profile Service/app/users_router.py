@@ -6,6 +6,21 @@ import httpx
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+ALLOWED_REVIEWER_SCIENCE_FIELDS = {
+    "economics",
+    "politology",
+    "jurisprudence",
+    "pedagogy",
+    "philology",
+    "psychology",
+    "sociology",
+    "management",
+    "philosophy",
+    "cultural_studies",
+    "information_technology",
+    "other",
+}
+
 
 def normalize_preferred_language(value: str | list[str] | None) -> str | None:
     if value is None:
@@ -16,6 +31,27 @@ def normalize_preferred_language(value: str | list[str] | None) -> str | None:
     if isinstance(value, str):
         return value.strip() or None
     return None
+
+
+def normalize_reviewer_science_fields(value: list[str] | None) -> list[str]:
+    if not value:
+        return []
+    normalized: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        candidate = item.strip()
+        if not candidate or candidate not in ALLOWED_REVIEWER_SCIENCE_FIELDS or candidate in normalized:
+            continue
+        normalized.append(candidate)
+    return normalized
+
+
+def normalize_reviewer_science_other(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    return normalized or None
 
 def get_db():
     db = database.SessionLocal()
@@ -78,6 +114,8 @@ def create_profile(profile: schemas.UserProfileCreate, db: Session = Depends(get
         raise HTTPException(status_code=400, detail="Profile already exists")
     payload = profile.dict()
     payload["preferred_language"] = normalize_preferred_language(payload.get("preferred_language")) or schemas.Language.en.value
+    payload["reviewer_science_fields"] = normalize_reviewer_science_fields(payload.get("reviewer_science_fields"))
+    payload["reviewer_science_other"] = normalize_reviewer_science_other(payload.get("reviewer_science_other"))
     new_profile = models.UserProfile(**payload)
     db.add(new_profile)
     db.commit()
@@ -142,6 +180,8 @@ def get_reviewers(
                 "organization": reviewer.organization,
                 "roles": reviewer.roles or [],
                 "preferred_language": reviewer.preferred_language,
+                "reviewer_science_fields": reviewer.reviewer_science_fields or [],
+                "reviewer_science_other": reviewer.reviewer_science_other,
                 "is_active": reviewer.is_active,
                 "is_council_member": reviewer.is_council_member,
                 "is_collegium_member": reviewer.is_collegium_member,
@@ -214,6 +254,36 @@ def update_profile_roles_internal(
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     profile.roles = payload.roles or ["author"]
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.patch("/me/reviewer-science", response_model=schemas.UserProfileOut)
+async def update_reviewer_science(
+    payload: schemas.ReviewerScienceUpdate,
+    current=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current["user_id"]
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    if "reviewer" not in (profile.roles or []):
+        raise HTTPException(status_code=403, detail="Reviewer role required")
+
+    fields = normalize_reviewer_science_fields(payload.reviewer_science_fields)
+    other = normalize_reviewer_science_other(payload.reviewer_science_other)
+
+    if not fields:
+        raise HTTPException(status_code=400, detail="Select at least one science field")
+    if "other" in fields and not other:
+        raise HTTPException(status_code=400, detail="Fill in the 'other' science field")
+    if "other" not in fields:
+        other = None
+
+    profile.reviewer_science_fields = fields
+    profile.reviewer_science_other = other
     db.commit()
     db.refresh(profile)
     return profile

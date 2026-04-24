@@ -8,6 +8,21 @@ from app import models, schemas, database, security, config
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+ALLOWED_REVIEWER_SCIENCE_FIELDS = {
+    "economics",
+    "politology",
+    "jurisprudence",
+    "pedagogy",
+    "philology",
+    "psychology",
+    "sociology",
+    "management",
+    "philosophy",
+    "cultural_studies",
+    "information_technology",
+    "other",
+}
+
 def get_db():
     db = database.SessionLocal()
     try:
@@ -127,6 +142,27 @@ def normalize_preferred_language(value: str | list[str] | None) -> str | None:
         return value.strip() or None
     return None
 
+
+def normalize_reviewer_science_fields(value: list[str] | None) -> list[str]:
+    if not value:
+        return []
+    normalized: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        candidate = item.strip()
+        if not candidate or candidate not in ALLOWED_REVIEWER_SCIENCE_FIELDS or candidate in normalized:
+            continue
+        normalized.append(candidate)
+    return normalized
+
+
+def normalize_reviewer_science_other(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    return normalized or None
+
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     existing_username = db.query(models.User).filter(models.User.username == user.username).first()
@@ -146,6 +182,8 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         )
 
     normalized_preferred_language = normalize_preferred_language(user.preferred_language)
+    normalized_reviewer_science_fields = normalize_reviewer_science_fields(user.reviewer_science_fields)
+    normalized_reviewer_science_other = normalize_reviewer_science_other(user.reviewer_science_other)
 
     if user.role == "reviewer" and not normalized_preferred_language:
         raise HTTPException(
@@ -157,6 +195,28 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
                 },
             },
         )
+    if user.role == "reviewer" and not normalized_reviewer_science_fields:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Для рецензента нужно выбрать хотя бы одно направление наук",
+                "fields": {
+                    "reviewer_science_fields": "Выберите хотя бы одно направление наук",
+                },
+            },
+        )
+    if user.role == "reviewer" and "other" in normalized_reviewer_science_fields and not normalized_reviewer_science_other:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Заполните поле 'Иное' для направления наук",
+                "fields": {
+                    "reviewer_science_other": "Заполните поле 'Иное'",
+                },
+            },
+        )
+    if "other" not in normalized_reviewer_science_fields:
+        normalized_reviewer_science_other = None
     hashed_password = security.hash_password(user.password)
     
     # Авто-активация только для роли автора; остальные неактивны
@@ -188,6 +248,8 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
             "roles": [new_user.role],
             "organization": new_user.organization,
             "preferred_language": normalized_preferred_language or "en",
+            "reviewer_science_fields": normalized_reviewer_science_fields,
+            "reviewer_science_other": normalized_reviewer_science_other,
             "phone": None,
         }
         with httpx.Client(timeout=5.0) as client:
@@ -387,6 +449,8 @@ def get_user_full_info(
         "profile_id": None,
         "phone": None,
         "preferred_language": None,
+        "reviewer_science_fields": [],
+        "reviewer_science_other": None,
         "roles": [user.role],
     }
     
@@ -399,6 +463,8 @@ def get_user_full_info(
                 user_info["profile_id"] = profile_data.get("id")
                 user_info["phone"] = profile_data.get("phone")
                 user_info["preferred_language"] = profile_data.get("preferred_language")
+                user_info["reviewer_science_fields"] = profile_data.get("reviewer_science_fields", [])
+                user_info["reviewer_science_other"] = profile_data.get("reviewer_science_other")
                 user_info["roles"] = profile_data.get("roles", [user.role])
                 # Update organization from profile if it's more recent
                 if profile_data.get("organization"):
@@ -482,6 +548,8 @@ def get_all_users(
                 "notify_status": user.notify_status,
                 "phone": profile.get("phone"),
                 "preferred_language": profile.get("preferred_language"),
+                "reviewer_science_fields": profile.get("reviewer_science_fields", []),
+                "reviewer_science_other": profile.get("reviewer_science_other"),
                 "roles": profile.get("roles", [user.role]),
                 "profile_id": profile.get("id"),
                 "is_council_member": profile.get("is_council_member"),
@@ -550,6 +618,8 @@ def get_admin_user_detail(
         "notify_status": user.notify_status,
         "phone": profile.get("phone"),
         "preferred_language": profile.get("preferred_language"),
+        "reviewer_science_fields": profile.get("reviewer_science_fields", []),
+        "reviewer_science_other": profile.get("reviewer_science_other"),
         "roles": profile.get("roles", [user.role]),
         "profile_id": profile.get("id"),
         "is_council_member": profile.get("is_council_member"),

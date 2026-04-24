@@ -4,6 +4,19 @@ import { useLanguage } from '../shared/LanguageContext'
 import type { Lang } from '../shared/labels'
 
 type PreferredLanguage = 'ru' | 'en' | 'kz'
+type ReviewerScienceField =
+  | 'economics'
+  | 'politology'
+  | 'jurisprudence'
+  | 'pedagogy'
+  | 'philology'
+  | 'psychology'
+  | 'sociology'
+  | 'management'
+  | 'philosophy'
+  | 'cultural_studies'
+  | 'information_technology'
+  | 'other'
 
 interface MeResponse {
   id: number
@@ -22,6 +35,8 @@ interface MeResponse {
   phone?: string | null
   roles?: string[]
   preferred_language?: PreferredLanguage | null
+  reviewer_science_fields?: ReviewerScienceField[]
+  reviewer_science_other?: string | null
 }
 
 type ProfileCopy = {
@@ -38,6 +53,9 @@ type ProfileCopy = {
   saveSuccess: string
   saveError: string
   reviewerLanguageHint: string
+  reviewerScienceHint: string
+  reviewerScienceTitle: string
+  reviewerScienceOtherLabel: string
   fields: {
     username: string
     email: string
@@ -56,7 +74,7 @@ type ProfileCopy = {
 
 const profileCopy: Record<Lang, ProfileCopy> = {
   ru: {
-    header: { eyebrow: 'Профиль', title: 'Мой профиль', subtitle: 'Контакты, роль и настройки вашей учетной записи.' },
+    header: { eyebrow: 'Профиль', title: 'Мой профиль', subtitle: 'Контакты, роль и настройки учетной записи.' },
     loading: 'Загрузка данных...',
     error: 'Не удалось загрузить профиль',
     update: 'Данные аккаунта',
@@ -64,11 +82,14 @@ const profileCopy: Record<Lang, ProfileCopy> = {
     no: 'Нет',
     enabled: 'Включены',
     disabled: 'Выключены',
-    save: 'Сохранить язык',
+    save: 'Сохранить настройки рецензента',
     saving: 'Сохранение...',
-    saveSuccess: 'Язык рецензирования обновлен',
-    saveError: 'Не удалось обновить язык',
+    saveSuccess: 'Настройки рецензента обновлены',
+    saveError: 'Не удалось обновить настройки рецензента',
     reviewerLanguageHint: 'Настройка доступна для рецензента и используется при подборе рукописей.',
+    reviewerScienceHint: 'Можно выбрать одно или несколько направлений. Если выбрано "Иное", заполните поле.',
+    reviewerScienceTitle: 'Направления наук',
+    reviewerScienceOtherLabel: 'Укажите иное направление',
     fields: {
       username: 'Имя пользователя',
       email: 'Email',
@@ -93,11 +114,14 @@ const profileCopy: Record<Lang, ProfileCopy> = {
     no: 'No',
     enabled: 'Enabled',
     disabled: 'Disabled',
-    save: 'Save language',
+    save: 'Save reviewer settings',
     saving: 'Saving...',
-    saveSuccess: 'Review language updated',
-    saveError: 'Failed to update language',
+    saveSuccess: 'Reviewer settings updated',
+    saveError: 'Failed to update reviewer settings',
     reviewerLanguageHint: 'This setting is available to reviewers and is used for manuscript matching.',
+    reviewerScienceHint: 'Select one or several fields. If you choose Other, fill in the text field.',
+    reviewerScienceTitle: 'Science fields',
+    reviewerScienceOtherLabel: 'Specify other field',
     fields: {
       username: 'Username',
       email: 'Email',
@@ -122,11 +146,14 @@ const profileCopy: Record<Lang, ProfileCopy> = {
     no: 'Жоқ',
     enabled: 'Қосулы',
     disabled: 'Сөндірулі',
-    save: 'Тілді сақтау',
+    save: 'Рецензент баптауларын сақтау',
     saving: 'Сақталуда...',
-    saveSuccess: 'Рецензия тілі жаңартылды',
-    saveError: 'Тілді жаңарту мүмкін болмады',
+    saveSuccess: 'Рецензент баптаулары жаңартылды',
+    saveError: 'Рецензент баптауларын жаңарту мүмкін болмады',
     reviewerLanguageHint: 'Бұл баптау рецензентке қолжетімді және қолжазбаларды іріктеуде қолданылады.',
+    reviewerScienceHint: 'Бір немесе бірнеше бағытты таңдаңыз. Егер "Өзге" таңдалса, мәтінді толтырыңыз.',
+    reviewerScienceTitle: 'Ғылым бағыттары',
+    reviewerScienceOtherLabel: 'Өзге бағытты нақтылаңыз',
     fields: {
       username: 'Пайдаланушы аты',
       email: 'Email',
@@ -156,12 +183,74 @@ const languageLabelMap = {
   kz: { ru: 'Орысша', en: 'English', kz: 'Қазақша' },
 } as const
 
+const reviewerScienceFieldOptions: ReviewerScienceField[] = [
+  'economics',
+  'politology',
+  'jurisprudence',
+  'pedagogy',
+  'philology',
+  'psychology',
+  'sociology',
+  'management',
+  'philosophy',
+  'cultural_studies',
+  'information_technology',
+  'other',
+]
+
+const reviewerScienceFieldLabels: Record<Lang, Record<ReviewerScienceField, string>> = {
+  ru: {
+    economics: 'Экономика',
+    politology: 'Политология',
+    jurisprudence: 'Юриспруденция',
+    pedagogy: 'Педагогика',
+    philology: 'Филология',
+    psychology: 'Психология',
+    sociology: 'Социология',
+    management: 'Менеджмент',
+    philosophy: 'Философия',
+    cultural_studies: 'Культурология',
+    information_technology: 'Информационные технологии',
+    other: 'Иное',
+  },
+  en: {
+    economics: 'Economics',
+    politology: 'Political science',
+    jurisprudence: 'Jurisprudence',
+    pedagogy: 'Pedagogy',
+    philology: 'Philology',
+    psychology: 'Psychology',
+    sociology: 'Sociology',
+    management: 'Management',
+    philosophy: 'Philosophy',
+    cultural_studies: 'Cultural studies',
+    information_technology: 'Information technology',
+    other: 'Other',
+  },
+  kz: {
+    economics: 'Экономика',
+    politology: 'Саясаттану',
+    jurisprudence: 'Құқықтану',
+    pedagogy: 'Педагогика',
+    philology: 'Филология',
+    psychology: 'Психология',
+    sociology: 'Әлеуметтану',
+    management: 'Менеджмент',
+    philosophy: 'Философия',
+    cultural_studies: 'Мәдениеттану',
+    information_technology: 'Ақпараттық технологиялар',
+    other: 'Өзге',
+  },
+}
+
 export function ProfilePage() {
   const { lang } = useLanguage()
   const l: Lang = (['ru', 'en', 'kz'] as const).includes(lang) ? lang : 'ru'
   const t = profileCopy[l]
   const [data, setData] = useState<MeResponse | null>(null)
   const [preferredLanguage, setPreferredLanguage] = useState<PreferredLanguage>('ru')
+  const [reviewerScienceFields, setReviewerScienceFields] = useState<ReviewerScienceField[]>([])
+  const [reviewerScienceOther, setReviewerScienceOther] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -175,6 +264,8 @@ export function ProfilePage() {
         if (!mounted) return
         setData(me)
         setPreferredLanguage((me.preferred_language as PreferredLanguage | null) || 'ru')
+        setReviewerScienceFields(me.reviewer_science_fields || [])
+        setReviewerScienceOther(me.reviewer_science_other || '')
       } catch (caught) {
         console.error(caught)
         if (mounted) setError(t.error)
@@ -193,13 +284,32 @@ export function ProfilePage() {
     return roles.has('reviewer')
   }, [data])
 
-  const handleSaveLanguage = async () => {
+  const toggleReviewerScienceField = (field: ReviewerScienceField) => {
+    setReviewerScienceFields((current) =>
+      current.includes(field) ? current.filter((item) => item !== field) : [...current, field],
+    )
+  }
+
+  const handleSaveReviewerSettings = async () => {
     if (!isReviewer || saving) return
     setSaving(true)
     setSaveMessage(null)
     try {
       await api.updateMyLanguage(preferredLanguage)
-      setData((current) => (current ? { ...current, preferred_language: preferredLanguage } : current))
+      await api.updateMyReviewerScience({
+        reviewer_science_fields: reviewerScienceFields,
+        reviewer_science_other: reviewerScienceFields.includes('other') ? reviewerScienceOther.trim() : null,
+      })
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              preferred_language: preferredLanguage,
+              reviewer_science_fields: reviewerScienceFields,
+              reviewer_science_other: reviewerScienceFields.includes('other') ? reviewerScienceOther.trim() : null,
+            }
+          : current,
+      )
       setSaveMessage(t.saveSuccess)
     } catch (caught) {
       console.error(caught)
@@ -230,7 +340,9 @@ export function ProfilePage() {
           <div>
             <p className="eyebrow">{t.header.eyebrow}</p>
             <h1 className="page-title">{t.header.title}</h1>
-            <p className="subtitle" style={{ color: '#d00' }}>{error}</p>
+            <p className="subtitle" style={{ color: '#d00' }}>
+              {error}
+            </p>
           </div>
         </section>
       </div>
@@ -325,7 +437,52 @@ export function ProfilePage() {
                   <option value="kz">{languageLabelMap[l].kz}</option>
                 </select>
                 <div className="form-hint">{t.reviewerLanguageHint}</div>
-                <button type="button" className="button button--secondary" onClick={handleSaveLanguage} disabled={saving}>
+              </div>
+            ) : (
+              <div className="profile-value">{languageLabel}</div>
+            )}
+          </div>
+
+          {isReviewer && (
+            <div className="profile-field">
+              <div className="profile-label">{t.reviewerScienceTitle}</div>
+              <div className="profile-language-editor">
+                <div className="auth-row auth-row--wrap">
+                  {reviewerScienceFieldOptions.map((field) => (
+                    <label className="checkbox" key={field}>
+                      <input
+                        type="checkbox"
+                        checked={reviewerScienceFields.includes(field)}
+                        onChange={() => {
+                          const willDisableOther = field === 'other' && reviewerScienceFields.includes('other')
+                          toggleReviewerScienceField(field)
+                          if (willDisableOther) {
+                            setReviewerScienceOther('')
+                          }
+                        }}
+                        disabled={saving}
+                      />
+                      <span>{reviewerScienceFieldLabels[l][field]}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="form-hint">{t.reviewerScienceHint}</div>
+                {reviewerScienceFields.includes('other') && (
+                  <input
+                    className="text-input"
+                    type="text"
+                    placeholder={t.reviewerScienceOtherLabel}
+                    value={reviewerScienceOther}
+                    onChange={(event) => setReviewerScienceOther(event.target.value)}
+                    disabled={saving}
+                  />
+                )}
+                <button
+                  type="button"
+                  className="button button--secondary"
+                  onClick={handleSaveReviewerSettings}
+                  disabled={saving}
+                >
                   {saving ? t.saving : t.save}
                 </button>
                 {saveMessage && (
@@ -334,10 +491,8 @@ export function ProfilePage() {
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="profile-value">{languageLabel}</div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

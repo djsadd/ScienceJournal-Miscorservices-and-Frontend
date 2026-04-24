@@ -15,6 +15,8 @@ class UserProfileBase(BaseModel):
     organization: str | None = None
     roles: List[str] = ["author"]
     preferred_language: str = Language.en.value
+    reviewer_science_fields: List[str] = []
+    reviewer_science_other: str | None = None
     is_council_member: bool = False
     is_collegium_member: bool = False
 
@@ -37,6 +39,11 @@ class UserRolesOut(BaseModel):
     user_id: int
     roles: List[str]
     preferred_language: str | None = None
+
+
+class ReviewerScienceUpdate(BaseModel):
+    reviewer_science_fields: List[str]
+    reviewer_science_other: str | None = None
 
 
 class UserRolesUpdate(BaseModel):
@@ -76,6 +83,8 @@ class ReviewerFullInfo(BaseModel):
     organization: str | None = None
     roles: List[str] = []
     preferred_language: str
+    reviewer_science_fields: List[str] = []
+    reviewer_science_other: str | None = None
     is_active: bool | None = None
     is_council_member: bool | None = None
     is_collegium_member: bool | None = None
