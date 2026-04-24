@@ -5,6 +5,7 @@ from app.routers import (
     auth,
     users,
     articles,
+    countries,
     reviews,
     editorial,
     layout,
@@ -33,6 +34,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(users.router, prefix=API_PREFIX)
 app.include_router(articles.router, prefix=API_PREFIX)
+app.include_router(countries.router, prefix=API_PREFIX)
 app.include_router(reviews.router, prefix=API_PREFIX)
 app.include_router(editorial.router, prefix=API_PREFIX)
 app.include_router(layout.router, prefix=API_PREFIX)
