@@ -22,6 +22,13 @@ ALLOWED_REVIEWER_SCIENCE_FIELDS = {
     "information_technology",
     "other",
 }
+ALLOWED_ACADEMIC_DEGREES = {
+    "candidate",
+    "doctor",
+    "phd",
+    "master",
+    "bachelor",
+}
 
 def get_db():
     db = database.SessionLocal()
@@ -164,7 +171,7 @@ def normalize_reviewer_science_other(value: str | None) -> str | None:
     return normalized or None
 
 
-def normalize_string_list(value: list[str] | None) -> list[str]:
+def normalize_academic_degrees(value: list[str] | None) -> list[str]:
     if not value:
         return []
     normalized: list[str] = []
@@ -172,7 +179,19 @@ def normalize_string_list(value: list[str] | None) -> list[str]:
         if not isinstance(item, str):
             continue
         candidate = item.strip()
-        if not candidate or candidate in normalized:
+        if not candidate:
+            continue
+        if candidate not in ALLOWED_ACADEMIC_DEGREES:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Некорректное значение ученой степени",
+                    "fields": {
+                        "academic_degrees": "Выберите ученую степень из списка",
+                    },
+                },
+            )
+        if candidate in normalized:
             continue
         normalized.append(candidate)
     return normalized
@@ -213,7 +232,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         )
 
     normalized_preferred_language = normalize_preferred_language(user.preferred_language)
-    normalized_academic_degrees = normalize_string_list(user.academic_degrees)
+    normalized_academic_degrees = normalize_academic_degrees(user.academic_degrees)
     normalized_orcid = normalize_orcid(user.orcid)
     normalized_reviewer_science_fields = normalize_reviewer_science_fields(user.reviewer_science_fields)
     normalized_reviewer_science_other = normalize_reviewer_science_other(user.reviewer_science_other)

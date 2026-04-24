@@ -20,6 +20,13 @@ ALLOWED_REVIEWER_SCIENCE_FIELDS = {
     "information_technology",
     "other",
 }
+ALLOWED_ACADEMIC_DEGREES = {
+    "candidate",
+    "doctor",
+    "phd",
+    "master",
+    "bachelor",
+}
 
 
 def normalize_preferred_language(value: str | list[str] | None) -> str | None:
@@ -54,7 +61,7 @@ def normalize_reviewer_science_other(value: str | None) -> str | None:
     return normalized or None
 
 
-def normalize_string_list(value: list[str] | None) -> list[str]:
+def normalize_academic_degrees(value: list[str] | None) -> list[str]:
     if not value:
         return []
     normalized: list[str] = []
@@ -62,7 +69,11 @@ def normalize_string_list(value: list[str] | None) -> list[str]:
         if not isinstance(item, str):
             continue
         candidate = item.strip()
-        if not candidate or candidate in normalized:
+        if not candidate:
+            continue
+        if candidate not in ALLOWED_ACADEMIC_DEGREES:
+            raise HTTPException(status_code=400, detail="Invalid academic degree")
+        if candidate in normalized:
             continue
         normalized.append(candidate)
     return normalized
@@ -142,7 +153,7 @@ def create_profile(profile: schemas.UserProfileCreate, db: Session = Depends(get
         raise HTTPException(status_code=400, detail="Profile already exists")
     payload = profile.dict()
     payload["preferred_language"] = normalize_preferred_language(payload.get("preferred_language")) or schemas.Language.en.value
-    payload["academic_degrees"] = normalize_string_list(payload.get("academic_degrees"))
+    payload["academic_degrees"] = normalize_academic_degrees(payload.get("academic_degrees"))
     payload["orcid"] = normalize_orcid(payload.get("orcid"))
     payload["reviewer_science_fields"] = normalize_reviewer_science_fields(payload.get("reviewer_science_fields"))
     payload["reviewer_science_other"] = normalize_reviewer_science_other(payload.get("reviewer_science_other"))
@@ -301,7 +312,7 @@ async def update_my_details(
     profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    profile.academic_degrees = normalize_string_list(payload.academic_degrees)
+    profile.academic_degrees = normalize_academic_degrees(payload.academic_degrees)
     profile.orcid = normalize_orcid(payload.orcid)
     db.commit()
     db.refresh(profile)

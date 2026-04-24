@@ -201,6 +201,9 @@ const languageLabelMap = {
   kz: { ru: 'Орысша', en: 'English', kz: 'Қазақша' },
 } as const
 
+const academicDegreeOptions = ['candidate', 'doctor', 'phd', 'master', 'bachelor'] as const
+type AcademicDegreeOption = (typeof academicDegreeOptions)[number]
+
 const reviewerScienceFieldOptions: ReviewerScienceField[] = [
   'economics',
   'politology',
@@ -262,6 +265,40 @@ const reviewerScienceFieldLabels: Record<Lang, Record<ReviewerScienceField, stri
 }
 
 const orcidPattern = /^(\d{4}-){3}[\dX]{4}$/i
+const legacyAcademicDegreeMap: Record<string, AcademicDegreeOption> = {
+  candidate: 'candidate',
+  doctor: 'doctor',
+  phd: 'phd',
+  master: 'master',
+  bachelor: 'bachelor',
+  'кандидат наук': 'candidate',
+  'доктор наук': 'doctor',
+  магистр: 'master',
+  бакалавр: 'bachelor',
+  'candidate of sciences': 'candidate',
+  'doctor of sciences': 'doctor',
+  "ғылым кандидаты": 'candidate',
+  "ғылым докторы": 'doctor',
+}
+
+function normalizeAcademicDegreeValues(values?: string[] | null): AcademicDegreeOption[] {
+  if (!values?.length) {
+    return []
+  }
+  const normalized: AcademicDegreeOption[] = []
+  for (const value of values) {
+    if (typeof value !== 'string') {
+      continue
+    }
+    const key = value.trim().toLowerCase()
+    const mapped = legacyAcademicDegreeMap[key]
+    if (!mapped || normalized.includes(mapped)) {
+      continue
+    }
+    normalized.push(mapped)
+  }
+  return normalized
+}
 
 export function ProfilePage() {
   const { lang } = useLanguage()
@@ -272,7 +309,6 @@ export function ProfilePage() {
   const [reviewerScienceFields, setReviewerScienceFields] = useState<ReviewerScienceField[]>([])
   const [reviewerScienceOther, setReviewerScienceOther] = useState('')
   const [academicDegrees, setAcademicDegrees] = useState<string[]>([])
-  const [degreeDraft, setDegreeDraft] = useState('')
   const [orcid, setOrcid] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -289,7 +325,7 @@ export function ProfilePage() {
         setPreferredLanguage((me.preferred_language as PreferredLanguage | null) || 'ru')
         setReviewerScienceFields(me.reviewer_science_fields || [])
         setReviewerScienceOther(me.reviewer_science_other || '')
-        setAcademicDegrees(me.academic_degrees || [])
+        setAcademicDegrees(normalizeAcademicDegreeValues(me.academic_degrees))
         setOrcid(me.orcid || '')
       } catch (caught) {
         console.error(caught)
@@ -309,21 +345,39 @@ export function ProfilePage() {
     return roles.has('reviewer')
   }, [data])
 
+  const academicDegreeLabels: Record<AcademicDegreeOption, string> =
+    l === 'en'
+      ? {
+          candidate: 'Candidate of Sciences',
+          doctor: 'Doctor of Sciences',
+          phd: 'PhD',
+          master: 'Master',
+          bachelor: 'Bachelor',
+        }
+      : l === 'kz'
+        ? {
+            candidate: 'Ғылым кандидаты',
+            doctor: 'Ғылым докторы',
+            phd: 'PhD',
+            master: 'Магистр',
+            bachelor: 'Бакалавр',
+          }
+        : {
+            candidate: 'Кандидат наук',
+            doctor: 'Доктор наук',
+            phd: 'PhD',
+            master: 'Магистр',
+            bachelor: 'Бакалавр',
+          }
+
   const toggleReviewerScienceField = (field: ReviewerScienceField) => {
     setReviewerScienceFields((current) =>
       current.includes(field) ? current.filter((item) => item !== field) : [...current, field],
     )
   }
 
-  const addAcademicDegree = () => {
-    const value = degreeDraft.trim()
-    if (!value) return
-    setAcademicDegrees((current) => (current.includes(value) ? current : [...current, value]))
-    setDegreeDraft('')
-  }
-
-  const removeAcademicDegree = (degree: string) => {
-    setAcademicDegrees((current) => current.filter((item) => item !== degree))
+  const toggleAcademicDegree = (degree: AcademicDegreeOption) => {
+    setAcademicDegrees((current) => (current.includes(degree) ? current.filter((item) => item !== degree) : [...current, degree]))
   }
 
   const handleSaveProfile = async () => {
@@ -447,37 +501,16 @@ export function ProfilePage() {
                 <span className="form-label">{t.fields.orcid}</span>
                 <input className="text-input" type="text" placeholder="0000-0000-0000-0000" value={orcid} onChange={(e) => setOrcid(e.target.value)} />
               </label>
-              <div className="chip-editor">
-                <div className="chip-editor__input-row">
-                  <input
-                    className="text-input"
-                    type="text"
-                    placeholder={t.degreePlaceholder}
-                    value={degreeDraft}
-                    onChange={(e) => setDegreeDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        addAcademicDegree()
-                      }
-                    }}
-                  />
-                  <button type="button" className="button button--secondary button--compact" onClick={addAcademicDegree}>
-                    {t.addDegree}
-                  </button>
-                </div>
-                {academicDegrees.length > 0 && (
-                  <div className="chip-list">
-                    {academicDegrees.map((degree) => (
-                      <span className="chip-list__item" key={degree}>
-                        <span>{degree}</span>
-                        <button type="button" className="chip-list__remove" onClick={() => removeAcademicDegree(degree)}>
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+              <div className="choice-chips">
+                {academicDegreeOptions.map((degree) => {
+                  const label = academicDegreeLabels[degree]
+                  return (
+                    <label className={`choice-chip${academicDegrees.includes(degree) ? ' choice-chip--active' : ''}`} key={degree}>
+                      <input type="checkbox" checked={academicDegrees.includes(degree)} onChange={() => toggleAcademicDegree(degree)} />
+                      <span className="choice-chip__label">{label}</span>
+                    </label>
+                  )
+                })}
               </div>
             </div>
           </div>

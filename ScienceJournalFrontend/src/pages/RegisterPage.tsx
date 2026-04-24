@@ -37,6 +37,8 @@ type RegisterField =
 type RegisterFieldErrors = Partial<Record<RegisterField, string>>
 
 const reviewLanguageOptions: ReviewLanguage[] = ['ru', 'en', 'kz']
+const academicDegreeOptions = ['candidate', 'doctor', 'phd', 'master', 'bachelor'] as const
+type AcademicDegreeOption = (typeof academicDegreeOptions)[number]
 const reviewerScienceFieldOptions: ReviewerScienceField[] = [
   'economics',
   'politology',
@@ -67,7 +69,6 @@ export function RegisterPage() {
   const [organization, setOrganization] = useState('')
   const [institution, setInstitution] = useState('')
   const [academicDegrees, setAcademicDegrees] = useState<string[]>([])
-  const [degreeDraft, setDegreeDraft] = useState('')
   const [orcid, setOrcid] = useState('')
   const [role, setRole] = useState<RegisterRole>('author')
   const [reviewLanguages, setReviewLanguages] = useState<ReviewLanguage[]>([])
@@ -146,9 +147,30 @@ export function RegisterPage() {
   const reviewerScienceOtherLabel =
     lang === 'en' ? 'Specify other field' : lang === 'kz' ? 'Өзге бағытты нақтылаңыз' : 'Укажите иное направление'
   const degreeTitle = lang === 'en' ? 'Academic degrees' : lang === 'kz' ? 'Ғылыми дәрежелер' : 'Учёная степень'
-  const degreePlaceholder =
-    lang === 'en' ? 'For example: Candidate of Sciences' : lang === 'kz' ? 'Мысалы: ғылым кандидаты' : 'Например: кандидат наук'
-  const addLabel = lang === 'en' ? 'Add' : lang === 'kz' ? 'Қосу' : 'Добавить'
+  const academicDegreeLabels: Record<AcademicDegreeOption, string> =
+    lang === 'en'
+      ? {
+          candidate: 'Candidate of Sciences',
+          doctor: 'Doctor of Sciences',
+          phd: 'PhD',
+          master: 'Master',
+          bachelor: 'Bachelor',
+        }
+      : lang === 'kz'
+        ? {
+            candidate: 'Ғылым кандидаты',
+            doctor: 'Ғылым докторы',
+            phd: 'PhD',
+            master: 'Магистр',
+            bachelor: 'Бакалавр',
+          }
+        : {
+            candidate: 'Кандидат наук',
+            doctor: 'Доктор наук',
+            phd: 'PhD',
+            master: 'Магистр',
+            bachelor: 'Бакалавр',
+          }
 
   const toggleReviewLanguage = (language: ReviewLanguage) => {
     setReviewLanguages((current) =>
@@ -162,15 +184,8 @@ export function RegisterPage() {
     )
   }
 
-  const addAcademicDegree = () => {
-    const value = degreeDraft.trim()
-    if (!value) return
-    setAcademicDegrees((current) => (current.includes(value) ? current : [...current, value]))
-    setDegreeDraft('')
-  }
-
-  const removeAcademicDegree = (degree: string) => {
-    setAcademicDegrees((current) => current.filter((item) => item !== degree))
+  const toggleAcademicDegree = (degree: AcademicDegreeOption) => {
+    setAcademicDegrees((current) => (current.includes(degree) ? current.filter((item) => item !== degree) : [...current, degree]))
   }
 
   const getInputClassName = (field: RegisterField) =>
@@ -440,37 +455,16 @@ export function RegisterPage() {
 
           <div className="form-field">
             <span className="form-label">{degreeTitle}</span>
-            <div className="chip-editor">
-              <div className="chip-editor__input-row">
-                <input
-                  className="text-input"
-                  type="text"
-                  placeholder={degreePlaceholder}
-                  value={degreeDraft}
-                  onChange={(e) => setDegreeDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      addAcademicDegree()
-                    }
-                  }}
-                />
-                <button type="button" className="button button--secondary button--compact" onClick={addAcademicDegree}>
-                  {addLabel}
-                </button>
-              </div>
-              {academicDegrees.length > 0 && (
-                <div className="chip-list">
-                  {academicDegrees.map((degree) => (
-                    <span className="chip-list__item" key={degree}>
-                      <span>{degree}</span>
-                      <button type="button" className="chip-list__remove" onClick={() => removeAcademicDegree(degree)}>
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
+            <div className="choice-chips">
+                {academicDegreeOptions.map((degree) => {
+                  const label = academicDegreeLabels[degree]
+                  return (
+                  <label className={`choice-chip${academicDegrees.includes(degree) ? ' choice-chip--active' : ''}`} key={degree}>
+                    <input type="checkbox" checked={academicDegrees.includes(degree)} onChange={() => toggleAcademicDegree(degree)} />
+                    <span className="choice-chip__label">{label}</span>
+                  </label>
+                  )
+                })}
             </div>
           </div>
 
