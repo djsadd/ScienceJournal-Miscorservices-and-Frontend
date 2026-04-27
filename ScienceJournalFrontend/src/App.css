@@ -1276,6 +1276,23 @@
   color: var(--muted);
 }
 
+.keyword-pill-button {
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+}
+
+.keyword-pill-button:hover {
+  border-color: #d4a8b8;
+  color: #7a1237;
+  background: #fcf8fa;
+}
+
+.keyword-pill-button:focus-visible {
+  outline: 2px solid #7a1237;
+  outline-offset: 2px;
+}
+
 .status-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -3398,6 +3415,35 @@
 .keyword-modal__list {
   display: grid;
   gap: 0.65rem;
+}
+
+.keyword-modal__translations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.keyword-modal__translation {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid #eadde2;
+  background: #ffffff;
+}
+
+.keyword-modal__translation-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7a1237;
+}
+
+.keyword-modal__translation-value {
+  color: #321421;
+  line-height: 1.5;
+  word-break: break-word;
 }
 
 .keyword-row {

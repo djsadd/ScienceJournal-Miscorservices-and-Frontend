@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { toApiFilesUrl } from '../shared/url'
 import { formatArticleStatus, formatArticleType } from '../shared/labels'
 import { getCountryLabel, type CountryValue } from '../shared/countries'
+import { useLanguage } from '../shared/LanguageContext'
 import ConfirmModal from '../shared/components/ConfirmModal'
 import Toast from '../shared/components/Toast'
 import CollapsibleSection from '../shared/components/CollapsibleSection'
@@ -15,7 +16,6 @@ interface KeywordOut {
   title_en?: string | null
   title_ru?: string | null
 }
-
 interface AuthorOut {
   id: number
   email: string
@@ -52,6 +52,7 @@ interface ArticleOut {
   abstract_kz?: string | null
   abstract_en?: string | null
   abstract_ru?: string | null
+  article_language?: string | null
   doi?: string | null
   status: string
   article_type: string
@@ -73,14 +74,16 @@ interface ArticleOut {
 
 export default function EditorArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { lang: pageLang } = useLanguage()
   const [data, setData] = useState<ArticleOut | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [lang, setLang] = useState<'ru' | 'en' | 'kz'>(() => {
+  const [articleFormLang, setArticleFormLang] = useState<'ru' | 'en' | 'kz'>(() => {
     const params = new URLSearchParams(window.location.search)
     const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
     return fromQuery && ['ru', 'en', 'kz'].includes(fromQuery) ? fromQuery : 'ru'
   })
+  const lang = articleFormLang
   // Status update (reject) states
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [statusError, setStatusError] = useState<string | null>(null)
@@ -325,6 +328,8 @@ export default function EditorArticleDetailPage() {
   // Author details modal state
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorOut | null>(null)
+  const [keywordModalOpen, setKeywordModalOpen] = useState(false)
+  const [selectedKeyword, setSelectedKeyword] = useState<KeywordOut | null>(null)
 
   const fetchLayoutRecords = async (articleId: number) => {
     setLayoutRecordsLoading(true)
@@ -459,6 +464,42 @@ export default function EditorArticleDetailPage() {
     return <span className="badge badge--ghost">{s}</span>
   }
 
+  const getKeywordLabel = (keyword: KeywordOut, targetLang: 'ru' | 'en' | 'kz' = lang) => (
+    (targetLang === 'ru' ? keyword.title_ru : targetLang === 'en' ? keyword.title_en : keyword.title_kz)
+    || keyword.title_ru
+    || keyword.title_en
+    || keyword.title_kz
+    || '—'
+  )
+
+  const keywordModalText = useMemo(() => {
+    if (pageLang === 'en') {
+      return {
+        title: 'Keyword',
+        intro: 'Compare the selected keyword in all available languages.',
+        labels: { ru: 'Russian', en: 'English', kz: 'Kazakh' },
+        close: 'Close',
+        openHint: 'View in all languages',
+      }
+    }
+    if (pageLang === 'kz') {
+      return {
+        title: 'Кілт сөз',
+        intro: 'Таңдалған кілт сөзді барлық қолжетімді тілдерде қарап шығыңыз.',
+        labels: { ru: 'Орысша', en: 'Ағылшынша', kz: 'Қазақша' },
+        close: 'Жабу',
+        openHint: 'Барлық тілде қарау',
+      }
+    }
+    return {
+      title: 'Ключевое слово',
+      intro: 'Просмотр выбранного ключевого слова на всех доступных языках.',
+      labels: { ru: 'Русский', en: 'English', kz: 'Қазақша' },
+      close: 'Закрыть',
+      openHint: 'Посмотреть на всех языках',
+    }
+  }, [pageLang])
+
   return (
     <div className="app-container">
       <section className="section-header">
@@ -467,7 +508,7 @@ export default function EditorArticleDetailPage() {
         </div>
         <div className="lang-switch">
           {(['ru','en','kz'] as const).map((l) => (
-            <button key={l} className={`lang-chip ${lang === l ? 'lang-chip--active' : ''}`} onClick={() => setLang(l)}>{l.toUpperCase()}</button>
+            <button key={l} className={`lang-chip ${lang === l ? 'lang-chip--active' : ''}`} onClick={() => setArticleFormLang(l)}>{l.toUpperCase()}</button>
           ))}
         </div>
       </section>
@@ -525,9 +566,9 @@ export default function EditorArticleDetailPage() {
               )}
             </div>
             <div className="article-meta">
-              <span className="meta-label">Тип:</span> {formatArticleType(data.article_type, lang)}
+              <span className="meta-label">Тип:</span> {formatArticleType(data.article_type, pageLang)}
               <span className="dot">•</span>
-              <span className="meta-label">Статус:</span> {formatArticleStatus(data.status, lang)}
+              <span className="meta-label">Статус:</span> {formatArticleStatus(data.status, pageLang)}
               <span className="dot">•</span>
               <span className="meta-label">DOI:</span> {data.doi || '—'}
               <span className="dot">•</span>
@@ -539,7 +580,7 @@ export default function EditorArticleDetailPage() {
             {abstract && (
               <div style={{ marginTop: '1.5rem', lineHeight: '1.6', color: '#444' }}>
                 <h4 style={{ marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 600, color: '#555' }}>
-                  {lang === 'ru' ? 'Аннотация' : lang === 'en' ? 'Abstract' : 'Аңдатпа'}
+                  {pageLang === 'ru' ? 'Аннотация' : pageLang === 'en' ? 'Abstract' : 'Аңдатпа'}
                 </h4>
                 <p style={{ whiteSpace: 'pre-wrap', textAlign: 'justify' }}>{abstract}</p>
               </div>
@@ -584,7 +625,18 @@ export default function EditorArticleDetailPage() {
             ) : (
               <div className="pill-list">
                 {data.keywords.map((k) => (
-                  <span key={k.id} className="pill pill--ghost">{k.title_ru || k.title_en || k.title_kz}</span>
+                  <button
+                    key={k.id}
+                    type="button"
+                    className="pill pill--ghost keyword-pill-button"
+                    title={keywordModalText.openHint}
+                    onClick={() => {
+                      setSelectedKeyword(k)
+                      setKeywordModalOpen(true)
+                    }}
+                  >
+                    {getKeywordLabel(k)}
+                  </button>
                 ))}
               </div>
             )}
@@ -916,6 +968,34 @@ export default function EditorArticleDetailPage() {
         </div>
       )}
 
+      {keywordModalOpen && selectedKeyword && (
+        <div className="modal-backdrop" onClick={() => setKeywordModalOpen(false)}>
+          <div className="modal keyword-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0 }}>{keywordModalText.title}</h3>
+              <button className="modal__close" onClick={() => setKeywordModalOpen(false)}>×</button>
+            </div>
+            <div className="modal__body keyword-modal__body">
+              <div className="keyword-modal__intro">
+                <p className="keyword-modal__eyebrow">{getKeywordLabel(selectedKeyword)}</p>
+                <p style={{ margin: 0 }}>{keywordModalText.intro}</p>
+              </div>
+              <div className="keyword-modal__translations">
+                {(['ru', 'en', 'kz'] as const).map((keywordLang) => (
+                  <div key={keywordLang} className="keyword-modal__translation">
+                    <div className="keyword-modal__translation-label">{keywordModalText.labels[keywordLang]}</div>
+                    <div className="keyword-modal__translation-value">{getKeywordLabel(selectedKeyword, keywordLang)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button className="button button--primary" onClick={() => setKeywordModalOpen(false)}>{keywordModalText.close}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAcceptOpen && (
         <div className="modal-backdrop" onClick={() => setIsAcceptOpen(false)}>
           <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
@@ -1237,3 +1317,4 @@ export default function EditorArticleDetailPage() {
     </div>
   )
 }
+
