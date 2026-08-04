@@ -277,36 +277,51 @@ COUNTRIES_DATA = [
 
 
 def upgrade() -> None:
-    # Create countries table
-    op.create_table('countries',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(), nullable=False),
-        sa.Column('alpha_2', sa.String(length=2), nullable=False),
-        sa.Column('alpha_3', sa.String(length=3), nullable=False),
-        sa.PrimaryKeyConstraint('id'),
-        sa.Index('ix_countries_id', 'id'),
-        sa.UniqueConstraint('name'),
-        sa.UniqueConstraint('alpha_2'),
-        sa.UniqueConstraint('alpha_3')
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    table_names = set(inspector.get_table_names())
+
+    if 'countries' not in table_names:
+        op.create_table('countries',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('name', sa.String(), nullable=False),
+            sa.Column('alpha_2', sa.String(length=2), nullable=False),
+            sa.Column('alpha_3', sa.String(length=3), nullable=False),
+            sa.PrimaryKeyConstraint('id'),
+            sa.Index('ix_countries_id', 'id'),
+            sa.UniqueConstraint('name'),
+            sa.UniqueConstraint('alpha_2'),
+            sa.UniqueConstraint('alpha_3')
+        )
+
+    country_count = conn.execute(sa.text("SELECT COUNT(*) FROM countries")).scalar() or 0
+    if country_count == 0:
+        op.bulk_insert(COUNTRIES_TABLE, COUNTRIES_DATA)
+
+    authors_columns = {c['name'] for c in inspector.get_columns('authors')}
+    if 'country_id' not in authors_columns:
+        op.add_column('authors', sa.Column('country_id', sa.Integer(), nullable=True))
+
+    op.execute(
+        """
+        UPDATE authors
+        SET country_id = (SELECT id FROM countries WHERE alpha_3 = 'KAZ')
+        WHERE country_id IS NULL
+        """
     )
-
-    # Insert full ISO country list directly in the migration for deterministic setup
-    op.bulk_insert(COUNTRIES_TABLE, COUNTRIES_DATA)
-
-    # Add country_id column to authors
-    op.add_column('authors', sa.Column('country_id', sa.Integer(), nullable=True))
-
-    # Set country_id to Kazakhstan for existing authors
-    op.execute("UPDATE authors SET country_id = (SELECT id FROM countries WHERE alpha_3 = 'KAZ')")
-
-    # Make country_id not nullable
     op.alter_column('authors', 'country_id', nullable=False)
 
-    # Drop old country column
-    op.drop_column('authors', 'country')
+    if 'country' in authors_columns:
+        op.drop_column('authors', 'country')
 
-    # Add foreign key
-    op.create_foreign_key('fk_authors_country_id', 'authors', 'countries', ['country_id'], ['id'])
+    foreign_keys = inspector.get_foreign_keys('authors')
+    has_country_fk = any(
+        fk.get('referred_table') == 'countries'
+        and fk.get('constrained_columns') == ['country_id']
+        for fk in foreign_keys
+    )
+    if not has_country_fk:
+        op.create_foreign_key('fk_authors_country_id', 'authors', 'countries', ['country_id'], ['id'])
 
 
 def downgrade() -> None:

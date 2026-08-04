@@ -1,3 +1,5 @@
+const toViewPath = (path: string) => path.replace(/\/download\/?$/, '/view')
+
 export const toApiFilesUrl = (raw?: string | null): string | undefined => {
   if (!raw) return undefined
 
@@ -10,12 +12,15 @@ export const toApiFilesUrl = (raw?: string | null): string | undefined => {
     const path = u.pathname || ''
 
     // If the path already starts with /api/files, keep it
-    if (/^\/api\/files\//.test(path)) return u.toString()
+    if (/^\/api\/files\//.test(path)) {
+      u.pathname = toViewPath(path)
+      return u.toString()
+    }
 
     // If we see /files/... (with or without domain), rewrite to /api/files/...
     const filesIndex = path.indexOf('/files/')
     if (filesIndex >= 0) {
-      const suffix = path.slice(filesIndex) // /files/{id}/download
+      const suffix = toViewPath(path.slice(filesIndex)) // /files/{id}/view
       // Build same-origin API path; queries preserved if needed
       const apiUrl = new URL(`/api${suffix}${u.search || ''}`, currentOrigin)
       return apiUrl.toString()
@@ -25,7 +30,7 @@ export const toApiFilesUrl = (raw?: string | null): string | undefined => {
     return u.toString()
   } catch {
     // If URL parsing fails, try minimal string-based fixes
-    if (raw.startsWith('/files/')) return `/api${raw}`
+    if (raw.startsWith('/files/')) return `/api${toViewPath(raw)}`
     return raw
   }
 }

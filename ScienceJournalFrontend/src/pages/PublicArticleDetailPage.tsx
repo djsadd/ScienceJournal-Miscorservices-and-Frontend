@@ -60,7 +60,7 @@ export default function PublicArticleDetailPage() {
       abstract: 'Аннотация',
       keywords: 'Ключевые слова',
       noLayout: 'Нет верстки',
-      downloadPdf: 'Скачать PDF',
+      downloadPdf: 'Открыть PDF',
       corresponding: 'Корреспондирующий',
       loadError: 'Не удалось загрузить том',
     },
@@ -79,7 +79,7 @@ export default function PublicArticleDetailPage() {
       abstract: 'Abstract',
       keywords: 'Keywords',
       noLayout: 'No layout',
-      downloadPdf: 'Download PDF',
+      downloadPdf: 'View PDF',
       corresponding: 'Corresponding',
       loadError: 'Failed to load volume',
     },
@@ -98,7 +98,7 @@ export default function PublicArticleDetailPage() {
       abstract: 'Аннотация',
       keywords: 'Кілт сөздер',
       noLayout: 'Беттеу жоқ',
-      downloadPdf: 'PDF жүктеу',
+      downloadPdf: 'PDF ашу',
       corresponding: 'Хат-хабарласушы',
       loadError: 'Томды жүктеу сәтсіз аяқталды',
     },
@@ -273,7 +273,7 @@ export default function PublicArticleDetailPage() {
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
                         fill="currentColor"
-                        d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1 1v1h14v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z"
+                        d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3ZM5 5h5v2H7v10h10v-3h2v5H5V5Z"
                       />
                     </svg>
                     {t.downloadPdf}

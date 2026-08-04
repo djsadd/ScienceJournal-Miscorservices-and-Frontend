@@ -22,19 +22,19 @@ export function HomePage() {
     ru: {
       latest: 'Последний выпуск',
       openIssue: 'Открыть выпуск',
-      downloadIssue: 'Скачать выпуск',
+      downloadIssue: 'Открыть выпуск',
       noCover: 'Обложка не загружена',
     },
     en: {
       latest: 'Latest issue',
       openIssue: 'Open issue',
-      downloadIssue: 'Download issue',
+      downloadIssue: 'View issue',
       noCover: 'No cover uploaded',
     },
     kz: {
       latest: 'Соңғы шығарылым',
       openIssue: 'Шығарылымды ашу',
-      downloadIssue: 'Шығарылымды жүктеу',
+      downloadIssue: 'Шығарылымды ашу',
       noCover: 'Мұқаба жүктелмеген',
     },
   }[lang]

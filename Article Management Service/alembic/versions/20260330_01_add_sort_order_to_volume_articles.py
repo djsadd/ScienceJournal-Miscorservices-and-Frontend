@@ -17,12 +17,28 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "volume_articles",
-        sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
+    connection = op.get_bind()
+    existing_columns = {
+        column["name"]
+        for column in sa.inspect(connection).get_columns("volume_articles")
+    }
+
+    if "sort_order" not in existing_columns:
+        op.add_column(
+            "volume_articles",
+            sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
+        )
+
+    connection.execute(
+        sa.text(
+            """
+            UPDATE volume_articles
+            SET sort_order = 0
+            WHERE sort_order IS NULL
+            """
+        )
     )
 
-    connection = op.get_bind()
     rows = connection.execute(
         sa.text(
             """
@@ -56,7 +72,7 @@ def upgrade() -> None:
             },
         )
 
-    op.alter_column("volume_articles", "sort_order", server_default=None)
+    op.alter_column("volume_articles", "sort_order", nullable=False, server_default=None)
 
 
 def downgrade() -> None:

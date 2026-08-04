@@ -247,7 +247,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
   ru: {
     hero: {
       eyebrow: 'Научный журнал университета',
-      title: 'Известия университета «Туран-Астана»',
+      title: 'Известия университета Туран-Астана',
       subtitle:
         'Рецензируемый журнал о цифровой трансформации, управлении и экономике. Мы публикуем результаты исследований, практические кейсы и обзорные статьи — от теории до прикладных проектов.',
       statsTitle: 'Основные сведения',
@@ -269,7 +269,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       eyebrow: 'О журнале',
       title: 'Издание о науке и инновациях',
       paragraphs: [
-        'Science Journal — площадка для публикаций о цифровой трансформации, менеджменте, экономике и образовании. Мы объединяем исследователей, преподавателей и практиков.',
+        'Известия университета Туран-Астана — площадка для публикаций о цифровой трансформации, менеджменте, экономике и образовании. Мы объединяем исследователей, преподавателей и практиков.',
         'Мы поддерживаем открытость, соблюдаем международные стандарты рецензирования и публикуем материалы на русском, английском и казахском языках.',
       ],
       cta: 'Связаться с редакцией',
@@ -329,7 +329,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
   en: {
     hero: {
       eyebrow: 'University research journal',
-      title: 'Bulletin of Turan-Astana University',
+      title: 'Turan-Astana University news',
       subtitle:
         'Peer-reviewed journal on digital transformation, management and economics. We publish research findings, case studies and reviews — from theory to applied projects.',
       statsTitle: 'Key facts',
@@ -351,7 +351,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       eyebrow: 'About',
       title: 'A journal about science and innovation',
       paragraphs: [
-        'Science Journal is a venue for publications on digital transformation, management, economics and education. We connect researchers, faculty and practitioners.',
+        'Turan-Astana University news is a venue for publications on digital transformation, management, economics and education. We connect researchers, faculty and practitioners.',
         'We support openness, follow international peer-review standards and publish in English, Russian and Kazakh.',
       ],
       cta: 'Contact the editorial team',
@@ -411,7 +411,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
   kz: {
     hero: {
       eyebrow: 'Университеттің ғылыми журналы',
-      title: '«Туран-Астана» университетінің хабаршысы',
+      title: 'Туран-Астана университетінің хабарлары',
       subtitle:
         'Сандық трансформация, менеджмент және экономика жөнінде рецензияланатын журнал. Біз зерттеу нәтижелерін, тәжірибелік кейстерді және шолу мақалаларды жариялаймыз.',
       statsTitle: 'Негізгі деректер',
@@ -433,7 +433,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       eyebrow: 'Журнал туралы',
       title: 'Ғылым мен инновацияға арналған басылым',
       paragraphs: [
-        'Science Journal — сандық трансформация, менеджмент, экономика және білім саласындағы зерттеулер алаңы. Біз зерттеушілерді, оқытушыларды және практиктерді біріктіреміз.',
+        'Туран-Астана университетінің хабарлары — сандық трансформация, менеджмент, экономика және білім саласындағы зерттеулер алаңы. Біз зерттеушілерді, оқытушыларды және практиктерді біріктіреміз.',
         'Біз ашықтықты қолдаймыз, халықаралық рецензиялау стандарттарын ұстанамыз және материалдарды қазақ, орыс және ағылшын тілдерінде жариялаймыз.',
       ],
       cta: 'Редакциямен байланысу',
@@ -497,7 +497,7 @@ export const loginCopy: Record<Lang, LoginCopy> = {
     headerEyebrow: 'Вход',
     headerTitle: 'Войти и продолжить работу',
     headerSubtitle:
-      'Используйте учетные данные Science Journal, чтобы получить доступ к кабинету, заданиям и публикациям.',
+      'Используйте учетные данные журнала «Известия университета Туран-Астана», чтобы получить доступ к кабинету, заданиям и публикациям.',
     alertTitle: 'Нет доступа',
     fields: {
       identifierLabel: 'Username или Email',
@@ -533,7 +533,7 @@ export const loginCopy: Record<Lang, LoginCopy> = {
     headerEyebrow: 'Login',
     headerTitle: 'Sign in to continue',
     headerSubtitle:
-      'Use your Science Journal credentials to access your dashboard, tasks and publications.',
+      'Use your Turan-Astana University news credentials to access your dashboard, tasks and publications.',
     alertTitle: 'Access denied',
     fields: {
       identifierLabel: 'Username or Email',
@@ -569,7 +569,7 @@ export const loginCopy: Record<Lang, LoginCopy> = {
     headerEyebrow: 'Кіру',
     headerTitle: 'Жұмысты жалғастыру үшін кіріңіз',
     headerSubtitle:
-      'Science Journal тіркелгі деректерін пайдаланып, кабинетке, тапсырмаларға және жарияланымдарға қол жеткізіңіз.',
+      'Туран-Астана университетінің хабарлары тіркелгі деректерін пайдаланып, кабинетке, тапсырмаларға және жарияланымдарға қол жеткізіңіз.',
     alertTitle: 'Қол жеткізу жоқ',
     fields: {
       identifierLabel: 'Пайдаланушы аты немесе Email',
@@ -606,7 +606,7 @@ export const loginCopy: Record<Lang, LoginCopy> = {
 export const registerCopy: Record<Lang, RegisterCopy> = {
   ru: {
     headerEyebrow: 'Новый аккаунт',
-    headerTitle: 'Регистрация в известия университета «Туран-Астана»',
+    headerTitle: 'Регистрация в журнале «Известия университета Туран-Астана»',
     headerSubtitle:
       'Создайте профиль автора, редактора или рецензента. После подтверждения мы пришлём инструкции на электронную почту.',
     fields: {
@@ -666,7 +666,7 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
   },
   en: {
     headerEyebrow: 'New account',
-    headerTitle: 'Register in Science Journal',
+    headerTitle: 'Register in Turan-Astana University news',
     headerSubtitle:
       'Create a profile as an author, editor or reviewer. We will email further instructions after approval.',
     fields: {
@@ -726,7 +726,7 @@ export const registerCopy: Record<Lang, RegisterCopy> = {
   },
   kz: {
     headerEyebrow: 'Жаңа аккаунт',
-    headerTitle: 'Science Journal жүйесінде тіркелу',
+    headerTitle: 'Туран-Астана университетінің хабарлары жүйесінде тіркелу',
     headerSubtitle:
       'Автор, редактор немесе рецензент ретінде профиль жасаңыз. Мақұлдаудан кейін нұсқауларды электрондық поштамен жібереміз.',
     fields: {

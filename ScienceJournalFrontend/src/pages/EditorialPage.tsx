@@ -19,7 +19,7 @@ export function EditorialPage() {
     en: {
       eyebrow: 'editorial',
       title: 'Editorial board and council',
-      subtitle: 'Members of the editorial board and council of “Bulletin of Turan-Astana University”.',
+      subtitle: 'Members of the editorial board and council of “Turan-Astana University news”.',
       boardBtn: 'Editorial board',
       councilBtn: 'Editorial council',
       secretary: 'Managing secretary: Nurmanov A. M.',
@@ -29,7 +29,7 @@ export function EditorialPage() {
     kz: {
       eyebrow: 'редакция',
       title: 'Редакциялық алқа және кеңес',
-      subtitle: '«Туран-Астана» университетінің хабаршысы редакциялық алқасы мен кеңесі.',
+      subtitle: '«Туран-Астана университетінің хабарлары» редакциялық алқасы мен кеңесі.',
       boardBtn: 'Редакциялық алқа',
       councilBtn: 'Редакциялық кеңес',
       secretary: 'Жауапты хатшы: Нурманов А. М.',

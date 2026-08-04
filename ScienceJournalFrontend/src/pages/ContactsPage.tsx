@@ -5,7 +5,7 @@ export function ContactsPage() {
   const t = {
     ru: {
       eyebrow: 'контактная информация',
-      title: 'Редакция «Вестник Туран-Астана»',
+      title: 'Редакция «Известия университета Туран-Астана»',
       emailLabel: 'Электронная почта',
       phoneLabel: 'Телефон',
       addressLabel: 'Адрес',
@@ -18,7 +18,7 @@ export function ContactsPage() {
     },
     en: {
       eyebrow: 'contact information',
-      title: 'Editorial team “Bulletin of Turan-Astana”',
+      title: 'Editorial team “Turan-Astana University news”',
       emailLabel: 'Email',
       phoneLabel: 'Phone',
       addressLabel: 'Address',
@@ -31,7 +31,7 @@ export function ContactsPage() {
     },
     kz: {
       eyebrow: 'байланыс ақпараттары',
-      title: '«Туран-Астана» журналы редакциясы',
+      title: '«Туран-Астана университетінің хабарлары» редакциясы',
       emailLabel: 'Email',
       phoneLabel: 'Телефон',
       addressLabel: 'Мекенжай',

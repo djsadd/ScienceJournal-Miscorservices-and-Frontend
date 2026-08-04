@@ -105,6 +105,21 @@ def download_file(file_id: str, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/{file_id}/view")
+def view_file(file_id: str, db: Session = Depends(get_db)):
+    file_obj = db.query(models.StoredFile).filter(models.StoredFile.id == file_id).first()
+    if not file_obj:
+        raise HTTPException(status_code=404, detail="File not found")
+    if not os.path.exists(file_obj.path):
+        raise HTTPException(status_code=410, detail="File content missing")
+    return FileResponse(
+        path=file_obj.path,
+        media_type=file_obj.content_type or "application/octet-stream",
+        filename=file_obj.original_name,
+        content_disposition_type="inline",
+    )
+
+
 @router.delete("/{file_id}")
 def delete_file(file_id: str, db: Session = Depends(get_db)):
     file_obj = db.query(models.StoredFile).filter(models.StoredFile.id == file_id).first()

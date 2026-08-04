@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import logo from '../../assets/logo.svg'
 import { useLanguage } from '../../shared/LanguageContext'
@@ -32,6 +32,12 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
 
   const { lang, setLang } = useLanguage()
   const nav = publicNavCopy[lang]
+
+  useEffect(() => {
+    try {
+      localStorage.removeItem('theme')
+    } catch {}
+  }, [])
 
   const topNav: NavItem[] = [
     { href: '/', label: nav.home },
@@ -292,15 +298,31 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
       <footer className="app-footer">
         <div className="footer__brand">
           <div className="brand-mark">
-            <img src={logo} alt="Science Journal" className="brand-logo" />
+            <img
+              src={logo}
+              alt={
+                lang === 'ru'
+                  ? 'Логотип журнала Известия университета Туран-Астана'
+                  : lang === 'kz'
+                    ? 'Туран-Астана университетінің хабарлары логотипі'
+                    : 'Turan-Astana University news logo'
+              }
+              className="brand-logo"
+            />
           </div>
           <div>
-            <div className="brand-title">Известия университета "Туран-Астана"</div>
-            <div className="brand-subtitle">Science Journal - Department of Digital Transformation</div>
+            <div className="brand-title">
+              {lang === 'ru'
+                ? 'Известия университета Туран-Астана'
+                : lang === 'kz'
+                  ? 'Туран-Астана университетінің хабарлары'
+                  : 'Turan-Astana University news'}
+            </div>
+            <div className="brand-subtitle">ISSN 2663-631X</div>
           </div>
         </div>
         <div className="footer__meta">
-          <span className="meta-label">c 2025 Science Journal</span>
+          <span className="meta-label">c 2025</span>
           <span className="meta-label">All rights reserved</span>
         </div>
       </footer>
