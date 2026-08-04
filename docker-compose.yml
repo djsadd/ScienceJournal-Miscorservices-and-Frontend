@@ -16,7 +16,7 @@ services:
       - db_data:/var/lib/postgresql/data
       - ./docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   auth:
     build: ./Auth - Identity Service
