@@ -16,6 +16,10 @@ type NavItem = {
   children?: { href: string; label: string }[]
 }
 
+const creativeCommonsLicenseUrl = 'https://creativecommons.org/licenses/by/4.0/'
+const creativeCommonsBadgeUrl = 'https://licensebuttons.net/l/by/4.0/88x31.png'
+const publisherAddress = '010000, Republic of Kazakhstan, Astana, Y. Dukenuly St., 29'
+
 function PublicLayoutShell({ children }: PublicLayoutProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -319,10 +323,28 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
                   : 'Turan-Astana University news'}
             </div>
             <div className="brand-subtitle">ISSN 2663-631X</div>
+            <a
+              className="footer-license"
+              href={creativeCommonsLicenseUrl}
+              rel="license noopener noreferrer"
+              target="_blank"
+            >
+              <img
+                className="footer-license__badge"
+                src={creativeCommonsBadgeUrl}
+                alt="Creative Commons Attribution 4.0 International License"
+              />
+              <span>
+                This journal is licensed under the CC-BY Creative Commons Attribution 4.0
+                International License.
+              </span>
+            </a>
           </div>
         </div>
         <div className="footer__meta">
-          <span className="meta-label">c 2025</span>
+          <span className="meta-label">Since 2025</span>
+          <span className="meta-label">&copy; Publisher - Turan-Astana University</span>
+          <span className="meta-label">Publisher address: {publisherAddress}</span>
           <span className="meta-label">All rights reserved</span>
         </div>
       </footer>
