@@ -44,6 +44,7 @@ const toDoiUrl = (doi?: string | null) => {
 
 export default function PublicArticleDetailPage() {
   const { lang } = useLanguage()
+  const localizedHref = (path: string) => (path === '/' ? `/${lang}` : `/${lang}${path}`)
   const t = {
     ru: {
       eyebrow: 'архив номеров',
@@ -209,13 +210,13 @@ export default function PublicArticleDetailPage() {
       <div className="section public-section">
         <p className="eyebrow">{t.eyebrow}</p>
         <nav className="breadcrumbs" aria-label="Breadcrumb">
-          <Link className="breadcrumbs__link" to="/">{t.home}</Link>
+          <Link className="breadcrumbs__link" to={localizedHref('/')}>{t.home}</Link>
           <span className="breadcrumbs__sep">→</span>
-          <Link className="breadcrumbs__link" to="/archive">{t.archive}</Link>
+          <Link className="breadcrumbs__link" to={localizedHref('/archive')}>{t.archive}</Link>
           {volumeCrumbLabel && volumeId ? (
             <>
               <span className="breadcrumbs__sep">→</span>
-              <Link className="breadcrumbs__link" to={`/archive/volumes/${volumeId}`}>{volumeCrumbLabel}</Link>
+              <Link className="breadcrumbs__link" to={localizedHref(`/archive/volumes/${volumeId}`)}>{volumeCrumbLabel}</Link>
             </>
           ) : null}
           {localizedTitle ? (

@@ -18,6 +18,7 @@ export function HomePage() {
   const isAuthed = Boolean(tokens?.accessToken)
   const { lang } = useLanguage()
   const t = homeCopy[lang]
+  const localizedHref = (path: string) => (path === '/' ? `/${lang}` : `/${lang}${path}`)
   const ui = {
     ru: {
       latest: 'Последний выпуск',
@@ -87,10 +88,10 @@ export function HomePage() {
               </>
             ) : (
               <>
-                <Link to="/login" className="button button--primary">
+                <Link to={localizedHref('/login')} className="button button--primary">
                   {t.hero.buttons.guestPrimary}
                 </Link>
-                <Link to="/register" className="button button--ghost">
+                <Link to={localizedHref('/register')} className="button button--ghost">
                   {t.hero.buttons.guestSecondary}
                 </Link>
               </>
@@ -102,9 +103,11 @@ export function HomePage() {
           <p className="subtitle">{t.hero.statsDescription}</p>
           <div className="stat-block">
             {t.hero.stats.map((stat) => (
-              <div key={stat.label}>
-                <div className="stat-value">{stat.value}</div>
-                <div className="stat-label">{stat.label}</div>
+              <div key={`${stat.label}-${stat.value}`}>
+                <div className={`stat-value ${stat.value.includes('\n') ? 'stat-value--multiline' : ''}`}>
+                  {stat.value}
+                </div>
+                {stat.label && <div className="stat-label">{stat.label}</div>}
               </div>
             ))}
           </div>
@@ -118,7 +121,7 @@ export function HomePage() {
           <div className="home-latest__header">
             <div className="panel-title">{ui.latest}</div>
             <div className="home-latest__actions">
-              <Link className="button button--ghost button--compact" to={`/archive/volumes/${latest.id}`}>
+              <Link className="button button--ghost button--compact" to={localizedHref(`/archive/volumes/${latest.id}`)}>
                 {ui.openIssue}
               </Link>
               {issueHref ? (

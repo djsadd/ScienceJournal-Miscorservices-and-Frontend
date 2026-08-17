@@ -230,6 +230,7 @@
   color: #4c5160;
   font-weight: 600;
   font-size: 0.9rem;
+  text-decoration: none;
   transition: all 0.15s ease;
 }
 
@@ -1244,6 +1245,15 @@
     column-gap: 0.45rem;
   }
 
+  .brand--compact {
+    max-width: 100%;
+  }
+
+  .brand-site-title {
+    max-width: min(52vw, 360px);
+    font-size: 0.74rem;
+  }
+
   .public-actions {
     justify-content: flex-end;
     flex-wrap: wrap;
@@ -1330,6 +1340,11 @@
   .public-top {
     grid-template-columns: 1fr auto;
     gap: 0.35rem;
+  }
+
+  .brand-site-title {
+    max-width: min(48vw, 260px);
+    font-size: 0.68rem;
   }
 
   .public-actions {
@@ -1558,11 +1573,21 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  max-width: min(44vw, 560px);
   padding: 0.2rem 0.4rem;
   border-radius: 12px;
   text-decoration: none;
   color: #2b2f3c;
   transition: background 0.15s ease, color 0.15s ease;
+}
+
+.brand-site-title {
+  display: block;
+  max-width: clamp(220px, 34vw, 510px);
+  color: #321421;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.18;
 }
 
 .brand--compact:hover {
@@ -1602,6 +1627,13 @@
   color: #7c8292;
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.footer__brand .brand-subtitle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  line-height: 1.35;
 }
 
 .role-switch {
@@ -2309,6 +2341,12 @@
   font-size: 2rem;
   font-weight: 700;
   color: #2b2f3c;
+  white-space: pre-line;
+}
+
+.stat-value--multiline {
+  font-size: 1.25rem;
+  line-height: 1.25;
 }
 
 .stat-hint {

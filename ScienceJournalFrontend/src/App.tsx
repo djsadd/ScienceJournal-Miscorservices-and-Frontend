@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import './App.css'
 import { MainLayout } from './app/layout/MainLayout'
 import { PublicLayout } from './app/layout/PublicLayout'
@@ -54,155 +54,63 @@ function RequireAuth({ children }: { children: ReactElement }) {
   return children
 }
 
+function isUrlLang(value: string | undefined) {
+  return value === 'ru' || value === 'kz' || value === 'en'
+}
+
+function PublicRoute({ children }: { children: ReactElement }) {
+  const { urlLang } = useParams()
+  if (urlLang && !isUrlLang(urlLang)) {
+    return <Navigate to="/" replace />
+  }
+  return <PublicLayout>{children}</PublicLayout>
+}
+
+const publicRoutes: { path: string; element: ReactElement }[] = [
+  { path: '/', element: <HomePage /> },
+  { path: '/about', element: <AboutPage /> },
+  { path: '/archive', element: <ArchivePage /> },
+  { path: '/archive/volumes/:id', element: <PublicVolumeDetailPage /> },
+  { path: '/archive/volumes/:volumeId/articles/:articleId', element: <PublicArticleDetailPage /> },
+  { path: '/editorial', element: <EditorialPage /> },
+  { path: '/editorial/unassigned', element: <EditorialUnassignedPage /> },
+  { path: '/policies', element: <PoliciesPage /> },
+  { path: '/contacts', element: <ContactsPage /> },
+  { path: '/policies/ethics', element: <PolicyEthicsPage /> },
+  { path: '/policies/ai', element: <PolicyAIPage /> },
+  { path: '/policies/review', element: <PolicyReviewPage /> },
+  { path: '/authors/requirements', element: <AuthorsRequirementsPage /> },
+  { path: '/authors/contract', element: <AuthorsContractPage /> },
+  { path: '/search', element: <SearchPage /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
+  { path: '/authors', element: <AuthorsInfoPage /> },
+  { path: '/auth/verify-email', element: <VerifyEmailPage /> },
+]
+
+function localizedRoutePath(path: string) {
+  return path === '/' ? '/:urlLang' : `/:urlLang${path}`
+}
+
 function App() {
   const { articles, users, assignments } = journalData
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <PublicLayout>
-            <HomePage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/about"
-        element={
-          <PublicLayout>
-            <AboutPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/archive"
-        element={
-          <PublicLayout>
-            <ArchivePage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/archive/volumes/:id"
-        element={
-          <PublicLayout>
-            <PublicVolumeDetailPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/archive/volumes/:volumeId/articles/:articleId"
-        element={
-          <PublicLayout>
-            <PublicArticleDetailPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/editorial"
-        element={
-          <PublicLayout>
-            <EditorialPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/editorial/unassigned"
-        element={
-          <PublicLayout>
-            <EditorialUnassignedPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/policies"
-        element={
-          <PublicLayout>
-            <PoliciesPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/contacts"
-        element={
-          <PublicLayout>
-            <ContactsPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/policies/ethics"
-        element={
-          <PublicLayout>
-            <PolicyEthicsPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/policies/ai"
-        element={
-          <PublicLayout>
-            <PolicyAIPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/policies/review"
-        element={
-          <PublicLayout>
-            <PolicyReviewPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/authors/requirements"
-        element={
-          <PublicLayout>
-            <AuthorsRequirementsPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/authors/contract"
-        element={
-          <PublicLayout>
-            <AuthorsContractPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/search"
-        element={
-          <PublicLayout>
-            <SearchPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/login"
-        element={
-          <PublicLayout>
-            <LoginPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <PublicLayout>
-            <RegisterPage />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/authors"
-        element={
-          <PublicLayout>
-            <AuthorsInfoPage />
-          </PublicLayout>
-        }
-      />
+      {publicRoutes.map((route) => (
+        <Route
+          key={route.path}
+          path={route.path}
+          element={<PublicRoute>{route.element}</PublicRoute>}
+        />
+      ))}
+      {publicRoutes.map((route) => (
+        <Route
+          key={`localized-${route.path}`}
+          path={localizedRoutePath(route.path)}
+          element={<PublicRoute>{route.element}</PublicRoute>}
+        />
+      ))}
       <Route
         path="/cabinet"
         element={
@@ -351,14 +259,6 @@ function App() {
               <AdminUsersPage />
             </MainLayout>
           </RequireAuth>
-        }
-      />
-      <Route
-        path="/auth/verify-email"
-        element={
-          <PublicLayout>
-            <VerifyEmailPage />
-          </PublicLayout>
         }
       />
       <Route

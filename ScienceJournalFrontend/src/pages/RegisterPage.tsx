@@ -63,6 +63,7 @@ const hasNumberPattern = /\d/
 export function RegisterPage() {
   const { lang } = useLanguage()
   const t = registerCopy[lang]
+  const localizedHref = (path: string) => (path === '/' ? `/${lang}` : `/${lang}${path}`)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [username, setUsername] = useState('')
@@ -615,7 +616,7 @@ export function RegisterPage() {
 
           <div className="auth-footer">
             <span>{t.footerPrompt}</span>
-            <Link to="/login" className="auth-link">
+            <Link to={localizedHref('/login')} className="auth-link">
               {t.footerLogin}
             </Link>
           </div>

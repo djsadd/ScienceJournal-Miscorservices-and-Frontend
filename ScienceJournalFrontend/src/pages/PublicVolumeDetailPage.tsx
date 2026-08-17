@@ -21,6 +21,7 @@ const toDoiUrl = (doi?: string | null) => {
 
 export default function PublicVolumeDetailPage() {
   const { lang } = useLanguage()
+  const localizedHref = (path: string) => (path === '/' ? `/${lang}` : `/${lang}${path}`)
   const t = {
     ru: {
       eyebrow: 'архив номеров',
@@ -179,9 +180,9 @@ export default function PublicVolumeDetailPage() {
       <div className="section public-section">
         <p className="eyebrow">{t.eyebrow}</p>
         <nav className="breadcrumbs" aria-label="Breadcrumb">
-          <Link className="breadcrumbs__link" to="/">{t.home}</Link>
+          <Link className="breadcrumbs__link" to={localizedHref('/')}>{t.home}</Link>
           <span className="breadcrumbs__sep">/</span>
-          <Link className="breadcrumbs__link" to="/archive">{t.archive}</Link>
+          <Link className="breadcrumbs__link" to={localizedHref('/archive')}>{t.archive}</Link>
           {volumeCrumbLabel ? (
             <>
               <span className="breadcrumbs__sep">/</span>
@@ -248,7 +249,7 @@ export default function PublicVolumeDetailPage() {
                   <div className="latest-table__cell latest-table__cell--title">
                     <div className="latest-table__name">
                       <Link
-                        to={id ? `/archive/volumes/${id}/articles/${String((a as any).id)}` : '#'}
+                        to={id ? localizedHref(`/archive/volumes/${id}/articles/${String((a as any).id)}`) : '#'}
                         style={{ textDecoration: 'none', color: 'inherit' }}
                       >
                         {pickLocalized(lang, a.title_ru, a.title_en, a.title_kz) ||

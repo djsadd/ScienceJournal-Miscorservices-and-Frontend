@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import logo from '../../assets/logo.svg'
@@ -19,6 +19,20 @@ type NavItem = {
 const creativeCommonsLicenseUrl = 'https://creativecommons.org/licenses/by/4.0/'
 const creativeCommonsBadgeUrl = 'https://licensebuttons.net/l/by/4.0/88x31.png'
 const publisherAddress = '010000, Republic of Kazakhstan, Astana, Y. Dukenuly St., 29'
+const journalTitles: Record<Lang, string> = {
+  ru: 'Интернет издания, Известия университета «Туран-Астана»',
+  kz: '«Тұран-Астана» университетінің хабарлары',
+  en: 'Turan-Astana University News',
+}
+const languageCodes: Lang[] = ['ru', 'kz', 'en']
+
+function stripLanguagePrefix(pathname: string) {
+  const parts = pathname.split('/').filter(Boolean)
+  if (parts[0] === 'ru' || parts[0] === 'kz' || parts[0] === 'en') {
+    parts.shift()
+  }
+  return parts.length ? `/${parts.join('/')}` : '/'
+}
 
 function PublicLayoutShell({ children }: PublicLayoutProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
@@ -35,7 +49,18 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   })
 
   const { lang, setLang } = useLanguage()
+  const location = useLocation()
   const nav = publicNavCopy[lang]
+
+  const localizedHref = (href: string, targetLang = lang) => {
+    const normalizedHref = href.startsWith('/') ? href : `/${href}`
+    return normalizedHref === '/' ? `/${targetLang}` : `/${targetLang}${normalizedHref}`
+  }
+
+  const languageHref = (targetLang: Lang) => {
+    const currentPath = stripLanguagePrefix(location.pathname)
+    return `${localizedHref(currentPath, targetLang)}${location.search}${location.hash}`
+  }
 
   useEffect(() => {
     try {
@@ -101,7 +126,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
               {item.children.map((child) => (
                 <Link
                   key={child.href}
-                  to={child.href}
+                  to={localizedHref(child.href)}
                   className="nav-dropdown__item"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -126,7 +151,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
       ) : (
         <Link
           key={item.href}
-          to={item.href}
+          to={localizedHref(item.href)}
           className="public-nav__link"
           onClick={() => setMobileMenuOpen(false)}
         >
@@ -145,8 +170,9 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
     >
       <header className="public-header">
         <div className="public-top" aria-label="Site navigation">
-          <Link to="/" className="brand brand--compact" onClick={() => setMobileMenuOpen(false)}>
+          <Link to={localizedHref('/')} className="brand brand--compact" onClick={() => setMobileMenuOpen(false)}>
             <img src={logo} alt={nav.brandAlt} className="brand-logo brand-logo--plain" />
+            <span className="brand-site-title">{journalTitles[lang]}</span>
           </Link>
           <nav className="public-nav public-nav--top">{renderNav(topNav)}</nav>
           <div className="public-actions">
@@ -201,15 +227,18 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
               </button>
             </div>
             <div className="lang-switch">
-              {(['ru', 'kz', 'en'] as Lang[]).map((code) => (
-                <button
+              {languageCodes.map((code) => (
+                <Link
                   key={code}
+                  to={languageHref(code)}
                   className={`lang-chip ${lang === code ? 'lang-chip--active' : ''}`}
-                  onClick={() => setLang(code)}
-                  type="button"
+                  onClick={() => {
+                    setLang(code)
+                    setMobileMenuOpen(false)
+                  }}
                 >
                   {code.toUpperCase()}
-                </button>
+                </Link>
               ))}
             </div>
             <Link
@@ -288,7 +317,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
                 {nav.searchModal.cancel}
               </button>
               <Link
-                to="/search"
+                to={localizedHref('/search')}
                 className="button button--primary"
                 onClick={() => setIsSearchOpen(false)}
               >
@@ -322,7 +351,10 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
                   ? 'Туран-Астана университетінің хабарлары'
                   : 'Turan-Astana University news'}
             </div>
-            <div className="brand-subtitle">ISSN 2663-631X</div>
+            <div className="brand-subtitle">
+              <span>Print ISSN: 2663-631X</span>
+              <span>Online ISSN: 3136-5337</span>
+            </div>
             <a
               className="footer-license"
               href={creativeCommonsLicenseUrl}

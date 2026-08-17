@@ -8,6 +8,7 @@ import { loginCopy } from '../shared/translations'
 export function LoginPage() {
   const { lang } = useLanguage()
   const t = loginCopy[lang]
+  const localizedHref = (path: string) => (path === '/' ? `/${lang}` : `/${lang}${path}`)
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -115,7 +116,7 @@ export function LoginPage() {
 
           <div className="auth-footer">
             <span>{t.footerPrompt}</span>
-            <Link to="/register" className="auth-link">
+            <Link to={localizedHref('/register')} className="auth-link">
               {t.footerRegister}
             </Link>
           </div>

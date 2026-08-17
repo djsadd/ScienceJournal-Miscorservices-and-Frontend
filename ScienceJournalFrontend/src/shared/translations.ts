@@ -261,7 +261,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       },
       stats: [
         { value: '2019', label: 'Год основания' },
-        { value: '2663-631X', label: 'ISSN' },
+        { value: 'Print ISSN: 2663-631X\nOnline ISSN: 3136-5337', label: '' },
         { value: '4', label: 'Выпусков в год' },
       ],
     },
@@ -308,7 +308,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       cta: 'Связаться с редакцией',
       items: [
         { title: 'Регистрация СМИ', text: 'Свидетельство №17458-Ж, выдано 14.01.2019.' },
-        { title: 'ISSN', text: '2663-631X — печатная версия журнала.' },
+        { title: 'ISSN', text: 'Print ISSN: 2663-631X. Online ISSN: 3136-5337.' },
         {
           title: 'Периодичность',
           text: '4 выпуска в год. Материалы публикуются на русском, английском и казахском языках.',
@@ -343,7 +343,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       },
       stats: [
         { value: '2019', label: 'Founded' },
-        { value: '2663-631X', label: 'ISSN' },
+        { value: 'Print ISSN: 2663-631X\nOnline ISSN: 3136-5337', label: '' },
         { value: '4', label: 'Issues per year' },
       ],
     },
@@ -390,7 +390,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       cta: 'Contact the editorial team',
       items: [
         { title: 'Media registration', text: 'Certificate No. 17458-Ж, issued 14.01.2019.' },
-        { title: 'ISSN', text: '2663-631X — print edition of the journal.' },
+        { title: 'ISSN', text: 'Print ISSN: 2663-631X. Online ISSN: 3136-5337.' },
         {
           title: 'Frequency',
           text: '4 issues a year. Articles are published in Kazakh, Russian and English.',
@@ -425,7 +425,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       },
       stats: [
         { value: '2019', label: 'Құрылған жыл' },
-        { value: '2663-631X', label: 'ISSN' },
+        { value: 'Print ISSN: 2663-631X\nOnline ISSN: 3136-5337', label: '' },
         { value: '4', label: 'Жылына шығарылымдар' },
       ],
     },
@@ -472,7 +472,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       cta: 'Редакциямен байланысу',
       items: [
         { title: 'БАҚ тіркеуі', text: 'Куәлік №17458-Ж, 14.01.2019 жылы берілді.' },
-        { title: 'ISSN', text: '2663-631X — журналдың баспа нұсқасы.' },
+        { title: 'ISSN', text: 'Print ISSN: 2663-631X. Online ISSN: 3136-5337.' },
         {
           title: 'Мерзімділік',
           text: 'Жылына 4 шығарылым. Материалдар қазақ, орыс және ағылшын тілдерінде жарияланады.',
