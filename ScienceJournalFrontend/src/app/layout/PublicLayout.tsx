@@ -62,6 +62,11 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
     return `${localizedHref(currentPath, targetLang)}${location.search}${location.hash}`
   }
 
+  const searchHref = () => {
+    const query = searchQuery.trim()
+    return localizedHref(query ? `/search?q=${encodeURIComponent(query)}` : '/search')
+  }
+
   useEffect(() => {
     try {
       localStorage.removeItem('theme')
@@ -317,7 +322,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
                 {nav.searchModal.cancel}
               </button>
               <Link
-                to={localizedHref('/search')}
+                to={searchHref()}
                 className="button button--primary"
                 onClick={() => setIsSearchOpen(false)}
               >
