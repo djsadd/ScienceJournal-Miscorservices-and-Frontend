@@ -20,6 +20,9 @@ class UserCreate(BaseModel):
     accept_terms: bool = False
     notify_status: bool = True
 
+    class Config:
+        extra = "forbid"
+
 
 class UserOut(BaseModel):
     id: int

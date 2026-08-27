@@ -5,7 +5,8 @@ import { Alert } from '../shared/components/Alert'
 import { useLanguage } from '../shared/LanguageContext'
 import { registerCopy } from '../shared/translations'
 
-type RegisterRole = 'author' | 'editor' | 'reviewer'
+const publicRegisterRoles = ['author', 'reviewer', 'editor'] as const
+type RegisterRole = (typeof publicRegisterRoles)[number]
 type ReviewLanguage = 'ru' | 'en' | 'kz'
 type ReviewerScienceField =
   | 'economics'
@@ -85,7 +86,7 @@ export function RegisterPage() {
   const [submitting, setSubmitting] = useState(false)
   const navigate = useNavigate()
 
-  const roleLabels = {
+  const roleLabels: Record<RegisterRole, string> = {
     author: t.fields.role.options.author,
     reviewer: t.fields.role.options.reviewer,
     editor: t.fields.role.options.editor,
@@ -474,9 +475,10 @@ export function RegisterPage() {
               className="text-input"
               value={role}
               onChange={(e) => {
-                const nextRole = e.target.value as RegisterRole
+                const nextRole = e.target.value
+                if (!publicRegisterRoles.includes(nextRole as RegisterRole)) return
                 clearFormError()
-                setRole(nextRole)
+                setRole(nextRole as RegisterRole)
                 if (nextRole !== 'reviewer') {
                   setReviewerScienceFields([])
                   setReviewerScienceOther('')
@@ -490,9 +492,11 @@ export function RegisterPage() {
                 })
               }}
             >
-              <option value="author">{roleLabels.author}</option>
-              <option value="reviewer">{roleLabels.reviewer}</option>
-              <option value="editor">{roleLabels.editor}</option>
+              {publicRegisterRoles.map((option) => (
+                <option value={option} key={option}>
+                  {roleLabels[option]}
+                </option>
+              ))}
             </select>
           </label>
 

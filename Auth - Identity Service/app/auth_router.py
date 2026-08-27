@@ -30,6 +30,7 @@ ALLOWED_ACADEMIC_DEGREES = {
     "bachelor",
 }
 PUBLIC_REGISTRATION_ROLES = {"author", "editor", "reviewer"}
+BLOCKED_REGISTRATION_ROLES = {"admin", "administrator"}
 
 def get_db():
     db = database.SessionLocal()
@@ -217,6 +218,8 @@ def normalize_orcid(value: str | None) -> str | None:
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     requested_role = user.role.strip().lower()
+    if requested_role in BLOCKED_REGISTRATION_ROLES:
+        raise HTTPException(status_code=403, detail="Administrator registration is not allowed")
     if requested_role not in PUBLIC_REGISTRATION_ROLES:
         raise HTTPException(status_code=400, detail="Invalid registration role")
 
@@ -313,7 +316,11 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         }
         with httpx.Client(timeout=5.0) as client:
             # Call users service with trailing slash to avoid FastAPI 307 redirect
-            client.post(f"{config.USER_SERVICE_URL}/users/", json=profile_payload)
+            client.post(
+                f"{config.USER_SERVICE_URL}/users/",
+                json=profile_payload,
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
     except Exception:
         # Fail-soft: auth registration succeeds even if profile call fails
         pass

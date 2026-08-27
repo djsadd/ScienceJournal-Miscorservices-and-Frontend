@@ -147,7 +147,12 @@ def ensure_service_secret(x_service_secret: str | None):
 
 
 @router.post("/", response_model=schemas.UserProfileOut)
-def create_profile(profile: schemas.UserProfileCreate, db: Session = Depends(get_db)):
+def create_profile(
+    profile: schemas.UserProfileCreate,
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+    db: Session = Depends(get_db),
+):
+    ensure_service_secret(x_service_secret)
     db_profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == profile.user_id).first()
     if db_profile:
         raise HTTPException(status_code=400, detail="Profile already exists")
