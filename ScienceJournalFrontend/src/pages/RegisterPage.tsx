@@ -5,7 +5,7 @@ import { Alert } from '../shared/components/Alert'
 import { useLanguage } from '../shared/LanguageContext'
 import { registerCopy } from '../shared/translations'
 
-type RegisterRole = 'author' | 'editor' | 'reviewer' | 'admin'
+type RegisterRole = 'author' | 'editor' | 'reviewer'
 type ReviewLanguage = 'ru' | 'en' | 'kz'
 type ReviewerScienceField =
   | 'economics'
@@ -89,7 +89,6 @@ export function RegisterPage() {
     author: t.fields.role.options.author,
     reviewer: t.fields.role.options.reviewer,
     editor: t.fields.role.options.editor,
-    admin: lang === 'en' ? 'Administrator' : lang === 'kz' ? 'Әкімші' : 'Администратор',
   }
 
   const reviewerScienceFieldLabels: Record<ReviewerScienceField, string> =
@@ -494,7 +493,6 @@ export function RegisterPage() {
               <option value="author">{roleLabels.author}</option>
               <option value="reviewer">{roleLabels.reviewer}</option>
               <option value="editor">{roleLabels.editor}</option>
-              <option value="admin">{roleLabels.admin}</option>
             </select>
           </label>
 

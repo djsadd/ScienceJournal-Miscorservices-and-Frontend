@@ -29,6 +29,7 @@ ALLOWED_ACADEMIC_DEGREES = {
     "master",
     "bachelor",
 }
+PUBLIC_REGISTRATION_ROLES = {"author", "editor", "reviewer"}
 
 def get_db():
     db = database.SessionLocal()
@@ -215,6 +216,10 @@ def normalize_orcid(value: str | None) -> str | None:
 
 @router.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    requested_role = user.role.strip().lower()
+    if requested_role not in PUBLIC_REGISTRATION_ROLES:
+        raise HTTPException(status_code=400, detail="Invalid registration role")
+
     existing_username = db.query(models.User).filter(models.User.username == user.username).first()
     existing_email = db.query(models.User).filter(models.User.email == user.email).first()
     if existing_username or existing_email:
@@ -237,7 +242,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     normalized_reviewer_science_fields = normalize_reviewer_science_fields(user.reviewer_science_fields)
     normalized_reviewer_science_other = normalize_reviewer_science_other(user.reviewer_science_other)
 
-    if user.role == "reviewer" and not normalized_preferred_language:
+    if requested_role == "reviewer" and not normalized_preferred_language:
         raise HTTPException(
             status_code=400,
             detail={
@@ -247,7 +252,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
                 },
             },
         )
-    if user.role == "reviewer" and not normalized_reviewer_science_fields:
+    if requested_role == "reviewer" and not normalized_reviewer_science_fields:
         raise HTTPException(
             status_code=400,
             detail={
@@ -257,7 +262,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
                 },
             },
         )
-    if user.role == "reviewer" and "other" in normalized_reviewer_science_fields and not normalized_reviewer_science_other:
+    if requested_role == "reviewer" and "other" in normalized_reviewer_science_fields and not normalized_reviewer_science_other:
         raise HTTPException(
             status_code=400,
             detail={
@@ -272,7 +277,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     hashed_password = security.hash_password(user.password)
     
     # Авто-активация только для роли автора; остальные неактивны
-    is_active = True if user.role in {"author", "admin"} else False
+    is_active = True if requested_role == "author" else False
     
     new_user = models.User(
         username=user.username,
@@ -283,7 +288,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         institution=user.institution,
         email=user.email,
         hashed_password=hashed_password,
-        role=user.role,
+        role=requested_role,
         is_active=is_active,
         accept_terms=user.accept_terms,
         notify_status=user.notify_status,
@@ -316,7 +321,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # Create notification (and email) via Notification Service
     try:
         with httpx.Client(timeout=5.0) as client:
-            if new_user.role in {"author", "admin"}:
+            if new_user.role == "author":
                 # Автор активируется сразу, отправим приветственное письмо
                 notify_payload = {
                     "user_id": new_user.id,
@@ -379,7 +384,7 @@ def verify_email(token: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
     # После подтверждения почты: авто-активация только для автора
-    if user.role in {"author", "admin"}:
+    if user.role == "author":
         user.is_active = True
         db.commit()
         return {"status": "verified", "activated": True, "user_id": user.id}
