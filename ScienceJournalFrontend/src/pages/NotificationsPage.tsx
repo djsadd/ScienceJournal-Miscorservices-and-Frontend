@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Alert from '../shared/components/Alert'
 import { api } from '../api/client'
 
@@ -9,6 +10,7 @@ type Notification = {
   type: UiVariant
   title: string
   message?: string
+  targetPath?: string
   createdAt: string
   read: boolean
 }
@@ -24,6 +26,8 @@ type NotificationDto = {
   created_at: string
   read_at?: string | null
 }
+
+const NOTIFICATIONS_REFRESH_INTERVAL_MS = 15000
 
 const stripLinks = (text?: string | null): string | undefined => {
   if (!text) return undefined
@@ -45,14 +49,30 @@ const mapTypeToVariant = (t: NotificationDto['type']): UiVariant => {
   }
 }
 
+const getNotificationTargetPath = (relatedEntity?: string | null): string | undefined => {
+  if (!relatedEntity) return undefined
+  const [type, rawId] = relatedEntity.split(':')
+  const id = Number(rawId)
+  if (!Number.isInteger(id) || id <= 0) return undefined
+  if (type === 'review') return `/cabinet/reviews/${id}`
+  if (type === 'article') return `/cabinet/my-articles/${id}`
+  return undefined
+}
+
 const toUi = (n: NotificationDto): Notification => ({
   id: String(n.id),
   type: mapTypeToVariant(n.type),
   title: n.title,
   message: stripLinks(n.message),
+  targetPath: getNotificationTargetPath(n.related_entity),
   createdAt: n.created_at,
   read: n.status === 'read',
 })
+
+const notifyNotificationsUpdated = () => {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event('notifications:updated'))
+}
 
 export default function NotificationsPage() {
   const [items, setItems] = useState<Notification[]>([])
@@ -60,23 +80,35 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const load = async () => {
-    setLoading(true)
-    setError(null)
+  const load = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true)
+      setError(null)
+    }
     try {
       const data = await api.get<NotificationDto[]>('/notifications', { params: { limit: 50, offset: 0 } })
       setItems(data.map(toUi))
     } catch (e: any) {
       console.error('Failed to load notifications', e)
+      if (options?.silent) return
       setError('Не удалось загрузить уведомления')
     } finally {
-      setLoading(false)
+      if (!options?.silent) {
+        setLoading(false)
+      }
     }
-  }
+  }, [])
 
   useEffect(() => {
     load()
-  }, [])
+    const refresh = () => load({ silent: true })
+    window.addEventListener('notifications:updated', refresh)
+    const interval = window.setInterval(refresh, NOTIFICATIONS_REFRESH_INTERVAL_MS)
+    return () => {
+      window.removeEventListener('notifications:updated', refresh)
+      window.clearInterval(interval)
+    }
+  }, [load])
 
   const filtered = useMemo(
     () => (filter === 'unread' ? items.filter((n) => !n.read) : items),
@@ -91,7 +123,8 @@ export default function NotificationsPage() {
     } catch (e) {
       // Ignore partial failures; will refresh
     } finally {
-      await load()
+      await load({ silent: true })
+      notifyNotificationsUpdated()
     }
   }
   const markOne = async (id: string) => {
@@ -100,7 +133,8 @@ export default function NotificationsPage() {
     } catch (e) {
       // no-op
     } finally {
-      await load()
+      await load({ silent: true })
+      notifyNotificationsUpdated()
     }
   }
 
@@ -126,7 +160,7 @@ export default function NotificationsPage() {
           <button type="button" className="button button--primary" onClick={markAllRead} disabled={loading}>
             Пометить все как прочитанные
           </button>
-          <button type="button" className="button button--ghost" onClick={load} disabled={loading}>
+          <button type="button" className="button button--ghost" onClick={() => load()} disabled={loading}>
             Обновить
           </button>
         </div>
@@ -164,6 +198,21 @@ export default function NotificationsPage() {
                     {new Date(n.createdAt).toLocaleString()}
                   </time>
                   <span style={{ flex: 1 }} />
+                  {n.targetPath ? (
+                    <Link
+                      className="button button--primary"
+                      to={n.targetPath}
+                      onClick={() => {
+                        if (!n.read) {
+                          api.markNotificationRead(n.id).finally(() => {
+                            notifyNotificationsUpdated()
+                          })
+                        }
+                      }}
+                    >
+                      Перейти к рецензии
+                    </Link>
+                  ) : null}
                   {!n.read ? (
                     <button className="button button--ghost" onClick={() => markOne(n.id)}>
                       Пометить как прочитано

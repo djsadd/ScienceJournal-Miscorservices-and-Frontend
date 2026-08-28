@@ -313,8 +313,10 @@ export const api = {
   getReviewers: <T>(language?: 'ru' | 'kz') => request<T>('/users/reviewers', 'GET', { params: { language } }),
   getAdminUsers: <T>() => request<T>('/auth/admin/users', 'GET'),
   getAdminUserDetail: <T>(userId: number | string) => request<T>(`/auth/admin/users/${userId}`, 'GET'),
-  updateMyLanguage: <T>(preferredLanguage: 'ru' | 'en' | 'kz') =>
-    request<T>('/users/me/language', 'PATCH', { params: { preferred_language: preferredLanguage } }),
+  updateMyContactProfile: <T>(body: { full_name?: string | null; phone?: string | null; organization?: string | null }) =>
+    request<T>('/users/me/contact', 'PATCH', { json: body }),
+  updateMyLanguage: <T>(preferredLanguage: 'ru' | 'en' | 'kz' | Array<'ru' | 'en' | 'kz'>) =>
+    request<T>('/users/me/language', 'PATCH', { json: { preferred_language: preferredLanguage } }),
   updateMyProfileDetails: <T>(body: { academic_degrees: string[]; orcid?: string | null }) =>
     request<T>('/users/me/details', 'PATCH', { json: body }),
   updateMyReviewerScience: <T>(body: { reviewer_science_fields: string[]; reviewer_science_other?: string | null }) =>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Header, Request
 from sqlalchemy.orm import Session
 from app import models, schemas, database, security
 from app import config
@@ -27,17 +27,33 @@ ALLOWED_ACADEMIC_DEGREES = {
     "master",
     "bachelor",
 }
+ALLOWED_REVIEW_LANGUAGES = {item.value for item in schemas.Language}
 
 
 def normalize_preferred_language(value: str | list[str] | None) -> str | None:
     if value is None:
         return None
     if isinstance(value, list):
-        normalized = [item.strip() for item in value if isinstance(item, str) and item.strip()]
-        return ",".join(dict.fromkeys(normalized)) or None
-    if isinstance(value, str):
-        return value.strip() or None
-    return None
+        raw_items = value
+    elif isinstance(value, str):
+        raw_items = value.split(",")
+    else:
+        return None
+
+    normalized: list[str] = []
+    for item in raw_items:
+        if not isinstance(item, str):
+            continue
+        candidate = item.strip()
+        if not candidate:
+            continue
+        if candidate not in ALLOWED_REVIEW_LANGUAGES:
+            raise HTTPException(status_code=400, detail="Invalid preferred language")
+        if candidate in normalized:
+            continue
+        normalized.append(candidate)
+
+    return ",".join(normalized) or None
 
 
 def normalize_reviewer_science_fields(value: list[str] | None) -> list[str]:
@@ -179,12 +195,20 @@ async def get_user_roles(current=Depends(get_current_user), db: Session = Depend
 
 
 @router.patch("/me/language", response_model=schemas.UserProfileOut)
-async def update_language(preferred_language: schemas.Language, current=Depends(get_current_user), db: Session = Depends(get_db)):
+async def update_language(
+    payload: schemas.UserLanguageUpdate | None = Body(default=None),
+    preferred_language: str | None = None,
+    current=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     user_id = current["user_id"]
     profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    profile.preferred_language = preferred_language.value
+    normalized = normalize_preferred_language(payload.preferred_language if payload else preferred_language)
+    if not normalized:
+        raise HTTPException(status_code=400, detail="Select at least one preferred language")
+    profile.preferred_language = normalized
     db.commit()
     db.refresh(profile)
     return profile
@@ -302,6 +326,28 @@ def update_profile_roles_internal(
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     profile.roles = payload.roles or ["author"]
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.patch("/me/contact", response_model=schemas.UserProfileOut)
+async def update_my_contact_profile(
+    payload: schemas.UserContactProfileUpdate,
+    current=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current["user_id"]
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    full_name = (payload.full_name or "").strip()
+    if full_name:
+        profile.full_name = full_name
+    profile.phone = (payload.phone or "").strip() or None
+    profile.organization = (payload.organization or "").strip() or None
+
     db.commit()
     db.refresh(profile)
     return profile

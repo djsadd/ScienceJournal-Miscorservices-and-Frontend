@@ -119,6 +119,11 @@ export default function VolumeEditPage() {
     setForm((prev: FormState) => ({ ...prev, [key]: value }))
   }
 
+  const articleDetailHref = (articleId?: string | number | null) => {
+    const normalized = Number(articleId)
+    return Number.isFinite(normalized) ? `/cabinet/editorial2/${normalized}` : '#'
+  }
+
   const toggleArticle = (articleId: number) => {
     setForm((prev: FormState) => {
       const ids = new Set(prev.article_ids || [])
@@ -391,6 +396,14 @@ export default function VolumeEditPage() {
                       )}
                     </div>
                     <div className="latest-table__cell volume-edit__cell--actions">
+                      <a
+                        className="button button--ghost button--compact volume-edit__articleLink"
+                        href={articleDetailHref(a.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Перейти к статье
+                      </a>
                       <button className="button button--secondary button--compact" type="button" onClick={() => toggleArticle(Number(a.id!))}>
                         {currentArticleIds.has(Number(a.id!)) ? 'Убрать из тома' : 'Добавить в том'}
                       </button>
@@ -525,6 +538,14 @@ export default function VolumeEditPage() {
                       )}
                     </div>
                     <div className="latest-table__cell volume-edit__cell--actions">
+                      <a
+                        className="button button--ghost button--compact volume-edit__articleLink"
+                        href={articleDetailHref(a.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Перейти к статье
+                      </a>
                       <button className="button button--secondary button--compact" type="button" onClick={() => toggleArticle(Number(a.id!))}>
                         {currentArticleIds.has(Number(a.id!)) ? 'Убрать' : 'Добавить'}
                       </button>

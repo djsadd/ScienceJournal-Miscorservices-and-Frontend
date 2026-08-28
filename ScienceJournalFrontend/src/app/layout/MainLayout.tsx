@@ -13,6 +13,25 @@ interface MainLayoutProps {
 type RoleKey = 'author' | 'editor' | 'reviewer' | 'layout' | 'admin'
 type LangKey = 'ru' | 'en' | 'kz'
 
+type NotificationPreviewDto = {
+  id: number
+  type: 'system' | 'article_status' | 'review_assignment' | 'editorial' | 'custom'
+  title: string
+  message?: string | null
+  related_entity?: string | null
+  status: 'unread' | 'read'
+  created_at: string
+}
+
+type NotificationPreview = {
+  id: number
+  title: string
+  message?: string
+  targetPath?: string
+  read: boolean
+  createdAt: string
+}
+
 type SidebarCopy = {
   roleOptions: Record<RoleKey, string>
   roleSwitcherLabel: string
@@ -36,6 +55,12 @@ type SidebarCopy = {
   mobileMenuClose: string
   sidebarShow: string
   sidebarHide: string
+  notificationsLabel: string
+  notificationsTitle: string
+  notificationsLoading: string
+  notificationsEmpty: string
+  notificationsAll: string
+  notificationsUnread: string
 }
 
 const sidebarCopy: Record<LangKey, SidebarCopy> = {
@@ -58,7 +83,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Обзор',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Главная', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
@@ -76,7 +101,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Обзор',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Главная', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
@@ -97,7 +122,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Обзор',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Главная', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
@@ -111,7 +136,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Обзор',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Главная', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
@@ -128,7 +153,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Обзор',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Главная', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
           ],
@@ -151,6 +176,12 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     mobileMenuClose: 'Закрыть меню',
     sidebarShow: 'Показать меню',
     sidebarHide: 'Скрыть меню',
+    notificationsLabel: 'Уведомления',
+    notificationsTitle: 'Уведомления',
+    notificationsLoading: 'Загрузка...',
+    notificationsEmpty: 'Нет уведомлений',
+    notificationsAll: 'Все уведомления',
+    notificationsUnread: 'Непрочитано',
   },
   en: {
     roleOptions: {
@@ -171,7 +202,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Overview',
           items: [
-            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Home', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
           ],
@@ -189,7 +220,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Overview',
           items: [
-            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Home', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
           ],
@@ -210,7 +241,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Overview',
           items: [
-            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Home', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
           ],
@@ -224,7 +255,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Overview',
           items: [
-            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Home', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
           ],
@@ -241,7 +272,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Overview',
           items: [
-            { label: 'Dashboard', path: '/cabinet' },
+            { label: 'Home', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
           ],
@@ -264,6 +295,12 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     mobileMenuClose: 'Close menu',
     sidebarShow: 'Show sidebar',
     sidebarHide: 'Hide sidebar',
+    notificationsLabel: 'Notifications',
+    notificationsTitle: 'Notifications',
+    notificationsLoading: 'Loading...',
+    notificationsEmpty: 'No notifications',
+    notificationsAll: 'All notifications',
+    notificationsUnread: 'Unread',
   },
   kz: {
     roleOptions: {
@@ -284,7 +321,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Шолу',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Басты бет', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
@@ -302,7 +339,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Шолу',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Басты бет', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
@@ -323,7 +360,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Шолу',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Басты бет', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
@@ -337,7 +374,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Шолу',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Басты бет', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
@@ -354,7 +391,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         {
           title: 'Шолу',
           items: [
-            { label: 'Дашборд', path: '/cabinet' },
+            { label: 'Басты бет', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
           ],
@@ -377,19 +414,55 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     mobileMenuClose: 'Мәзірді жабу',
     sidebarShow: 'Мәзірді көрсету',
     sidebarHide: 'Мәзірді жасыру',
+    notificationsLabel: 'Хабарламалар',
+    notificationsTitle: 'Хабарламалар',
+    notificationsLoading: 'Жүктелуде...',
+    notificationsEmpty: 'Хабарламалар жоқ',
+    notificationsAll: 'Барлық хабарламалар',
+    notificationsUnread: 'Оқылмаған',
   },
 }
 
 const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
 const isRoleKey = (value: string): value is RoleKey => allRoles.includes(value as RoleKey)
 const languageOptions: Lang[] = ['ru', 'en', 'kz']
-const roleLandingPage: Record<RoleKey, string> = {
-  author: '/cabinet/submissions',
-  editor: '/cabinet/editorial2',
-  reviewer: '/cabinet/reviews',
-  layout: '/cabinet/layout',
-  admin: '/cabinet/admin/users',
+const cabinetHomePath = '/cabinet'
+const NOTIFICATIONS_REFRESH_INTERVAL_MS = 15000
+const notificationLocale: Record<LangKey, string> = {
+  ru: 'ru-RU',
+  en: 'en-US',
+  kz: 'kk-KZ',
 }
+
+const stripNotificationLinks = (text?: string | null): string | undefined => {
+  if (!text) return undefined
+  const cleaned = text
+    .replace(/Откройте:\s*https?:\/\/\S+/gi, '')
+    .replace(/РћС‚РєСЂРѕР№С‚Рµ:\s*https?:\/\/\S+/gi, '')
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+  return cleaned || undefined
+}
+
+const getNotificationTargetPath = (relatedEntity?: string | null): string | undefined => {
+  if (!relatedEntity) return undefined
+  const [type, rawId] = relatedEntity.split(':')
+  const id = Number(rawId)
+  if (!Number.isInteger(id) || id <= 0) return undefined
+  if (type === 'review') return `/cabinet/reviews/${id}`
+  if (type === 'article') return `/cabinet/my-articles/${id}`
+  return undefined
+}
+
+const toNotificationPreview = (notification: NotificationPreviewDto): NotificationPreview => ({
+  id: notification.id,
+  title: notification.title,
+  message: stripNotificationLinks(notification.message),
+  targetPath: getNotificationTargetPath(notification.related_entity),
+  read: notification.status === 'read',
+  createdAt: notification.created_at,
+})
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [activeRole, setActiveRole] = useState<RoleKey>(() => {
@@ -400,6 +473,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
   const roleMenuRef = useRef<HTMLDivElement | null>(null)
+  const notificationsMenuRef = useRef<HTMLDivElement | null>(null)
   const [isDesktopViewport, setIsDesktopViewport] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true
     return window.matchMedia('(min-width: 960px)').matches
@@ -422,9 +496,17 @@ export function MainLayout({ children }: MainLayoutProps) {
     try {
       window.localStorage.setItem('activeRole', role)
     } catch {}
-    navigate(roleLandingPage[role])
+    if (typeof window !== 'undefined') {
+      window.location.assign(cabinetHomePath)
+      return
+    }
+    navigate(cabinetHomePath)
   }, [closeSidebar, navigate])
   const [unreadCount, setUnreadCount] = useState<number>(0)
+  const [notificationItems, setNotificationItems] = useState<NotificationPreview[]>([])
+  const [areNotificationsLoading, setAreNotificationsLoading] = useState(false)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [pageTitle, setPageTitle] = useState('')
   const [lowVision, setLowVision] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('lowVision')
@@ -471,20 +553,32 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   useEffect(() => {
     let active = true
-    const loadUnread = async () => {
+    const loadHeaderNotifications = async () => {
+      setAreNotificationsLoading(true)
       try {
-        const data = await api.get<Array<{ id: number }>>('/notifications', { params: { status: 'unread', limit: 50, offset: 0 } })
+        const [unread, latest] = await Promise.all([
+          api.get<Array<{ id: number }>>('/notifications', { params: { status: 'unread', limit: 50, offset: 0 } }),
+          api.get<NotificationPreviewDto[]>('/notifications', { params: { limit: 5, offset: 0 } }),
+        ])
         if (!active) return
-        setUnreadCount(Array.isArray(data) ? data.length : 0)
+        setUnreadCount(Array.isArray(unread) ? unread.length : 0)
+        setNotificationItems(Array.isArray(latest) ? latest.map(toNotificationPreview) : [])
       } catch {
         if (!active) return
         setUnreadCount(0)
+        setNotificationItems([])
+      } finally {
+        if (active) {
+          setAreNotificationsLoading(false)
+        }
       }
     }
-    loadUnread()
-    const interval = setInterval(loadUnread, 60000)
+    loadHeaderNotifications()
+    window.addEventListener('notifications:updated', loadHeaderNotifications)
+    const interval = setInterval(loadHeaderNotifications, NOTIFICATIONS_REFRESH_INTERVAL_MS)
     return () => {
       active = false
+      window.removeEventListener('notifications:updated', loadHeaderNotifications)
       clearInterval(interval)
     }
   }, [])
@@ -516,18 +610,59 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   useEffect(() => {
     setIsRoleMenuOpen(false)
+    setIsNotificationsOpen(false)
   }, [activeRole, isDesktopViewport])
 
   useEffect(() => {
-    if (!isRoleMenuOpen) return
+    if (!isRoleMenuOpen && !isNotificationsOpen) return
     const handlePointerDown = (event: MouseEvent) => {
-      if (!roleMenuRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (isRoleMenuOpen && !roleMenuRef.current?.contains(target)) {
         setIsRoleMenuOpen(false)
+      }
+      if (isNotificationsOpen && !notificationsMenuRef.current?.contains(target)) {
+        setIsNotificationsOpen(false)
       }
     }
     window.addEventListener('mousedown', handlePointerDown)
     return () => window.removeEventListener('mousedown', handlePointerDown)
-  }, [isRoleMenuOpen])
+  }, [isRoleMenuOpen, isNotificationsOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    let frameId = 0
+    const readPageTitle = () => {
+      frameId = 0
+      const title = document
+        .querySelector<HTMLElement>('.app-main .page-title')
+        ?.textContent
+        ?.replace(/\s+/g, ' ')
+        .trim()
+
+      setPageTitle(title || '')
+    }
+    const scheduleRead = () => {
+      if (frameId) return
+      frameId = window.requestAnimationFrame(readPageTitle)
+    }
+
+    scheduleRead()
+    const main = document.querySelector('.app-main')
+    if (!main) {
+      return () => {
+        if (frameId) window.cancelAnimationFrame(frameId)
+      }
+    }
+
+    const observer = new MutationObserver(scheduleRead)
+    observer.observe(main, { childList: true, subtree: true, characterData: true })
+
+    return () => {
+      if (frameId) window.cancelAnimationFrame(frameId)
+      observer.disconnect()
+    }
+  }, [lang])
 
   const locale: LangKey = ['ru', 'en', 'kz'].includes(lang) ? (lang as LangKey) : 'ru'
   const copy = sidebarCopy[locale]
@@ -543,6 +678,19 @@ export function MainLayout({ children }: MainLayoutProps) {
   const sidebarToggleLabel = isDesktopViewport
     ? isSidebarVisible ? copy.sidebarHide : copy.sidebarShow
     : isSidebarOpen ? copy.mobileMenuClose : copy.mobileMenuOpen
+  const formattedNotificationDate = useCallback(
+    (value: string) => {
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return value
+      return date.toLocaleString(notificationLocale[locale], {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    },
+    [locale],
+  )
 
   return (
     <div className={`app-shell ${lowVision ? 'low-vision' : ''} ${isDesktopViewport && !isSidebarVisible ? 'app-shell--sidebar-hidden' : ''}`}>
@@ -625,43 +773,50 @@ export function MainLayout({ children }: MainLayoutProps) {
       />
       <div className="app-body">
         <div className="mobile-shell-header">
-          <button
-            type="button"
-            className="sidebar-toggle"
-            aria-controls="cabinet-sidebar"
-            aria-expanded={isSidebarVisible}
-            aria-label={sidebarToggleLabel}
-            title={sidebarToggleLabel}
-            onClick={toggleSidebar}
-          >
-            <svg
-              className="sidebar-toggle__icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
+          <div className="app-header-start">
+            <button
+              type="button"
+              className="sidebar-toggle"
+              aria-controls="cabinet-sidebar"
+              aria-expanded={isSidebarVisible}
+              aria-label={sidebarToggleLabel}
+              title={sidebarToggleLabel}
+              onClick={toggleSidebar}
             >
-              <rect x="3.5" y="4.5" width="17" height="15" rx="3" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M9 6.75V17.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              {isSidebarVisible ? (
-                <path
-                  d="M14.75 9.25L11.75 12L14.75 14.75"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ) : (
-                <path
-                  d="M12.25 9.25L15.25 12L12.25 14.75"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              )}
-            </svg>
-          </button>
+              <svg
+                className="sidebar-toggle__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <rect x="3.5" y="4.5" width="17" height="15" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M9 6.75V17.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                {isSidebarVisible ? (
+                  <path
+                    d="M14.75 9.25L11.75 12L14.75 14.75"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ) : (
+                  <path
+                    d="M12.25 9.25L15.25 12L12.25 14.75"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
+              </svg>
+            </button>
+            {pageTitle ? (
+              <h1 className="app-header-title" title={pageTitle}>
+                {pageTitle}
+              </h1>
+            ) : null}
+          </div>
           <div className="header-controls">
             <div
               ref={roleMenuRef}
@@ -674,7 +829,10 @@ export function MainLayout({ children }: MainLayoutProps) {
                 aria-expanded={isRoleMenuOpen}
                 aria-label={copy.roleSwitcherLabel}
                 title={copy.roleSwitcherLabel}
-                onClick={() => setIsRoleMenuOpen((prev) => !prev)}
+                onClick={() => {
+                  setIsNotificationsOpen(false)
+                  setIsRoleMenuOpen((prev) => !prev)
+                }}
               >
                 <span>{copy.roleOptions[activeRole]}</span>
                 <svg
@@ -700,6 +858,104 @@ export function MainLayout({ children }: MainLayoutProps) {
                       {copy.roleOptions[role]}
                     </button>
                   ))}
+                </div>
+              ) : null}
+            </div>
+            <div
+              ref={notificationsMenuRef}
+              className={`header-notifications ${isNotificationsOpen ? 'header-notifications--open' : ''}`}
+            >
+              <button
+                type="button"
+                className="header-notifications__button"
+                aria-haspopup="dialog"
+                aria-expanded={isNotificationsOpen}
+                aria-label={copy.notificationsLabel}
+                title={copy.notificationsLabel}
+                onClick={() => {
+                  setIsRoleMenuOpen(false)
+                  window.dispatchEvent(new Event('notifications:updated'))
+                  setIsNotificationsOpen((prev) => !prev)
+                }}
+              >
+                <svg
+                  className="header-notifications__icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M18 9.75C18 6.44 15.31 3.75 12 3.75S6 6.44 6 9.75V12.5C6 13.46 5.62 14.38 4.94 15.06L4.5 15.5H19.5L19.06 15.06C18.38 14.38 18 13.46 18 12.5V9.75Z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9.75 18.25C10.14 19.42 11.04 20.25 12 20.25C12.96 20.25 13.86 19.42 14.25 18.25"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                {unreadCount > 0 ? (
+                  <span className="header-notifications__badge">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                ) : null}
+              </button>
+              {isNotificationsOpen ? (
+                <div className="header-notifications__menu" role="dialog" aria-label={copy.notificationsTitle}>
+                  <div className="header-notifications__top">
+                    <div className="header-notifications__title">{copy.notificationsTitle}</div>
+                    {unreadCount > 0 ? (
+                      <span className="header-notifications__unread">
+                        {copy.notificationsUnread}: {unreadCount}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="header-notifications__list">
+                    {areNotificationsLoading ? (
+                      <div className="header-notifications__state">{copy.notificationsLoading}</div>
+                    ) : notificationItems.length === 0 ? (
+                      <div className="header-notifications__state">{copy.notificationsEmpty}</div>
+                    ) : (
+                      notificationItems.map((notification) => (
+                        <Link
+                          key={notification.id}
+                          to={notification.targetPath ?? '/cabinet/notifications'}
+                          className={`header-notification ${notification.read ? '' : 'header-notification--unread'}`}
+                          onClick={() => {
+                            setIsNotificationsOpen(false)
+                            if (!notification.read) {
+                              api.markNotificationRead(notification.id).finally(() => {
+                                window.dispatchEvent(new Event('notifications:updated'))
+                              })
+                            }
+                          }}
+                        >
+                          <span className="header-notification__dot" aria-hidden="true" />
+                          <span className="header-notification__body">
+                            <span className="header-notification__title">{notification.title}</span>
+                            {notification.message ? (
+                              <span className="header-notification__message">{notification.message}</span>
+                            ) : null}
+                            <time className="header-notification__time" dateTime={notification.createdAt}>
+                              {formattedNotificationDate(notification.createdAt)}
+                            </time>
+                          </span>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                  <Link
+                    to="/cabinet/notifications"
+                    className="header-notifications__all"
+                    onClick={() => setIsNotificationsOpen(false)}
+                  >
+                    {copy.notificationsAll}
+                  </Link>
                 </div>
               ) : null}
             </div>
@@ -758,3 +1014,4 @@ export function MainLayout({ children }: MainLayoutProps) {
     </div>
   )
 }
+

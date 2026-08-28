@@ -529,6 +529,8 @@ def get_user_full_info(
             if response.status_code == 200:
                 profile_data = response.json()
                 user_info["profile_id"] = profile_data.get("id")
+                if profile_data.get("full_name"):
+                    user_info["full_name"] = profile_data.get("full_name")
                 user_info["phone"] = profile_data.get("phone")
                 user_info["preferred_language"] = profile_data.get("preferred_language")
                 user_info["academic_degrees"] = profile_data.get("academic_degrees", [])

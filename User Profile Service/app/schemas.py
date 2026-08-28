@@ -43,6 +43,16 @@ class UserRolesOut(BaseModel):
     preferred_language: str | None = None
 
 
+class UserContactProfileUpdate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+    organization: str | None = None
+
+
+class UserLanguageUpdate(BaseModel):
+    preferred_language: str | List[str]
+
+
 class ReviewerScienceUpdate(BaseModel):
     reviewer_science_fields: List[str]
     reviewer_science_other: str | None = None

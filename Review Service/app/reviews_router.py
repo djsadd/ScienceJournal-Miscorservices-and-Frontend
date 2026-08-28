@@ -145,13 +145,15 @@ def assign_reviewer(request: schemas.AssignReviewerRequest, db: Session = Depend
         api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
         api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
         shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
-        frontend_url = getattr(config, 'FRONTEND_URL', 'http://localhost:8081')
+        article_title = _fetch_article_titles([request.article_id]).get(request.article_id)
+        article_label = f"«{article_title}»" if article_title else f"#{request.article_id}"
         payload = {
             "user_id": request.reviewer_id,
             "type": "review_assignment",
-            "title": "Вам назначена рецензия",
-            "message": f"Вам назначена рецензия по статье #{request.article_id}.",
             "related_entity": f"review:{new_review.id}",
+            "title": "Вам назначена рецензия",
+            "message": f"Вам назначена рецензия по статье {article_label}.",
+            "article_id": request.article_id,
         }
         with httpx.Client(timeout=5.0) as client:
             print(f"{api_gateway}{api_prefix}/notifications/internal")
