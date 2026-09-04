@@ -32,9 +32,25 @@ type NotificationPreview = {
   createdAt: string
 }
 
+type RoleRequestDto = {
+  id: number
+  requested_role: RoleKey
+  status: string
+  editor_approved: boolean
+  admin_approved: boolean
+}
+
 type SidebarCopy = {
   roleOptions: Record<RoleKey, string>
   roleSwitcherLabel: string
+  addRoleTitle: string
+  addRoleEmpty: string
+  addRoleAuthorConfirm: string
+  addRoleApprovalConfirm: string
+  addRolePending: string
+  addRoleRequested: string
+  addRoleAdded: string
+  addRoleFailed: string
   languageNames: Record<LangKey, string>
   nav: Record<
     RoleKey,
@@ -73,6 +89,14 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       admin: 'Администратор',
     },
     roleSwitcherLabel: 'Выбор роли',
+    addRoleTitle: 'Добавить роль',
+    addRoleEmpty: 'Все доступные роли уже добавлены',
+    addRoleAuthorConfirm: 'Добавить себе роль автора?',
+    addRoleApprovalConfirm: 'Эта роль будет добавлена после согласования редактора и администратора. Отправить заявку?',
+    addRolePending: 'На согласовании',
+    addRoleRequested: 'Заявка отправлена',
+    addRoleAdded: 'Роль автора добавлена',
+    addRoleFailed: 'Не удалось отправить заявку',
     languageNames: {
       ru: 'Рус',
       en: 'Eng',
@@ -111,6 +135,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Назначения', path: '/cabinet/editorial2' },
             { label: 'Быстрая публикация', path: '/cabinet/quick-publish' },
+            { label: 'Заявки на роли', path: '/cabinet/role-requests' },
           ],
         },
         {
@@ -160,7 +185,10 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         },
         {
           title: 'Администрирование',
-          items: [{ label: 'Пользователи', path: '/cabinet/admin/users' }],
+          items: [
+            { label: 'Пользователи', path: '/cabinet/admin/users' },
+            { label: 'Заявки на роли', path: '/cabinet/role-requests' },
+          ],
         },
       ],
     },
@@ -192,6 +220,14 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       admin: 'Administrator',
     },
     roleSwitcherLabel: 'Role switcher',
+    addRoleTitle: 'Add role',
+    addRoleEmpty: 'All available roles are already assigned',
+    addRoleAuthorConfirm: 'Add the author role to your profile?',
+    addRoleApprovalConfirm: 'This role will be added after editor and administrator approval. Send request?',
+    addRolePending: 'Pending approval',
+    addRoleRequested: 'Request sent',
+    addRoleAdded: 'Author role added',
+    addRoleFailed: 'Failed to send request',
     languageNames: {
       ru: 'Rus',
       en: 'Eng',
@@ -230,6 +266,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Assignments', path: '/cabinet/editorial2' },
             { label: 'Quick publish', path: '/cabinet/quick-publish' },
+            { label: 'Role requests', path: '/cabinet/role-requests' },
           ],
         },
         {
@@ -279,7 +316,10 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         },
         {
           title: 'Administration',
-          items: [{ label: 'Users', path: '/cabinet/admin/users' }],
+          items: [
+            { label: 'Users', path: '/cabinet/admin/users' },
+            { label: 'Role requests', path: '/cabinet/role-requests' },
+          ],
         },
       ],
     },
@@ -311,6 +351,14 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       admin: 'Әкімші',
     },
     roleSwitcherLabel: 'Рөлді таңдау',
+    addRoleTitle: 'Рөл қосу',
+    addRoleEmpty: 'Барлық қолжетімді рөлдер қосылған',
+    addRoleAuthorConfirm: 'Профильге автор рөлін қосасыз ба?',
+    addRoleApprovalConfirm: 'Бұл рөл редактор және әкімші мақұлдағаннан кейін қосылады. Өтінім жіберілсін бе?',
+    addRolePending: 'Мақұлдауды күтуде',
+    addRoleRequested: 'Өтінім жіберілді',
+    addRoleAdded: 'Автор рөлі қосылды',
+    addRoleFailed: 'Өтінімді жіберу мүмкін болмады',
     languageNames: {
       ru: 'Орыс',
       en: 'Ағыл',
@@ -349,6 +397,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Тапсырмалар', path: '/cabinet/editorial2' },
             { label: 'Жылдам жариялау', path: '/cabinet/quick-publish' },
+            { label: 'Рөл өтінімдері', path: '/cabinet/role-requests' },
           ],
         },
         {
@@ -398,7 +447,10 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
         },
         {
           title: 'Әкімшілік',
-          items: [{ label: 'Пайдаланушылар', path: '/cabinet/admin/users' }],
+          items: [
+            { label: 'Пайдаланушылар', path: '/cabinet/admin/users' },
+            { label: 'Рөл өтінімдері', path: '/cabinet/role-requests' },
+          ],
         },
       ],
     },
@@ -424,6 +476,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
 }
 
 const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
+const selfRequestRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'layout']
 const isRoleKey = (value: string): value is RoleKey => allRoles.includes(value as RoleKey)
 const languageOptions: Lang[] = ['ru', 'en', 'kz']
 const cabinetHomePath = '/cabinet'
@@ -470,6 +523,9 @@ export function MainLayout({ children }: MainLayoutProps) {
     return stored && isRoleKey(stored) ? stored : 'author'
   })
   const [availableRoles, setAvailableRoles] = useState<RoleKey[]>(allRoles)
+  const [roleRequests, setRoleRequests] = useState<RoleRequestDto[]>([])
+  const [roleActionStatus, setRoleActionStatus] = useState<string | null>(null)
+  const [roleActionKey, setRoleActionKey] = useState<RoleKey | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
   const roleMenuRef = useRef<HTMLDivElement | null>(null)
@@ -489,13 +545,14 @@ export function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate()
   const { lang, setLang } = useLanguage()
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), [])
-  const handleRoleChange = useCallback((role: RoleKey) => {
+  const handleRoleChange = useCallback(async (role: RoleKey) => {
     setActiveRole(role)
     setIsRoleMenuOpen(false)
     closeSidebar()
     try {
       window.localStorage.setItem('activeRole', role)
     } catch {}
+    await api.refreshTokens().catch(() => null)
     if (typeof window !== 'undefined') {
       window.location.assign(cabinetHomePath)
       return
@@ -516,40 +573,46 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
   })
 
+  const loadRoles = useCallback(async (shouldUpdate: () => boolean = () => true) => {
+    try {
+      const [response, requests] = await Promise.all([
+        api.get<{ user_id: string; roles: string[] }>('/users/me/roles'),
+        api.getMyRoleRequests<RoleRequestDto[]>().catch(() => []),
+      ])
+      const roles = (response.roles || []).filter(isRoleKey)
+      const nextRoles: RoleKey[] =
+        roles.includes('admin')
+          ? Array.from(new Set<RoleKey>(['admin', 'editor', 'reviewer', 'author', ...roles]))
+          : roles.length > 0
+            ? roles
+            : ['author']
+      if (!shouldUpdate()) return
+      setAvailableRoles(nextRoles)
+      setRoleRequests((requests || []).filter((item) => isRoleKey(item.requested_role)))
+      setActiveRole((prev) => {
+        const stored = typeof window !== 'undefined' ? window.localStorage.getItem('activeRole') : null
+        const preferred = stored && isRoleKey(stored) && nextRoles.includes(stored) ? stored : undefined
+        return preferred ?? (nextRoles.includes(prev) ? prev : nextRoles[0])
+      })
+    } catch (error) {
+      console.error('Failed to load roles', error)
+      if (!shouldUpdate()) return
+      setAvailableRoles(['author'])
+      setRoleRequests([])
+      setActiveRole(() => {
+        const stored = typeof window !== 'undefined' ? window.localStorage.getItem('activeRole') : null
+        return stored && isRoleKey(stored) ? stored : 'author'
+      })
+    }
+  }, [])
+
   useEffect(() => {
     let isMounted = true
-    const loadRoles = async () => {
-      try {
-        const response = await api.get<{ user_id: string; roles: string[] }>('/users/me/roles')
-        const roles = (response.roles || []).filter(isRoleKey)
-        const nextRoles: RoleKey[] =
-          roles.includes('admin')
-            ? Array.from(new Set<RoleKey>(['admin', 'editor', 'reviewer', 'author', ...roles]))
-            : roles.length > 0
-              ? roles
-              : ['author']
-        if (!isMounted) return
-        setAvailableRoles(nextRoles)
-        setActiveRole((prev) => {
-          const stored = typeof window !== 'undefined' ? window.localStorage.getItem('activeRole') : null
-          const preferred = stored && isRoleKey(stored) && nextRoles.includes(stored) ? stored : undefined
-          return preferred ?? (nextRoles.includes(prev) ? prev : nextRoles[0])
-        })
-      } catch (error) {
-        console.error('Failed to load roles', error)
-        if (!isMounted) return
-        setAvailableRoles(['author'])
-        setActiveRole(() => {
-          const stored = typeof window !== 'undefined' ? window.localStorage.getItem('activeRole') : null
-          return stored && isRoleKey(stored) ? stored : 'author'
-        })
-      }
-    }
-    loadRoles()
+    loadRoles(() => isMounted)
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [loadRoles])
 
   useEffect(() => {
     let active = true
@@ -690,6 +753,35 @@ export function MainLayout({ children }: MainLayoutProps) {
       })
     },
     [locale],
+  )
+  const pendingRequestedRoles = useMemo(
+    () => new Set(roleRequests.filter((item) => item.status.startsWith('pending')).map((item) => item.requested_role)),
+    [roleRequests],
+  )
+  const rolesToRequest = useMemo(
+    () => selfRequestRoles.filter((role) => !availableRoles.includes(role)),
+    [availableRoles],
+  )
+  const handleAddRole = useCallback(
+    async (role: RoleKey) => {
+      if (pendingRequestedRoles.has(role)) return
+      const confirmText = role === 'author' ? copy.addRoleAuthorConfirm : copy.addRoleApprovalConfirm
+      if (typeof window !== 'undefined' && !window.confirm(confirmText)) return
+
+      setRoleActionKey(role)
+      setRoleActionStatus(null)
+      try {
+        const result = await api.requestMyRole<RoleRequestDto>(role)
+        await loadRoles()
+        setRoleActionStatus(result.status === 'approved' ? copy.addRoleAdded : copy.addRoleRequested)
+      } catch (error) {
+        console.error('Failed to request role', error)
+        setRoleActionStatus(copy.addRoleFailed)
+      } finally {
+        setRoleActionKey(null)
+      }
+    },
+    [copy, loadRoles, pendingRequestedRoles],
   )
 
   return (
@@ -858,6 +950,28 @@ export function MainLayout({ children }: MainLayoutProps) {
                       {copy.roleOptions[role]}
                     </button>
                   ))}
+                  <div className="header-role-switch__divider" />
+                  <div className="header-role-switch__section-title">{copy.addRoleTitle}</div>
+                  {rolesToRequest.length === 0 ? (
+                    <div className="header-role-switch__empty">{copy.addRoleEmpty}</div>
+                  ) : (
+                    rolesToRequest.map((role) => {
+                      const pending = pendingRequestedRoles.has(role)
+                      return (
+                        <button
+                          key={`request-${role}`}
+                          type="button"
+                          className="header-role-switch__option header-role-switch__option--request"
+                          disabled={pending || roleActionKey === role}
+                          onClick={() => handleAddRole(role)}
+                        >
+                          <span>{copy.roleOptions[role]}</span>
+                          {pending ? <span className="header-role-switch__status">{copy.addRolePending}</span> : null}
+                        </button>
+                      )
+                    })
+                  )}
+                  {roleActionStatus ? <div className="header-role-switch__message">{roleActionStatus}</div> : null}
                 </div>
               ) : null}
             </div>

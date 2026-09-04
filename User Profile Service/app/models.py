@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
+from datetime import datetime
 
 roles = ["author", "reviewer", "editor", "layout", "admin"]
 
@@ -36,6 +37,23 @@ class UserProfile(Base):
     reviews = relationship("ReviewLink", back_populates="user")
 
     roles = Column(ARRAY(String), default=["author"])
+
+
+class RoleRequest(Base):
+    __tablename__ = "role_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    requested_role = Column(String, nullable=False)
+    status = Column(String, nullable=False, default="pending")
+    editor_approved = Column(Boolean, nullable=False, default=False)
+    admin_approved = Column(Boolean, nullable=False, default=False)
+    editor_approved_by = Column(Integer, nullable=True)
+    admin_approved_by = Column(Integer, nullable=True)
+    rejected_by = Column(Integer, nullable=True)
+    rejection_reason = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class ArticleLink(Base):

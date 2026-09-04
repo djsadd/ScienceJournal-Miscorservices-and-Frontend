@@ -219,6 +219,7 @@ export const api = {
     persistTokens(tokens)
   },
   getTokens: () => currentTokens,
+  refreshTokens: () => doRefresh(),
   logout: () => {
     currentTokens = null
     persistTokens(null)
@@ -321,6 +322,14 @@ export const api = {
     request<T>('/users/me/details', 'PATCH', { json: body }),
   updateMyReviewerScience: <T>(body: { reviewer_science_fields: string[]; reviewer_science_other?: string | null }) =>
     request<T>('/users/me/reviewer-science', 'PATCH', { json: body }),
+  requestMyRole: <T>(role: string) =>
+    request<T>('/users/me/role-requests', 'POST', { json: { role } }),
+  getMyRoleRequests: <T>() => request<T>('/users/me/role-requests', 'GET'),
+  getRoleRequests: <T>(status?: string) => request<T>('/users/role-requests', 'GET', { params: { status } }),
+  decideRoleRequest: <T>(requestId: number | string, stage: 'editor' | 'admin', decision: 'approve' | 'reject', reason?: string) =>
+    request<T>(`/users/role-requests/${requestId}/decision`, 'PATCH', {
+      json: { stage, decision, ...(reason ? { reason } : {}) },
+    }),
   getAdminUserStats: <T>() => request<T>('/auth/admin/users/stats', 'GET'),
   activateAdminUser: <T>(userId: number | string, isActive: boolean) =>
     request<T>(`/auth/admin/users/${userId}/activate`, 'PATCH', { json: { is_active: isActive } }),

@@ -67,6 +67,37 @@ class UserRolesUpdate(BaseModel):
     roles: List[str]
 
 
+class RoleRequestCreate(BaseModel):
+    role: str
+
+
+class RoleRequestDecision(BaseModel):
+    stage: str
+    decision: str
+    reason: str | None = None
+
+
+class RoleRequestOut(BaseModel):
+    id: int
+    user_id: int
+    full_name: str | None = None
+    organization: str | None = None
+    current_roles: List[str] = []
+    requested_role: str
+    status: str
+    editor_approved: bool
+    admin_approved: bool
+    editor_approved_by: int | None = None
+    admin_approved_by: int | None = None
+    rejected_by: int | None = None
+    rejection_reason: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+
+    class Config:
+        orm_mode = True
+
+
 class ArticleLinkBase(BaseModel):
     article_id: int
     role: str
