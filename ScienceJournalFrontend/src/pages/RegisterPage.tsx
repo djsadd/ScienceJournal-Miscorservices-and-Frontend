@@ -28,6 +28,7 @@ type RegisterField =
   | 'username'
   | 'email'
   | 'orcid'
+  | 'academicDegrees'
   | 'password'
   | 'confirm'
   | 'reviewLanguages'
@@ -60,6 +61,20 @@ const orcidPattern = /^(\d{4}-){3}[\dX]{4}$/i
 const usernamePattern = /^[A-Za-z0-9._-]{3,}$/
 const hasLetterPattern = /\p{L}/u
 const hasNumberPattern = /\d/
+
+const apiFieldMap: Record<string, RegisterField> = {
+  first_name: 'firstName',
+  last_name: 'lastName',
+  username: 'username',
+  email: 'email',
+  orcid: 'orcid',
+  academic_degrees: 'academicDegrees',
+  password: 'password',
+  preferred_language: 'reviewLanguages',
+  reviewer_science_fields: 'reviewerScienceFields',
+  reviewer_science_other: 'reviewerScienceOther',
+  accept_terms: 'acceptTerms',
+}
 
 export function RegisterPage() {
   const { lang } = useLanguage()
@@ -187,6 +202,8 @@ export function RegisterPage() {
 
   const toggleAcademicDegree = (degree: AcademicDegreeOption) => {
     setAcademicDegrees((current) => (current.includes(degree) ? current.filter((item) => item !== degree) : [...current, degree]))
+    clearFormError()
+    clearFieldError('academicDegrees')
   }
 
   const getInputClassName = (field: RegisterField) =>
@@ -297,6 +314,44 @@ export function RegisterPage() {
     return apiError.bodyText || t.errors.registrationFailed
   }
 
+  const extractApiFieldErrors = (apiError: ApiError): RegisterFieldErrors => {
+    const body = apiError.bodyJson
+    const nextErrors: RegisterFieldErrors = {}
+
+    if (!body || typeof body !== 'object' || !('detail' in body)) {
+      return nextErrors
+    }
+
+    const detail = (body as { detail?: unknown }).detail
+    if (detail && typeof detail === 'object' && !Array.isArray(detail) && 'fields' in detail) {
+      const fields = (detail as { fields?: unknown }).fields
+      if (fields && typeof fields === 'object' && !Array.isArray(fields)) {
+        Object.entries(fields as Record<string, unknown>).forEach(([apiField, message]) => {
+          const field = apiFieldMap[apiField]
+          if (field && typeof message === 'string' && message.trim()) {
+            nextErrors[field] = message
+          }
+        })
+      }
+    }
+
+    if (Array.isArray(detail)) {
+      detail.forEach((item) => {
+        if (!item || typeof item !== 'object') return
+        const loc = (item as { loc?: unknown }).loc
+        const msg = (item as { msg?: unknown }).msg
+        if (!Array.isArray(loc) || typeof msg !== 'string') return
+        const apiField = String(loc[loc.length - 1] ?? '')
+        const field = apiFieldMap[apiField]
+        if (field && msg.trim()) {
+          nextErrors[field] = msg
+        }
+      })
+    }
+
+    return nextErrors
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (submitting) return
@@ -337,6 +392,10 @@ export function RegisterPage() {
     } catch (caught) {
       console.error('Register error:', caught)
       if (caught instanceof ApiError) {
+        const apiFieldErrors = extractApiFieldErrors(caught)
+        if (Object.keys(apiFieldErrors).length > 0) {
+          setFieldErrors((current) => ({ ...current, ...apiFieldErrors }))
+        }
         setError(extractApiErrorMessage(caught))
       } else {
         setError(t.errors.networkFail)
@@ -467,6 +526,7 @@ export function RegisterPage() {
                   )
                 })}
             </div>
+            {fieldErrors.academicDegrees && <span className="form-error-text">{fieldErrors.academicDegrees}</span>}
           </div>
 
           <label className="form-field">

@@ -43,6 +43,7 @@ import PublicArticleDetailPage from './pages/PublicArticleDetailPage'
 import VolumeEditPage from './pages/VolumeEditPage'
 import NotificationsPage from './pages/NotificationsPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import QuickPublishPage from './pages/QuickPublishPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import RoleRequestsPage from './pages/RoleRequestsPage'
@@ -87,6 +88,7 @@ const publicRoutes: { path: string; element: ReactElement }[] = [
   { path: '/register', element: <RegisterPage /> },
   { path: '/authors', element: <AuthorsInfoPage /> },
   { path: '/auth/verify-email', element: <VerifyEmailPage /> },
+  { path: '/auth/reset-password', element: <ResetPasswordPage /> },
 ]
 
 function localizedRoutePath(path: string) {

@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 import httpx
 import secrets
@@ -141,6 +143,45 @@ def generate_temporary_password(length: int = 12) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
+def build_registration_conflict_error(existing_username: bool, existing_email: bool) -> HTTPException:
+    field_errors: dict[str, str] = {}
+    if existing_username:
+        field_errors["username"] = "Пользователь с таким логином уже существует"
+    if existing_email:
+        field_errors["email"] = "Пользователь с такой почтой уже зарегистрирован"
+    return HTTPException(
+        status_code=400,
+        detail={
+            "message": "Не удалось завершить регистрацию",
+            "fields": field_errors,
+        },
+    )
+
+
+def send_password_reset_notification(user: models.User, reset_link: str) -> None:
+    display_name = user.full_name or user.first_name or user.username
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            client.post(
+                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
+                json={
+                    "user_id": user.id,
+                    "type": "system",
+                    "title": "Восстановление пароля",
+                    "message": (
+                        f"Здравствуйте, {display_name}. "
+                        "Для смены пароля перейдите по ссылке: "
+                        f"{reset_link}. "
+                        "Если вы не запрашивали восстановление, просто проигнорируйте это письмо."
+                    ),
+                    "related_entity": f"auth:password-reset:{user.id}",
+                },
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+    except Exception:
+        pass
+
+
 def normalize_preferred_language(value: str | list[str] | None) -> str | None:
     if value is None:
         return None
@@ -223,21 +264,12 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if requested_role not in PUBLIC_REGISTRATION_ROLES:
         raise HTTPException(status_code=400, detail="Invalid registration role")
 
-    existing_username = db.query(models.User).filter(models.User.username == user.username).first()
-    existing_email = db.query(models.User).filter(models.User.email == user.email).first()
+    username = user.username.strip()
+    email = str(user.email).strip().lower()
+    existing_username = db.query(models.User).filter(models.User.username == username).first()
+    existing_email = db.query(models.User).filter(func.lower(models.User.email) == email).first()
     if existing_username or existing_email:
-        field_errors: dict[str, str] = {}
-        if existing_username:
-            field_errors["username"] = "Пользователь с таким логином уже существует"
-        if existing_email:
-            field_errors["email"] = "Пользователь с таким email уже существует"
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Не удалось завершить регистрацию",
-                "fields": field_errors,
-            },
-        )
+        raise build_registration_conflict_error(bool(existing_username), bool(existing_email))
 
     normalized_preferred_language = normalize_preferred_language(user.preferred_language)
     normalized_academic_degrees = normalize_academic_degrees(user.academic_degrees)
@@ -283,13 +315,13 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     is_active = True if requested_role == "author" else False
     
     new_user = models.User(
-        username=user.username,
+        username=username,
         full_name=user.full_name,
         first_name=user.first_name,
         last_name=user.last_name,
         organization=user.organization,
         institution=user.institution,
-        email=user.email,
+        email=email,
         hashed_password=hashed_password,
         role=requested_role,
         is_active=is_active,
@@ -297,7 +329,13 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         notify_status=user.notify_status,
     )
     db.add(new_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing_username = db.query(models.User).filter(models.User.username == username).first()
+        existing_email = db.query(models.User).filter(func.lower(models.User.email) == email).first()
+        raise build_registration_conflict_error(bool(existing_username), bool(existing_email))
     db.refresh(new_user)
 
     # Create profile in User Profile Service
@@ -371,6 +409,43 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         pass
 
     return new_user
+
+
+@router.post("/forgot-password", response_model=schemas.MessageResponse)
+def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = str(payload.email).strip().lower()
+    user = db.query(models.User).filter(
+        func.lower(models.User.email) == email,
+        models.User.is_hidden == False,
+    ).first()
+
+    if user:
+        reset_token = security.create_access_token({"sub": str(user.id), "purpose": "password_reset"})
+        reset_link = f"{config.PUBLIC_BASE_URL}/auth/reset-password?token={reset_token}"
+        send_password_reset_notification(user, reset_link)
+
+    return {"message": "Если аккаунт с такой почтой существует, мы отправили ссылку для восстановления пароля."}
+
+
+@router.post("/reset-password", response_model=schemas.MessageResponse)
+def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        decoded = jwt.decode(payload.token, config.SECRET_KEY, algorithms=[config.ALGORITHM])
+        sub = decoded.get("sub")
+        purpose = decoded.get("purpose")
+        if not sub or purpose != "password_reset":
+            raise HTTPException(status_code=400, detail="Invalid password reset token")
+        user_id = int(sub)
+    except (JWTError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid or expired password reset token")
+
+    user = db.query(models.User).filter(models.User.id == user_id, models.User.is_hidden == False).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.hashed_password = security.hash_password(payload.new_password)
+    db.commit()
+    return {"message": "Пароль обновлен. Теперь вы можете войти с новым паролем."}
 
 
 @router.get("/verify-email")

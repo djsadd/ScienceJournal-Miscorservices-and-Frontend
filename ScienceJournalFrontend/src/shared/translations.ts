@@ -73,6 +73,40 @@ type LoginCopy = {
   fields: { identifierLabel: string; identifierPlaceholder: string; passwordLabel: string; passwordPlaceholder: string }
   rememberDevice: string
   needHelp: string
+  forgot: {
+    trigger: string
+    title: string
+    description: string
+    emailLabel: string
+    emailPlaceholder: string
+    submitIdle: string
+    submitBusy: string
+    successTitle: string
+    errorTitle: string
+    invalidEmail: string
+    sent: string
+  }
+  reset: {
+    headerEyebrow: string
+    headerTitle: string
+    headerSubtitle: string
+    tokenMissing: string
+    newPasswordLabel: string
+    newPasswordPlaceholder: string
+    confirmLabel: string
+    confirmPlaceholder: string
+    submitIdle: string
+    submitBusy: string
+    successTitle: string
+    errorTitle: string
+    passwordUpdated: string
+    passwordTooShort: string
+    passwordWeak: string
+    passwordMismatch: string
+    apiFail: string
+    networkFail: string
+    backToLogin: string
+  }
   submitIdle: string
   submitBusy: string
   footerPrompt: string
@@ -507,6 +541,40 @@ export const loginCopy: Record<Lang, LoginCopy> = {
     },
     rememberDevice: 'Запомнить устройство',
     needHelp: 'Нужна помощь?',
+    forgot: {
+      trigger: 'Забыли пароль?',
+      title: 'Восстановление пароля',
+      description: 'Введите email аккаунта. Мы отправим ссылку для создания нового пароля.',
+      emailLabel: 'Email',
+      emailPlaceholder: 'name@example.com',
+      submitIdle: 'Отправить ссылку',
+      submitBusy: 'Отправляем...',
+      successTitle: 'Проверьте почту',
+      errorTitle: 'Не удалось отправить',
+      invalidEmail: 'Введите корректный email',
+      sent: 'Если аккаунт с такой почтой существует, мы отправили ссылку для восстановления пароля.',
+    },
+    reset: {
+      headerEyebrow: 'Новый пароль',
+      headerTitle: 'Создайте новый пароль',
+      headerSubtitle: 'Введите новый пароль для аккаунта журнала.',
+      tokenMissing: 'Ссылка восстановления некорректна или устарела. Запросите новую ссылку на странице входа.',
+      newPasswordLabel: 'Новый пароль',
+      newPasswordPlaceholder: 'Минимум 8 символов',
+      confirmLabel: 'Подтвердите пароль',
+      confirmPlaceholder: 'Повторите пароль ещё раз',
+      submitIdle: 'Обновить пароль',
+      submitBusy: 'Сохраняем...',
+      successTitle: 'Пароль обновлен',
+      errorTitle: 'Не удалось обновить пароль',
+      passwordUpdated: 'Пароль обновлен. Теперь вы можете войти с новым паролем.',
+      passwordTooShort: 'Пароль должен содержать минимум 8 символов',
+      passwordWeak: 'Пароль должен содержать буквы и цифры',
+      passwordMismatch: 'Пароли не совпадают',
+      apiFail: 'Ссылка восстановления некорректна или устарела. Запросите новую ссылку.',
+      networkFail: 'Не удалось обновить пароль. Проверьте подключение и попробуйте снова.',
+      backToLogin: 'Вернуться ко входу',
+    },
     submitIdle: 'Войти',
     submitBusy: 'Отправляем...',
     footerPrompt: 'Еще нет аккаунта?',
@@ -543,6 +611,40 @@ export const loginCopy: Record<Lang, LoginCopy> = {
     },
     rememberDevice: 'Remember this device',
     needHelp: 'Need help?',
+    forgot: {
+      trigger: 'Forgot password?',
+      title: 'Password recovery',
+      description: 'Enter your account email. We will send a link for creating a new password.',
+      emailLabel: 'Email',
+      emailPlaceholder: 'name@example.com',
+      submitIdle: 'Send link',
+      submitBusy: 'Sending...',
+      successTitle: 'Check your email',
+      errorTitle: 'Could not send',
+      invalidEmail: 'Enter a valid email address',
+      sent: 'If an account with this email exists, we sent a password recovery link.',
+    },
+    reset: {
+      headerEyebrow: 'New password',
+      headerTitle: 'Create a new password',
+      headerSubtitle: 'Enter a new password for your journal account.',
+      tokenMissing: 'The recovery link is invalid or expired. Request a new link from the login page.',
+      newPasswordLabel: 'New password',
+      newPasswordPlaceholder: 'Minimum 8 characters',
+      confirmLabel: 'Confirm password',
+      confirmPlaceholder: 'Repeat password once more',
+      submitIdle: 'Update password',
+      submitBusy: 'Saving...',
+      successTitle: 'Password updated',
+      errorTitle: 'Could not update password',
+      passwordUpdated: 'Password updated. You can now sign in with your new password.',
+      passwordTooShort: 'Password must be at least 8 characters long',
+      passwordWeak: 'Password must contain letters and numbers',
+      passwordMismatch: 'Passwords do not match',
+      apiFail: 'The recovery link is invalid or expired. Request a new link.',
+      networkFail: 'Failed to update password. Check your connection and try again.',
+      backToLogin: 'Back to login',
+    },
     submitIdle: 'Log in',
     submitBusy: 'Submitting...',
     footerPrompt: 'No account yet?',
@@ -579,6 +681,40 @@ export const loginCopy: Record<Lang, LoginCopy> = {
     },
     rememberDevice: 'Құрылғыны есте сақтау',
     needHelp: 'Көмек керек пе?',
+    forgot: {
+      trigger: 'Құпиясөзді ұмыттыңыз ба?',
+      title: 'Құпиясөзді қалпына келтіру',
+      description: 'Аккаунт email-ін енгізіңіз. Жаңа құпиясөз жасауға арналған сілтемені жібереміз.',
+      emailLabel: 'Email',
+      emailPlaceholder: 'name@example.com',
+      submitIdle: 'Сілтемені жіберу',
+      submitBusy: 'Жіберілуде...',
+      successTitle: 'Поштаңызды тексеріңіз',
+      errorTitle: 'Жіберу мүмкін болмады',
+      invalidEmail: 'Дұрыс email енгізіңіз',
+      sent: 'Бұл email бойынша аккаунт бар болса, құпиясөзді қалпына келтіру сілтемесін жібердік.',
+    },
+    reset: {
+      headerEyebrow: 'Жаңа құпиясөз',
+      headerTitle: 'Жаңа құпиясөз жасаңыз',
+      headerSubtitle: 'Журнал аккаунты үшін жаңа құпиясөз енгізіңіз.',
+      tokenMissing: 'Қалпына келтіру сілтемесі дұрыс емес немесе ескірген. Кіру бетінен жаңа сілтеме сұраңыз.',
+      newPasswordLabel: 'Жаңа құпиясөз',
+      newPasswordPlaceholder: 'Ең аз 8 таңба',
+      confirmLabel: 'Құпиясөзді растау',
+      confirmPlaceholder: 'Құпиясөзді қайта енгізіңіз',
+      submitIdle: 'Құпиясөзді жаңарту',
+      submitBusy: 'Сақталуда...',
+      successTitle: 'Құпиясөз жаңартылды',
+      errorTitle: 'Құпиясөзді жаңарту мүмкін болмады',
+      passwordUpdated: 'Құпиясөз жаңартылды. Енді жаңа құпиясөзбен кіре аласыз.',
+      passwordTooShort: 'Құпиясөз кемінде 8 таңбадан тұруы керек',
+      passwordWeak: 'Құпиясөзде әріптер мен сандар болуы керек',
+      passwordMismatch: 'Құпиясөздер сәйкес емес',
+      apiFail: 'Қалпына келтіру сілтемесі дұрыс емес немесе ескірген. Жаңа сілтеме сұраңыз.',
+      networkFail: 'Құпиясөзді жаңарту сәтсіз. Қосылымды тексеріп, қайта көріңіз.',
+      backToLogin: 'Кіру бетіне қайту',
+    },
     submitIdle: 'Кіру',
     submitBusy: 'Жіберілуде...',
     footerPrompt: 'Әлі тіркелген жоқсыз ба?',
