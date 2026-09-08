@@ -47,6 +47,17 @@ class NotificationArticleCreate(BaseModel):
     type: Optional[NotificationType] = NotificationType.article_status
 
 
+class InternalEmailCreate(BaseModel):
+    user_id: int
+    subject: str
+    text: str
+    html: Optional[str] = None
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
 class NotificationUpdateStatus(BaseModel):
     status: NotificationStatus
 

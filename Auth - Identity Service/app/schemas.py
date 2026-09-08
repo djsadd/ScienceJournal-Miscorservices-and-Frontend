@@ -143,7 +143,7 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    token: str
+    token: str = Field(min_length=36, max_length=36)
     new_password: str = Field(min_length=8, max_length=128)
 
 

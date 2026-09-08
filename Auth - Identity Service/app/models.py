@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from app.database import Base
 
 
@@ -19,3 +21,17 @@ class User(Base):
     is_hidden = Column(Boolean, default=False, nullable=False)
     accept_terms = Column(Boolean, default=False)
     notify_status = Column(Boolean, default=True)
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    request_uuid = Column(String(36), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    request_ip = Column(String(64), nullable=True)
+    request_user_agent = Column(String(512), nullable=True)

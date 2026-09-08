@@ -1,4 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from datetime import datetime, timedelta
+import hashlib
+import html
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -33,6 +38,7 @@ ALLOWED_ACADEMIC_DEGREES = {
 }
 PUBLIC_REGISTRATION_ROLES = {"author", "editor", "reviewer"}
 BLOCKED_REGISTRATION_ROLES = {"admin", "administrator"}
+PASSWORD_RESET_GENERIC_MESSAGE = "Если аккаунт с такой почтой существует, мы отправили ссылку для восстановления пароля."
 
 def get_db():
     db = database.SessionLocal()
@@ -143,6 +149,17 @@ def generate_temporary_password(length: int = 12) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
+def hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def normalize_uuid_token(token: str) -> str:
+    try:
+        return str(uuid.UUID(token.strip()))
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=400, detail="Invalid or expired password reset token")
+
+
 def build_registration_conflict_error(existing_username: bool, existing_email: bool) -> HTTPException:
     field_errors: dict[str, str] = {}
     if existing_username:
@@ -160,21 +177,32 @@ def build_registration_conflict_error(existing_username: bool, existing_email: b
 
 def send_password_reset_notification(user: models.User, reset_link: str) -> None:
     display_name = user.full_name or user.first_name or user.username
+    title = "Восстановление пароля"
+    text = (
+        f"Здравствуйте, {display_name}.\n\n"
+        "Для смены пароля перейдите по ссылке:\n"
+        f"{reset_link}\n\n"
+        f"Ссылка действует {config.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES} минут.\n"
+        "Если вы не запрашивали восстановление, просто проигнорируйте это письмо."
+    )
+    escaped_link = html.escape(reset_link, quote=True)
+    escaped_name = html.escape(display_name)
+    html_body = (
+        f"<p>Здравствуйте, {escaped_name}.</p>"
+        f"<p>Для смены пароля перейдите по ссылке:</p>"
+        f'<p><a href="{escaped_link}">{escaped_link}</a></p>'
+        f"<p>Ссылка действует {config.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES} минут.</p>"
+        "<p>Если вы не запрашивали восстановление, просто проигнорируйте это письмо.</p>"
+    )
     try:
         with httpx.Client(timeout=5.0) as client:
             client.post(
-                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
+                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal/email",
                 json={
                     "user_id": user.id,
-                    "type": "system",
-                    "title": "Восстановление пароля",
-                    "message": (
-                        f"Здравствуйте, {display_name}. "
-                        "Для смены пароля перейдите по ссылке: "
-                        f"{reset_link}. "
-                        "Если вы не запрашивали восстановление, просто проигнорируйте это письмо."
-                    ),
-                    "related_entity": f"auth:password-reset:{user.id}",
+                    "subject": title,
+                    "text": text,
+                    "html": html_body,
                 },
                 headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
             )
@@ -412,7 +440,11 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/forgot-password", response_model=schemas.MessageResponse)
-def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password(
+    payload: schemas.ForgotPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     email = str(payload.email).strip().lower()
     user = db.query(models.User).filter(
         func.lower(models.User.email) == email,
@@ -420,30 +452,48 @@ def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depend
     ).first()
 
     if user:
-        reset_token = security.create_access_token({"sub": str(user.id), "purpose": "password_reset"})
+        now = datetime.utcnow()
+        reset_token = str(uuid.uuid4())
+        token_record = models.PasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_reset_token(reset_token),
+            request_uuid=str(uuid.uuid4()),
+            created_at=now,
+            expires_at=now + timedelta(minutes=config.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES),
+            request_ip=request.client.host if request.client else None,
+            request_user_agent=(request.headers.get("user-agent") or "")[:512] or None,
+        )
+        db.add(token_record)
+        db.commit()
         reset_link = f"{config.PUBLIC_BASE_URL}/auth/reset-password?token={reset_token}"
         send_password_reset_notification(user, reset_link)
 
-    return {"message": "Если аккаунт с такой почтой существует, мы отправили ссылку для восстановления пароля."}
+    return {"message": PASSWORD_RESET_GENERIC_MESSAGE}
 
 
 @router.post("/reset-password", response_model=schemas.MessageResponse)
 def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
-    try:
-        decoded = jwt.decode(payload.token, config.SECRET_KEY, algorithms=[config.ALGORITHM])
-        sub = decoded.get("sub")
-        purpose = decoded.get("purpose")
-        if not sub or purpose != "password_reset":
-            raise HTTPException(status_code=400, detail="Invalid password reset token")
-        user_id = int(sub)
-    except (JWTError, ValueError):
+    now = datetime.utcnow()
+    token = normalize_uuid_token(payload.token)
+    token_record = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token_hash == hash_reset_token(token),
+        models.PasswordResetToken.used_at.is_(None),
+        models.PasswordResetToken.expires_at > now,
+    ).first()
+    if not token_record:
         raise HTTPException(status_code=400, detail="Invalid or expired password reset token")
 
-    user = db.query(models.User).filter(models.User.id == user_id, models.User.is_hidden == False).first()
+    user = db.query(models.User).filter(models.User.id == token_record.user_id, models.User.is_hidden == False).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     user.hashed_password = security.hash_password(payload.new_password)
+    token_record.used_at = now
+    db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.user_id == user.id,
+        models.PasswordResetToken.used_at.is_(None),
+        models.PasswordResetToken.id != token_record.id,
+    ).update({"used_at": now}, synchronize_session=False)
     db.commit()
     return {"message": "Пароль обновлен. Теперь вы можете войти с новым паролем."}
 

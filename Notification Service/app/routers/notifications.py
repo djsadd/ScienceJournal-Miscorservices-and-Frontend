@@ -99,6 +99,28 @@ def create_notification_internal(
     return notification
 
 
+@router.post("/internal/email", response_model=schemas.MessageResponse)
+def send_internal_email(
+    payload: schemas.InternalEmailCreate,
+    request: Request,
+):
+    secret = request.headers.get("X-Service-Secret")
+    if not secret or secret != config.SHARED_SERVICE_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    recipient = _get_user_email(payload.user_id)
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient email not found")
+
+    try:
+        send_email(recipient, payload.subject, payload.text, payload.html)
+    except Exception as e:
+        logger.warning("Internal email send failed for user_id=%s: %s", payload.user_id, e)
+        raise HTTPException(status_code=502, detail="Email send failed")
+
+    return {"message": "Email sent"}
+
+
 @router.post("/article", response_model=schemas.NotificationOut)
 def create_article_notification(
     payload: schemas.NotificationArticleCreate,
