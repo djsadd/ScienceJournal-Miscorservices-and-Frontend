@@ -43,6 +43,7 @@ import PublicArticleDetailPage from './pages/PublicArticleDetailPage'
 import VolumeEditPage from './pages/VolumeEditPage'
 import NotificationsPage from './pages/NotificationsPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import QuickPublishPage from './pages/QuickPublishPage'
 import AdminUsersPage from './pages/AdminUsersPage'
@@ -88,6 +89,7 @@ const publicRoutes: { path: string; element: ReactElement }[] = [
   { path: '/register', element: <RegisterPage /> },
   { path: '/authors', element: <AuthorsInfoPage /> },
   { path: '/auth/verify-email', element: <VerifyEmailPage /> },
+  { path: '/auth/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/auth/reset-password', element: <ResetPasswordPage /> },
 ]
 

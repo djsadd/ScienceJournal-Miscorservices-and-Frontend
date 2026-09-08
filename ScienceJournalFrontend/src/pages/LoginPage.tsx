@@ -5,8 +5,6 @@ import { Alert } from '../shared/components/Alert'
 import { useLanguage } from '../shared/LanguageContext'
 import { loginCopy } from '../shared/translations'
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 export function LoginPage() {
   const { lang } = useLanguage()
   const t = loginCopy[lang]
@@ -15,40 +13,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [forgotEmail, setForgotEmail] = useState('')
-  const [forgotSubmitting, setForgotSubmitting] = useState(false)
-  const [forgotError, setForgotError] = useState<string | null>(null)
-  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null)
   const navigate = useNavigate()
-
-  const handleForgotPassword = async () => {
-    if (forgotSubmitting) return
-
-    const email = forgotEmail.trim()
-    if (!emailPattern.test(email)) {
-      setForgotSuccess(null)
-      setForgotError(t.forgot.invalidEmail)
-      return
-    }
-
-    setForgotSubmitting(true)
-    setForgotError(null)
-    setForgotSuccess(null)
-    try {
-      await api.post<{ message: string }>('/auth/forgot-password', { email })
-      setForgotSuccess(t.forgot.sent)
-    } catch (error) {
-      console.error('Forgot password error:', error)
-      if (error instanceof ApiError) {
-        setForgotError(t.errors.apiFail)
-      } else {
-        setForgotError(t.errors.networkFail)
-      }
-    } finally {
-      setForgotSubmitting(false)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -141,56 +106,10 @@ export function LoginPage() {
               <input type="checkbox" />
               <span>{t.rememberDevice}</span>
             </label>
-            <button
-              className="auth-link auth-link-button"
-              type="button"
-              onClick={() => {
-                setShowForgotPassword((current) => !current)
-                setForgotEmail((current) => current || (identifier.includes('@') ? identifier : ''))
-                setForgotError(null)
-                setForgotSuccess(null)
-              }}
-            >
+            <Link className="auth-link" to={localizedHref('/auth/forgot-password')}>
               {t.forgot.trigger}
-            </button>
+            </Link>
           </div>
-
-          {showForgotPassword && (
-            <div className="forgot-password-panel">
-              <div>
-                <div className="forgot-password-panel__title">{t.forgot.title}</div>
-                <div className="form-hint">{t.forgot.description}</div>
-              </div>
-              {forgotSuccess && (
-                <Alert variant="success" title={t.forgot.successTitle} className="auth-alert">
-                  {forgotSuccess}
-                </Alert>
-              )}
-              {forgotError && (
-                <Alert variant="error" title={t.forgot.errorTitle} className="auth-alert">
-                  {forgotError}
-                </Alert>
-              )}
-              <label className="form-field">
-                <span className="form-label">{t.forgot.emailLabel}</span>
-                <input
-                  className={`text-input${forgotError ? ' text-input--error' : ''}`}
-                  type="email"
-                  placeholder={t.forgot.emailPlaceholder}
-                  value={forgotEmail}
-                  onChange={(e) => {
-                    setForgotEmail(e.target.value)
-                    setForgotError(null)
-                    setForgotSuccess(null)
-                  }}
-                  required
-                />
-              </label>
-              <button type="button" className="button button--ghost" disabled={forgotSubmitting} onClick={handleForgotPassword}>
-                {forgotSubmitting ? t.forgot.submitBusy : t.forgot.submitIdle}
-              </button>
-            </div>
-          )}
 
           <button type="submit" className="button button--primary auth-submit" disabled={submitting}>
             {submitting ? t.submitBusy : t.submitIdle}
