@@ -795,6 +795,12 @@
   color: #2b2f3c;
 }
 
+.required-star {
+  color: #c93c37;
+  font-weight: 700;
+  margin-left: 0.18rem;
+}
+
 .app-shell .form-label {
   font-size: 0.92rem;
 }
@@ -835,6 +841,11 @@
   background: #f9fafc;
   font-size: 0.95rem;
   color: #4c5160;
+}
+
+.file-input--error {
+  border-color: #c93c37;
+  background: #fff6f5;
 }
 
 .app-shell .file-input {

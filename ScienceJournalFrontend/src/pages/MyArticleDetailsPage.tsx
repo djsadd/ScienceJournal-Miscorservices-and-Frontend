@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { getArticleLanguageLabel, getArticleLanguageOptions } from '../shared/articleLanguages'
 import { getCountryLabel, type CountryValue } from '../shared/countries'
 import { toApiFilesUrl } from '../shared/url'
 
@@ -11,6 +12,7 @@ interface ApiKeyword {
   title_ru: string
 }
 type Keyword = { id?: number; ru: string; kz: string; en: string }
+type ArticleType = 'original' | 'review'
 
 interface ApiAuthor {
   id: number
@@ -39,6 +41,7 @@ interface ApiArticle {
   abstract_kz: string
   abstract_en: string
   abstract_ru: string
+  article_language: string | null
   doi: string | null
   status: string
   article_type: string
@@ -82,7 +85,36 @@ interface ArticleUpdatePayload {
   abstract_kz?: string | null
   abstract_en?: string | null
   abstract_ru?: string | null
+  article_language?: string | null
+  article_type?: ArticleType | null
   doi?: string | null
+  not_published_elsewhere?: boolean | null
+  plagiarism_free?: boolean | null
+  authors_agree?: boolean | null
+  generative_ai_info?: string | null
+}
+
+const RequiredMark = () => <span className="required-star" aria-hidden="true">*</span>
+const editableArticleStatuses = ['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision', 'draft']
+const articleTypeOptions: ArticleType[] = ['original', 'review']
+const articleLanguageOptions = getArticleLanguageOptions('ru').map((option) => ({
+  value: option.code,
+  label: option.label,
+}))
+
+const updateErrorText = {
+  invalidForm: 'Сорри, исправьте ошибки в обязательных полях и попробуйте отправить статью снова.',
+  articleType: 'Выберите тип статьи',
+  articleLanguage: 'Выберите язык статьи',
+  title: 'Заполните название статьи',
+  abstract: 'Заполните аннотацию',
+  keywords: 'Добавьте минимум 5 ключевых слов и заполните каждое слово на трех языках',
+  authors: 'Добавьте сведения об авторах',
+  manuscript: 'Загрузите рукопись',
+  authorInfo: 'Загрузите файл со сведениями об авторах',
+  copyright: 'Подтвердите, что статья ранее не публиковалась и не рассматривается другим журналом',
+  originality: 'Подтвердите отсутствие плагиата',
+  consent: 'Подтвердите согласие всех авторов',
 }
 
 export function MyArticleDetailsPage() {
@@ -92,6 +124,8 @@ export function MyArticleDetailsPage() {
   const [myFiles, setMyFiles] = useState<ApiMyFile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [showRevokeConfirm, setShowRevokeConfirm] = useState(false)
   const [revokeMessage, setRevokeMessage] = useState<string | null>(null)
   const [revokeLoading, setRevokeLoading] = useState(false)
@@ -151,6 +185,7 @@ export function MyArticleDetailsPage() {
     const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
     return fromQuery && ['ru', 'en', 'kz'].includes(fromQuery) ? fromQuery : 'ru'
   })
+  const canEdit = Boolean(article && editableArticleStatuses.includes(article.status))
 
   useEffect(() => {
     if (!id) return
@@ -261,9 +296,52 @@ export function MyArticleDetailsPage() {
     }
   }
 
+  const hasStoredFile = (kind: ApiMyFile['kind'], fileUrl: string | null) =>
+    Boolean(fileUrl || myFiles.some((file) => file.kind === kind))
+
+  const scrollToFirstError = (errors: Record<string, string>) => {
+    const firstErrorKey = Object.keys(errors)[0]
+    const el = document.querySelector<HTMLElement>(`[data-error-key="${firstErrorKey}"]`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  const validateUpdate = () => {
+    if (!article) return false
+    const nextErrors: Record<string, string> = {}
+
+    if (!article.article_type) nextErrors.articleType = updateErrorText.articleType
+    if (!article.article_language) nextErrors.articleLanguage = updateErrorText.articleLanguage
+    ;(['ru', 'kz', 'en'] as const).forEach((contentLang) => {
+      const title = article[`title_${contentLang}` as keyof Pick<ApiArticle, 'title_ru' | 'title_kz' | 'title_en'>]
+      const abstract = article[`abstract_${contentLang}` as keyof Pick<ApiArticle, 'abstract_ru' | 'abstract_kz' | 'abstract_en'>]
+      if (!String(title ?? '').trim()) nextErrors[`title_${contentLang}`] = updateErrorText.title
+      if (!String(abstract ?? '').trim()) nextErrors[`abstract_${contentLang}`] = updateErrorText.abstract
+    })
+    if (
+      selectedKeywords.length < 5
+      || selectedKeywords.some((keyword) => !keyword.ru.trim() || !keyword.kz.trim() || !keyword.en.trim())
+    ) nextErrors.keywords = updateErrorText.keywords
+    if (authorList.length === 0) nextErrors.authorList = updateErrorText.authors
+    if (!fileManuscript && !hasStoredFile('manuscript', article.manuscript_file_url)) nextErrors.manuscript = updateErrorText.manuscript
+    if (!fileAuthorInfo && !hasStoredFile('author_info', article.author_info_file_url)) nextErrors.authorInfo = updateErrorText.authorInfo
+    if (!article.not_published_elsewhere) nextErrors.confirmCopyright = updateErrorText.copyright
+    if (!article.plagiarism_free) nextErrors.confirmOriginality = updateErrorText.originality
+    if (!article.authors_agree) nextErrors.confirmConsent = updateErrorText.consent
+
+    setFieldErrors(nextErrors)
+    setSubmitError(Object.keys(nextErrors).length ? updateErrorText.invalidForm : null)
+    if (Object.keys(nextErrors).length) {
+      scrollToFirstError(nextErrors)
+      return false
+    }
+    return true
+  }
+
   const handleUpdate = async () => {
     if (!article) return
+    if (!validateUpdate()) return
     try {
+      setSubmitError(null)
       // optionally upload newly selected files
       const uploadFile = async (file: File) => {
         const formData = new FormData()
@@ -288,7 +366,13 @@ export function MyArticleDetailsPage() {
         abstract_kz: article.abstract_kz || null,
         abstract_en: article.abstract_en || null,
         abstract_ru: article.abstract_ru || null,
+        article_language: article.article_language || null,
+        article_type: (article.article_type || null) as ArticleType | null,
         doi: article.doi || null,
+        not_published_elsewhere: article.not_published_elsewhere,
+        plagiarism_free: article.plagiarism_free,
+        authors_agree: article.authors_agree,
+        generative_ai_info: article.generative_ai_info || null,
       }
       const extended: any = {
         ...payload,
@@ -331,7 +415,7 @@ export function MyArticleDetailsPage() {
   }
 
   const saveNewKeyword = async () => {
-    if (!newKeyword.ru.trim()) return
+    if (!newKeyword.ru.trim() || !newKeyword.kz.trim() || !newKeyword.en.trim()) return
     try {
       const created = await api.post<ApiKeyword>('/articles/keywords', {
         title_ru: newKeyword.ru.trim(),
@@ -374,6 +458,12 @@ export function MyArticleDetailsPage() {
         </div>
       </section>
 
+      {submitError && canEdit ? (
+        <div className="alert error" style={{ marginBottom: '1rem' }}>
+          {submitError}
+        </div>
+      ) : null}
+
       <div className="panel panel--compact">
         <div className="lang-toggle-row">
           <span className="lang-toggle-row__label">Язык рукописи</span>
@@ -405,34 +495,40 @@ export function MyArticleDetailsPage() {
 
       <div className="panel">
         <p className="eyebrow">Заголовок</p>
-        {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)) ? (
+        {canEdit ? (
           <>
             <div className="form-field">
-              <label className="form-label">Заголовок (RU)</label>
+              <label className="form-label">Заголовок (RU)<RequiredMark /></label>
               <input
-                className="text-input"
+                className={`text-input ${fieldErrors.title_ru ? 'text-input--error' : ''}`}
                 value={article.title_ru}
                 onChange={(e) => setArticle({ ...article, title_ru: e.target.value })}
                 placeholder="Заголовок на русском"
+                data-error-key="title_ru"
               />
+              {fieldErrors.title_ru ? <span className="form-error-text">{fieldErrors.title_ru}</span> : null}
             </div>
             <div className="form-field">
-              <label className="form-label">Title (EN)</label>
+              <label className="form-label">Title (EN)<RequiredMark /></label>
               <input
-                className="text-input"
+                className={`text-input ${fieldErrors.title_en ? 'text-input--error' : ''}`}
                 value={article.title_en}
                 onChange={(e) => setArticle({ ...article, title_en: e.target.value })}
                 placeholder="Title in English"
+                data-error-key="title_en"
               />
+              {fieldErrors.title_en ? <span className="form-error-text">{fieldErrors.title_en}</span> : null}
             </div>
             <div className="form-field">
-              <label className="form-label">Тақырып (KZ)</label>
+              <label className="form-label">Тақырып (KZ)<RequiredMark /></label>
               <input
-                className="text-input"
+                className={`text-input ${fieldErrors.title_kz ? 'text-input--error' : ''}`}
                 value={article.title_kz}
                 onChange={(e) => setArticle({ ...article, title_kz: e.target.value })}
                 placeholder="Тақырып қазақ тілінде"
+                data-error-key="title_kz"
               />
+              {fieldErrors.title_kz ? <span className="form-error-text">{fieldErrors.title_kz}</span> : null}
             </div>
           </>
         ) : (
@@ -465,18 +561,62 @@ export function MyArticleDetailsPage() {
             </div>
           </div>
           <div className="form-field">
-            <div className="form-label">Тип статьи</div>
-            <div className="form-hint">
-              {article.article_type === 'original' ? 'Оригинальная статья' : article.article_type}
-            </div>
+            <div className="form-label">Тип статьи{canEdit ? <RequiredMark /> : null}</div>
+            {canEdit ? (
+              <>
+                <select
+                  className={`text-input ${fieldErrors.articleType ? 'text-input--error' : ''}`}
+                  value={article.article_type ?? ''}
+                  onChange={(e) => setArticle({ ...article, article_type: e.target.value })}
+                  data-error-key="articleType"
+                >
+                  <option value="">---------</option>
+                  {articleTypeOptions.map((type) => (
+                    <option key={type} value={type}>
+                      {type === 'original' ? 'Оригинальная статья' : 'Обзорная статья'}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.articleType ? <span className="form-error-text">{fieldErrors.articleType}</span> : null}
+              </>
+            ) : (
+              <div className="form-hint">
+                {article.article_type === 'original' ? 'Оригинальная статья' : article.article_type}
+              </div>
+            )}
           </div>
           <div className="form-field">
             <div className="form-label">Дата создания</div>
             <div className="form-hint">{new Date(article.created_at).toLocaleDateString('ru-RU')}</div>
           </div>
           <div className="form-field">
+            <div className="form-label">Язык статьи{canEdit ? <RequiredMark /> : null}</div>
+            {canEdit ? (
+              <>
+                <select
+                  className={`text-input ${fieldErrors.articleLanguage ? 'text-input--error' : ''}`}
+                  value={article.article_language ?? ''}
+                  onChange={(e) => setArticle({ ...article, article_language: e.target.value || null })}
+                  data-error-key="articleLanguage"
+                >
+                  <option value="">Не указан</option>
+                  {articleLanguageOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.articleLanguage ? <span className="form-error-text">{fieldErrors.articleLanguage}</span> : null}
+              </>
+            ) : (
+              <div className="form-hint">
+                {getArticleLanguageLabel(article.article_language, 'ru') || 'Не указан'}
+              </div>
+            )}
+          </div>
+          <div className="form-field">
             <div className="form-label">DOI</div>
-            {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)) ? (
+            {canEdit ? (
               <input
                 className="text-input"
                 value={article.doi ?? ''}
@@ -493,37 +633,43 @@ export function MyArticleDetailsPage() {
 
       <div className="panel">
         <p className="eyebrow">Аннотация</p>
-        {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)) ? (
+        {canEdit ? (
           <>
             <div className="form-field">
-              <label className="form-label">Аннотация (RU)</label>
+              <label className="form-label">Аннотация (RU)<RequiredMark /></label>
               <textarea
-                className="text-input"
+                className={`text-input ${fieldErrors.abstract_ru ? 'text-input--error' : ''}`}
                 rows={4}
                 value={article.abstract_ru}
                 onChange={(e) => setArticle({ ...article, abstract_ru: e.target.value })}
                 placeholder="Аннотация на русском"
+                data-error-key="abstract_ru"
               />
+              {fieldErrors.abstract_ru ? <span className="form-error-text">{fieldErrors.abstract_ru}</span> : null}
             </div>
             <div className="form-field">
-              <label className="form-label">Abstract (EN)</label>
+              <label className="form-label">Abstract (EN)<RequiredMark /></label>
               <textarea
-                className="text-input"
+                className={`text-input ${fieldErrors.abstract_en ? 'text-input--error' : ''}`}
                 rows={4}
                 value={article.abstract_en}
                 onChange={(e) => setArticle({ ...article, abstract_en: e.target.value })}
                 placeholder="Abstract in English"
+                data-error-key="abstract_en"
               />
+              {fieldErrors.abstract_en ? <span className="form-error-text">{fieldErrors.abstract_en}</span> : null}
             </div>
             <div className="form-field">
-              <label className="form-label">Аннотация (KZ)</label>
+              <label className="form-label">Аннотация (KZ)<RequiredMark /></label>
               <textarea
-                className="text-input"
+                className={`text-input ${fieldErrors.abstract_kz ? 'text-input--error' : ''}`}
                 rows={4}
                 value={article.abstract_kz}
                 onChange={(e) => setArticle({ ...article, abstract_kz: e.target.value })}
                 placeholder="Аннотация на казахском"
+                data-error-key="abstract_kz"
               />
+              {fieldErrors.abstract_kz ? <span className="form-error-text">{fieldErrors.abstract_kz}</span> : null}
             </div>
           </>
         ) : (
@@ -541,8 +687,8 @@ export function MyArticleDetailsPage() {
       </div>
 
       <div className="panel">
-        <p className="eyebrow">Ключевые слова</p>
-        {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision', 'draft'].includes(article.status)) ? (
+        <p className="eyebrow" data-error-key="keywords">Ключевые слова{canEdit ? <RequiredMark /> : null}</p>
+        {canEdit ? (
           <>
             {selectedKeywords.length > 0 ? (
               <div className="pill-list" style={{ marginBottom: '0.5rem' }}>
@@ -595,6 +741,7 @@ export function MyArticleDetailsPage() {
                 Добавить новое ключевое слово
               </button>
             ) : null}
+            {fieldErrors.keywords ? <span className="form-error-text">{fieldErrors.keywords}</span> : null}
           </>
         ) : (
           <>
@@ -619,27 +766,88 @@ export function MyArticleDetailsPage() {
         <p className="eyebrow">Согласия и проверки</p>
         <div className="grid grid-3">
           <div className="form-field">
-            <div className="form-label">Не публиковалась ранее</div>
-            <div className="form-hint">{article.not_published_elsewhere ? 'Да' : 'Нет'}</div>
+            {canEdit ? (
+              <>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={article.not_published_elsewhere}
+                    onChange={(e) => setArticle({ ...article, not_published_elsewhere: e.target.checked })}
+                    data-error-key="confirmCopyright"
+                  />{' '}
+                  Не публиковалась ранее<RequiredMark />
+                </label>
+                {fieldErrors.confirmCopyright ? <span className="form-error-text">{fieldErrors.confirmCopyright}</span> : null}
+              </>
+            ) : (
+              <>
+                <div className="form-label">Не публиковалась ранее</div>
+                <div className="form-hint">{article.not_published_elsewhere ? 'Да' : 'Нет'}</div>
+              </>
+            )}
           </div>
           <div className="form-field">
-            <div className="form-label">Без плагиата</div>
-            <div className="form-hint">{article.plagiarism_free ? 'Да' : 'Нет'}</div>
+            {canEdit ? (
+              <>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={article.plagiarism_free}
+                    onChange={(e) => setArticle({ ...article, plagiarism_free: e.target.checked })}
+                    data-error-key="confirmOriginality"
+                  />{' '}
+                  Без плагиата<RequiredMark />
+                </label>
+                {fieldErrors.confirmOriginality ? <span className="form-error-text">{fieldErrors.confirmOriginality}</span> : null}
+              </>
+            ) : (
+              <>
+                <div className="form-label">Без плагиата</div>
+                <div className="form-hint">{article.plagiarism_free ? 'Да' : 'Нет'}</div>
+              </>
+            )}
           </div>
           <div className="form-field">
-            <div className="form-label">Все авторы согласны</div>
-            <div className="form-hint">{article.authors_agree ? 'Да' : 'Нет'}</div>
+            {canEdit ? (
+              <>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={article.authors_agree}
+                    onChange={(e) => setArticle({ ...article, authors_agree: e.target.checked })}
+                    data-error-key="confirmConsent"
+                  />{' '}
+                  Все авторы согласны<RequiredMark />
+                </label>
+                {fieldErrors.confirmConsent ? <span className="form-error-text">{fieldErrors.confirmConsent}</span> : null}
+              </>
+            ) : (
+              <>
+                <div className="form-label">Все авторы согласны</div>
+                <div className="form-hint">{article.authors_agree ? 'Да' : 'Нет'}</div>
+              </>
+            )}
           </div>
           <div className="form-field" style={{ gridColumn: '1 / -1' }}>
             <div className="form-label">Использование генеративного ИИ</div>
-            <div className="form-hint">{article.generative_ai_info || 'Не указано'}</div>
+            {canEdit ? (
+              <textarea
+                className="text-input"
+                rows={3}
+                value={article.generative_ai_info ?? ''}
+                onChange={(e) => setArticle({ ...article, generative_ai_info: e.target.value || null })}
+                placeholder="Опишите, где и как использовался генеративный ИИ, если он применялся."
+              />
+            ) : (
+              <div className="form-hint">{article.generative_ai_info || 'Не указано'}</div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="panel">
-        <p className="eyebrow">Авторы</p>
-        {(!['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)) ? (
+        <p className="eyebrow" data-error-key="authorList">Авторы{canEdit ? <RequiredMark /> : null}</p>
+        {!canEdit ? (
           <>
             {article.authors.length === 0 ? (
               <div className="table__empty">Список авторов не заполнен.</div>
@@ -761,6 +969,7 @@ export function MyArticleDetailsPage() {
                 </div>
               </div>
             )}
+            {fieldErrors.authorList ? <span className="form-error-text">{fieldErrors.authorList}</span> : null}
           </>
         )}
       </div>
@@ -769,7 +978,7 @@ export function MyArticleDetailsPage() {
         <p className="eyebrow">Файлы</p>
         <div className="grid grid-3">
           <div className="form-field">
-            <div className="form-label">Рукопись</div>
+            <div className="form-label" data-error-key="manuscript">Рукопись{canEdit ? <RequiredMark /> : null}</div>
             {myFiles.find((f) => f.kind === 'manuscript') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'manuscript') as ApiMyFile
@@ -794,10 +1003,15 @@ export function MyArticleDetailsPage() {
             ) : (
               <div className="form-hint">Не загружено</div>
             )}
-            {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)) ? (
+            {canEdit ? (
               <div style={{ marginTop: '0.5rem' }}>
-                <input type="file" className="file-input" onChange={(e) => setFileManuscript(e.target.files?.[0] ?? null)} />
+                <input
+                  type="file"
+                  className={`file-input ${fieldErrors.manuscript ? 'file-input--error' : ''}`}
+                  onChange={(e) => setFileManuscript(e.target.files?.[0] ?? null)}
+                />
                 {fileManuscript ? <div className="form-hint">Новый файл: {fileManuscript.name}</div> : null}
+                {fieldErrors.manuscript ? <span className="form-error-text">{fieldErrors.manuscript}</span> : null}
               </div>
             ) : null}
           </div>
@@ -827,7 +1041,7 @@ export function MyArticleDetailsPage() {
             ) : (
               <div className="form-hint">Не загружено</div>
             )}
-            {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)) ? (
+            {canEdit ? (
               <div style={{ marginTop: '0.5rem' }}>
                 <input type="file" className="file-input" onChange={(e) => setFileAntiplagiarism(e.target.files?.[0] ?? null)} />
                 {fileAntiplagiarism ? <div className="form-hint">Новый файл: {fileAntiplagiarism.name}</div> : null}
@@ -835,7 +1049,7 @@ export function MyArticleDetailsPage() {
             ) : null}
           </div>
           <div className="form-field">
-            <div className="form-label">Данные автора</div>
+            <div className="form-label" data-error-key="authorInfo">Данные автора{canEdit ? <RequiredMark /> : null}</div>
             {myFiles.find((f) => f.kind === 'author_info') ? (
               (() => {
                 const f = myFiles.find((file) => file.kind === 'author_info') as ApiMyFile
@@ -860,10 +1074,15 @@ export function MyArticleDetailsPage() {
             ) : (
               <div className="form-hint">Не загружено</div>
             )}
-            {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)) ? (
+            {canEdit ? (
               <div style={{ marginTop: '0.5rem' }}>
-                <input type="file" className="file-input" onChange={(e) => setFileAuthorInfo(e.target.files?.[0] ?? null)} />
+                <input
+                  type="file"
+                  className={`file-input ${fieldErrors.authorInfo ? 'file-input--error' : ''}`}
+                  onChange={(e) => setFileAuthorInfo(e.target.files?.[0] ?? null)}
+                />
                 {fileAuthorInfo ? <div className="form-hint">Новый файл: {fileAuthorInfo.name}</div> : null}
+                {fieldErrors.authorInfo ? <span className="form-error-text">{fieldErrors.authorInfo}</span> : null}
               </div>
             ) : null}
           </div>
@@ -893,7 +1112,7 @@ export function MyArticleDetailsPage() {
             ) : (
               <div className="form-hint">Не загружено</div>
             )}
-            {article.status === 'withdrawn' ? (
+            {canEdit ? (
               <div style={{ marginTop: '0.5rem' }}>
                 <input type="file" className="file-input" onChange={(e) => setFileCoverLetter(e.target.files?.[0] ?? null)} />
                 {fileCoverLetter ? <div className="form-hint">Новый файл: {fileCoverLetter.name}</div> : null}
@@ -903,7 +1122,7 @@ export function MyArticleDetailsPage() {
         </div>
       </div>
 
-      {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)) && (
+      {canEdit && (
         <div className="panel">
           <div className="section-heading">
             <div>
@@ -983,7 +1202,7 @@ export function MyArticleDetailsPage() {
             </div>
             <div className="modal__body">
               <div className="form-field">
-                <label className="form-label">На русском</label>
+                <label className="form-label">На русском<RequiredMark /></label>
                 <input
                   className="text-input"
                   value={newKeyword.ru}
@@ -992,7 +1211,7 @@ export function MyArticleDetailsPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">На казахском</label>
+                <label className="form-label">На казахском<RequiredMark /></label>
                 <input
                   className="text-input"
                   value={newKeyword.kz}
@@ -1001,7 +1220,7 @@ export function MyArticleDetailsPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">На английском</label>
+                <label className="form-label">На английском<RequiredMark /></label>
                 <input
                   className="text-input"
                   value={newKeyword.en}
@@ -1014,7 +1233,7 @@ export function MyArticleDetailsPage() {
               <button className="button button--ghost" type="button" onClick={() => setKwModalOpen(false)}>
                 Отмена
               </button>
-              <button className="button button--primary" type="button" onClick={saveNewKeyword} disabled={!newKeyword.ru.trim()}>
+              <button className="button button--primary" type="button" onClick={saveNewKeyword} disabled={!newKeyword.ru.trim() || !newKeyword.kz.trim() || !newKeyword.en.trim()}>
                 Добавить
               </button>
             </div>
@@ -1033,7 +1252,7 @@ export function MyArticleDetailsPage() {
             </div>
             <div className="modal__body author-grid">
               <div className="form-field">
-                <label className="form-label">Email *</label>
+                <label className="form-label">Email<RequiredMark /></label>
                 <input
                   className="text-input"
                   value={authorForm.email}
@@ -1049,7 +1268,7 @@ export function MyArticleDetailsPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">Имя *</label>
+                <label className="form-label">Имя<RequiredMark /></label>
                 <input
                   className="text-input"
                   value={authorForm.firstName}
@@ -1065,7 +1284,7 @@ export function MyArticleDetailsPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">Фамилия *</label>
+                <label className="form-label">Фамилия<RequiredMark /></label>
                 <input
                   className="text-input"
                   value={authorForm.lastName}
@@ -1089,7 +1308,7 @@ export function MyArticleDetailsPage() {
                 />
               </div>
               <div className="form-field">
-                <label className="form-label">Страна *</label>
+                <label className="form-label">Страна<RequiredMark /></label>
                 <input
                   className="text-input"
                   value={authorForm.country}
@@ -1098,7 +1317,7 @@ export function MyArticleDetailsPage() {
               </div>
 
               <div className="form-field">
-                <label className="form-label">Аффилиация 1 *</label>
+                <label className="form-label">Аффилиация 1<RequiredMark /></label>
                 <textarea
                   className="text-input"
                   rows={3}
@@ -1178,7 +1397,7 @@ export function MyArticleDetailsPage() {
                 className="button button--primary"
                 type="button"
                 onClick={async () => {
-                  if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()) return
+                  if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()) return
                   try {
                     const payload = {
                       email: authorForm.email.trim(),
@@ -1225,7 +1444,7 @@ export function MyArticleDetailsPage() {
                     console.error('Failed to create author', err)
                   }
                 }}
-                disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim()}
+                disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()}
               >
                 Сохранить автора
               </button>

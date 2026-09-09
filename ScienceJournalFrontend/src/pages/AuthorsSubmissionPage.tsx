@@ -65,6 +65,8 @@ type AuthorForm = {
   researcherId: string
 }
 
+const RequiredMark = () => <span className="required-star" aria-hidden="true">*</span>
+
 const pageCopy: Record<LocaleKey, any> = {
   ru: {
     pageTitle: 'Загрузите рукопись',
@@ -198,7 +200,9 @@ const pageCopy: Record<LocaleKey, any> = {
     },
     errors: {
       server: 'Ошибка сервера',
+      invalidForm: 'Сорри, исправьте ошибки в обязательных полях и попробуйте отправить статью снова.',
       submitFailed: 'Не удалось отправить статью. Данные формы сохранены, исправьте ошибку и попробуйте снова.',
+      articleLanguage: 'Выберите язык статьи',
       articleType: 'Выберите тип статьи',
       title: 'Заполните заголовок',
       abstract: 'Заполните аннотацию',
@@ -343,7 +347,9 @@ const pageCopy: Record<LocaleKey, any> = {
     },
     errors: {
       server: 'Server error',
+      invalidForm: 'Sorry, fix the required fields and try submitting the article again.',
       submitFailed: 'Failed to submit the article. Form data was kept, fix the issue and try again.',
+      articleLanguage: 'Select article language',
       articleType: 'Select article type',
       title: 'Fill in the title',
       abstract: 'Fill in the abstract',
@@ -488,7 +494,9 @@ const pageCopy: Record<LocaleKey, any> = {
     },
     errors: {
       server: 'Сервер қатесі',
+      invalidForm: 'Кешіріңіз, міндетті өрістердегі қателерді түзетіп, мақаланы қайта жіберіңіз.',
       submitFailed: 'Мақаланы жіберу мүмкін болмады. Форма деректері сақталды, қатені түзетіп, қайта көріңіз.',
+      articleLanguage: 'Мақала тілін таңдаңыз',
       articleType: 'Мақала түрін таңдаңыз',
       title: 'Атауды толтырыңыз',
       abstract: 'Аңдатпаны толтырыңыз',
@@ -644,7 +652,7 @@ export function AuthorsSubmissionPage() {
     if (normalizedKeywords.length < 5 || hasIncompleteKeyword) {
       setErrors((prev) => ({
         ...prev,
-        keywords: 'Добавьте минимум 5 ключевых слов и заполните каждое слово на трех языках',
+        keywords: t.errors.keywordsFull,
       }))
       return
     }
@@ -697,7 +705,7 @@ export function AuthorsSubmissionPage() {
   })
 
   const saveAuthor = async () => {
-    if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim()) return
+    if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()) return
     try {
       const payload = {
         email: authorForm.email.trim(),
@@ -768,17 +776,27 @@ export function AuthorsSubmissionPage() {
   const validateSubmissionFields = (): boolean => {
     const nextErrors: Record<string, string> = {}
     if (!articleType) nextErrors.articleType = t.errors.articleType
+    if (!articleLanguage) nextErrors.articleLanguage = t.errors.articleLanguage
     ;(['ru', 'kz', 'en'] as Lang[]).forEach((contentLang) => {
       if (!titles[contentLang]?.trim()) nextErrors[`title_${contentLang}`] = t.errors.title
       if (!abstracts[contentLang]?.trim()) nextErrors[`abstract_${contentLang}`] = t.errors.abstract
     })
-    if (selectedKeywords.length < 5) nextErrors.keywords = t.errors.keywordsMin
+    if (
+      selectedKeywords.length < 5
+      || selectedKeywords.some((keyword) => !keyword.ru.trim() || !keyword.kz.trim() || !keyword.en.trim())
+    ) nextErrors.keywords = t.errors.keywordsFull
     if (authorList.length === 0) nextErrors.authorList = t.errors.authors
+    const manuscript = getFileNameFromInputIndex(0)
+    const authorInfo = getFileNameFromInputIndex(1)
+    if (!manuscript) nextErrors.manuscript = t.errors.manuscript
+    else if (!manuscript.toLowerCase().endsWith('.docx')) nextErrors.manuscript = t.errors.manuscriptExt
+    if (!authorInfo) nextErrors.authorInfo = t.errors.authorInfo
     if (!confirmCopyright) nextErrors.confirmCopyright = t.errors.copyright
     if (!confirmOriginality) nextErrors.confirmOriginality = t.errors.originality
     if (!confirmConsent) nextErrors.confirmConsent = t.errors.consent
 
     setErrors(nextErrors)
+    setSubmitError(Object.keys(nextErrors).length ? t.errors.invalidForm : null)
     if (Object.keys(nextErrors).length) {
       const firstErrorKey = Object.keys(nextErrors)[0]
       const el = document.querySelector<HTMLElement>(`[data-error-key="${firstErrorKey}"]`)
@@ -791,26 +809,27 @@ export function AuthorsSubmissionPage() {
   const validateForm = (): boolean => {
     const nextErrors: Record<string, string> = {}
     if (!articleType) nextErrors.articleType = t.errors.articleType
+    if (!articleLanguage) nextErrors.articleLanguage = t.errors.articleLanguage
     ;(['ru', 'kz', 'en'] as Lang[]).forEach((contentLang) => {
       if (!titles[contentLang]?.trim()) nextErrors[`title_${contentLang}`] = t.errors.title
       if (!abstracts[contentLang]?.trim()) nextErrors[`abstract_${contentLang}`] = t.errors.abstract
     })
-    if (selectedKeywords.length < 5) nextErrors.keywords = t.errors.keywordsMin
+    if (
+      selectedKeywords.length < 5
+      || selectedKeywords.some((keyword) => !keyword.ru.trim() || !keyword.kz.trim() || !keyword.en.trim())
+    ) nextErrors.keywords = t.errors.keywordsFull
     if (authorList.length === 0) nextErrors.authorList = t.errors.authors
     const manuscript = getFileNameFromInputIndex(0)
-    const antiplag = getFileNameFromInputIndex(3)
     const authorInfo = getFileNameFromInputIndex(1)
-    const coverLetter = getFileNameFromInputIndex(2)
     if (!manuscript) nextErrors.manuscript = t.errors.manuscript
     else if (!manuscript.toLowerCase().endsWith('.docx')) nextErrors.manuscript = t.errors.manuscriptExt
-    if (!antiplag) nextErrors.antiplagiarism = t.errors.antiplagiarism
     if (!authorInfo) nextErrors.authorInfo = t.errors.authorInfo
-    if (!coverLetter) nextErrors.coverLetter = t.errors.coverLetter
     if (!confirmCopyright) nextErrors.confirmCopyright = t.errors.copyright
     if (!confirmOriginality) nextErrors.confirmOriginality = t.errors.originality
     if (!confirmConsent) nextErrors.confirmConsent = t.errors.consent
 
     setErrors(nextErrors)
+    setSubmitError(Object.keys(nextErrors).length ? t.errors.invalidForm : null)
     if (Object.keys(nextErrors).length) {
       const firstErrorKey = Object.keys(nextErrors)[0]
       const el = document.querySelector<HTMLElement>(`[data-error-key="${firstErrorKey}"]`)
@@ -951,7 +970,7 @@ export function AuthorsSubmissionPage() {
           </div>
           )}
           <div className="form-field">
-            <label className="form-label">{t.articleTypeLabel}</label>
+            <label className="form-label">{t.articleTypeLabel}<RequiredMark /></label>
               <select
                 className="chip-select"
                 value={articleType}
@@ -968,11 +987,13 @@ export function AuthorsSubmissionPage() {
           </div>
 
           <div className="form-field">
-            <label className="form-label">{t.articleLanguage.label}</label>
+            <label className="form-label">{t.articleLanguage.label}<RequiredMark /></label>
             <select
               className="chip-select"
               value={articleLanguage}
               onChange={(e) => setArticleLanguage(e.target.value)}
+              data-error-key="articleLanguage"
+              style={errors.articleLanguage ? { borderColor: 'red' } : undefined}
             >
               {articleLanguageOptions.map((option) => (
                 <option key={option.code} value={option.code}>
@@ -981,10 +1002,11 @@ export function AuthorsSubmissionPage() {
               ))}
             </select>
             <p className="form-hint">{t.articleLanguage.hint}</p>
+            {errors.articleLanguage ? (<p className="form-hint" style={{ color: 'red' }}>{errors.articleLanguage}</p>) : null}
           </div>
 
           <div className="form-field form-field--article-file">
-            <label className="form-label">{t.keywords.label}</label>
+            <label className="form-label">{t.keywords.label}<RequiredMark /></label>
             <div className="form-field">
               {selectedKeywords.length > 0 ? (
                 <div className="pill-list">
@@ -1052,7 +1074,7 @@ export function AuthorsSubmissionPage() {
           </div>
 
           <div className="form-field">
-            <label className="form-label">{t.titleLabel} ({langLabels[activeLang]})</label>
+            <label className="form-label">{t.titleLabel} ({langLabels[activeLang]})<RequiredMark /></label>
             <input
               className="text-input"
               placeholder={t.titlePlaceholders[activeLang]}
@@ -1065,7 +1087,7 @@ export function AuthorsSubmissionPage() {
           </div>
 
           <div className="form-field">
-            <label className="form-label">{t.abstractLabel} ({langLabels[activeLang]})</label>
+            <label className="form-label">{t.abstractLabel} ({langLabels[activeLang]})<RequiredMark /></label>
             <textarea
               className="text-input"
               rows={4}
@@ -1080,10 +1102,10 @@ export function AuthorsSubmissionPage() {
 
 
           <div className="form-field">
-            <label className="form-label">{t.files.manuscript}</label>
+            <label className="form-label">{t.files.manuscript}<RequiredMark /></label>
             <input
               type="file"
-              className="file-input"
+              className={`file-input ${errors.manuscript ? 'file-input--error' : ''}`}
               data-upload-slot="article-file"
               data-error-key="manuscript"
               accept=".docx"
@@ -1104,8 +1126,8 @@ export function AuthorsSubmissionPage() {
           </div>
           )}
           <div className="form-field">
-            <label className="form-label">{t.files.authorInfo}</label>
-            <input type="file" className="file-input" data-upload-slot="article-file" data-error-key="authorInfo" style={errors.authorInfo ? { outline: '2px solid red' } : undefined} />
+            <label className="form-label">{t.files.authorInfo}<RequiredMark /></label>
+            <input type="file" className={`file-input ${errors.authorInfo ? 'file-input--error' : ''}`} data-upload-slot="article-file" data-error-key="authorInfo" style={errors.authorInfo ? { outline: '2px solid red' } : undefined} />
             {errors.authorInfo ? (<p className="form-hint" style={{ color: 'red' }}>{errors.authorInfo}</p>) : null}
           </div>
           <div className="form-field">
@@ -1132,7 +1154,7 @@ export function AuthorsSubmissionPage() {
                 onChange={(e) => setConfirmCopyright(e.target.checked)}
                 data-error-key="confirmCopyright"
               />{' '}
-              {t.confirmations.copyright}
+              {t.confirmations.copyright}<RequiredMark />
             </label>
             {errors.confirmCopyright ? (<p className="form-hint" style={{ color: 'red' }}>{errors.confirmCopyright}</p>) : null}
             <label className="checkbox">
@@ -1142,7 +1164,7 @@ export function AuthorsSubmissionPage() {
                 onChange={(e) => setConfirmOriginality(e.target.checked)}
                 data-error-key="confirmOriginality"
               />{' '}
-              {t.confirmations.originality}
+              {t.confirmations.originality}<RequiredMark />
             </label>
             {errors.confirmOriginality ? (<p className="form-hint" style={{ color: 'red' }}>{errors.confirmOriginality}</p>) : null}
             <label className="checkbox">
@@ -1152,7 +1174,7 @@ export function AuthorsSubmissionPage() {
                 onChange={(e) => setConfirmConsent(e.target.checked)}
                 data-error-key="confirmConsent"
               />{' '}
-              {t.confirmations.consent}
+              {t.confirmations.consent}<RequiredMark />
             </label>
             {errors.confirmConsent ? (<p className="form-hint" style={{ color: 'red' }}>{errors.confirmConsent}</p>) : null}
 
@@ -1166,7 +1188,7 @@ export function AuthorsSubmissionPage() {
         <div className="section-heading">
           <div>
             <p className="eyebrow">{t.authors.eyebrow}</p>
-            <h2 className="panel-title">{t.authors.title}</h2>
+            <h2 className="panel-title" data-error-key="authorList">{t.authors.title}<RequiredMark /></h2>
           </div>
           <button className="button button--primary button--compact" type="button" onClick={() => setAuthorModalOpen(true)}>
             {t.authors.add}
@@ -1247,7 +1269,7 @@ export function AuthorsSubmissionPage() {
                     </div>
                     <div className="keyword-row__grid">
                       <div className="form-field keyword-row__field" style={{ margin: 0 }}>
-                        <label className="form-label">{t.keywords.languageLabels.ru}</label>
+                        <label className="form-label">{t.keywords.languageLabels.ru}<RequiredMark /></label>
                         <input
                           className="text-input keyword-row__input"
                           value={keyword.ru}
@@ -1256,7 +1278,7 @@ export function AuthorsSubmissionPage() {
                         />
                       </div>
                       <div className="form-field keyword-row__field" style={{ margin: 0 }}>
-                        <label className="form-label">{t.keywords.languageLabels.kz}</label>
+                        <label className="form-label">{t.keywords.languageLabels.kz}<RequiredMark /></label>
                         <input
                           className="text-input keyword-row__input"
                           value={keyword.kz}
@@ -1265,7 +1287,7 @@ export function AuthorsSubmissionPage() {
                         />
                       </div>
                       <div className="form-field keyword-row__field" style={{ margin: 0 }}>
-                        <label className="form-label">{t.keywords.languageLabels.en}</label>
+                        <label className="form-label">{t.keywords.languageLabels.en}<RequiredMark /></label>
                         <input
                           className="text-input keyword-row__input"
                           value={keyword.en}
@@ -1315,7 +1337,7 @@ export function AuthorsSubmissionPage() {
               </div>
               <div className="author-grid">
                 <div className="form-field">
-                  <label className="form-label">Email *</label>
+                  <label className="form-label">Email<RequiredMark /></label>
                   <input className="text-input" value={authorForm.email} onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))} placeholder={t.authors.placeholders.email} />
                 </div>
                 <div className="form-field">
@@ -1323,7 +1345,7 @@ export function AuthorsSubmissionPage() {
                   <input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} placeholder={t.authors.placeholders.prefix} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.firstName}</label>
+                  <label className="form-label">{t.authors.fields.firstName.replace(' *', '')}<RequiredMark /></label>
                   <input className="text-input" value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} placeholder={t.authors.placeholders.firstName} />
                 </div>
                 <div className="form-field">
@@ -1331,7 +1353,7 @@ export function AuthorsSubmissionPage() {
                   <input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} placeholder={t.authors.placeholders.middleName} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.lastName}</label>
+                  <label className="form-label">{t.authors.fields.lastName.replace(' *', '')}<RequiredMark /></label>
                   <input className="text-input" value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} placeholder={t.authors.placeholders.lastName} />
                 </div>
                 <div className="form-field">
@@ -1343,7 +1365,7 @@ export function AuthorsSubmissionPage() {
                   <input className="text-input" value={authorForm.address} onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))} placeholder={t.authors.placeholders.address} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.country}</label>
+                  <label className="form-label">{t.authors.fields.country.replace(' *', '')}<RequiredMark /></label>
                   <select className="text-input" value={authorForm.country} onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))}>
                     <option value="">{t.authors.placeholders.country}</option>
                     {countryOptions.map((country) => (
@@ -1354,7 +1376,7 @@ export function AuthorsSubmissionPage() {
                   </select>
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.affiliation1}</label>
+                  <label className="form-label">{t.authors.fields.affiliation1.replace(' *', '')}<RequiredMark /></label>
                   <textarea className="text-input" rows={3} value={authorForm.affiliation1} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))} placeholder={t.authors.placeholders.affiliation1} />
                 </div>
                 <div className="form-field">
@@ -1388,7 +1410,7 @@ export function AuthorsSubmissionPage() {
             </div>
             <div className="modal__footer author-modal__footer">
               <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>{t.common.cancel}</button>
-              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim()}>{t.authors.save}</button>
+              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()}>{t.authors.save}</button>
             </div>
           </div>
         </div>

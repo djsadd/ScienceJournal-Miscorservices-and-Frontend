@@ -440,15 +440,25 @@ def update_published_article_for_editor(
                 db.execute(models.article_authors.insert().values(article_id=article_id, author_id=author.id))
 
     # Update keywords (optional)
-    if "keyword_ids" in update_data and update_data.get("keyword_ids") is not None:
-        keyword_ids = update_data.pop("keyword_ids")
+    keyword_ids = update_data.pop("keyword_ids", None)
+    keyword_payloads = update_data.pop("keywords", None)
+    if keyword_ids is not None or keyword_payloads is not None:
+        attached_keyword_ids: set[int] = set()
         db.execute(models.article_keywords.delete().where(models.article_keywords.c.article_id == article_id))
         if keyword_ids:
             keywords = db.query(models.Keyword).filter(models.Keyword.id.in_(keyword_ids)).all()
             if len(keywords) != len(set(keyword_ids)):
                 raise HTTPException(status_code=400, detail="One or more keywords not found")
             for keyword in keywords:
-                db.execute(models.article_keywords.insert().values(article_id=article_id, keyword_id=keyword.id))
+                if keyword.id not in attached_keyword_ids:
+                    db.execute(models.article_keywords.insert().values(article_id=article_id, keyword_id=keyword.id))
+                    attached_keyword_ids.add(keyword.id)
+        if keyword_payloads:
+            for kw_payload in keyword_payloads:
+                keyword = _get_or_create_keyword(db, kw_payload)
+                if keyword.id not in attached_keyword_ids:
+                    db.execute(models.article_keywords.insert().values(article_id=article_id, keyword_id=keyword.id))
+                    attached_keyword_ids.add(keyword.id)
 
     for field, value in update_data.items():
         setattr(existing_article, field, value)
@@ -1215,8 +1225,10 @@ def update_article(
                 )
     
     # Обновляем ключевые слова
-    if "keyword_ids" in update_data:
-        keyword_ids = update_data.pop("keyword_ids")
+    keyword_ids = update_data.pop("keyword_ids", None)
+    keyword_payloads = update_data.pop("keywords", None)
+    if keyword_ids is not None or keyword_payloads is not None:
+        attached_keyword_ids: set[int] = set()
         # Удаляем старые связи
         db.execute(
             models.article_keywords.delete().where(models.article_keywords.c.article_id == article_id)
@@ -1227,9 +1239,19 @@ def update_article(
             if len(keywords) != len(set(keyword_ids)):
                 raise HTTPException(status_code=400, detail="One or more keywords not found")
             for keyword in keywords:
-                db.execute(
-                    models.article_keywords.insert().values(article_id=article_id, keyword_id=keyword.id)
-                )
+                if keyword.id not in attached_keyword_ids:
+                    db.execute(
+                        models.article_keywords.insert().values(article_id=article_id, keyword_id=keyword.id)
+                    )
+                    attached_keyword_ids.add(keyword.id)
+        if keyword_payloads:
+            for kw_payload in keyword_payloads:
+                keyword = _get_or_create_keyword(db, kw_payload)
+                if keyword.id not in attached_keyword_ids:
+                    db.execute(
+                        models.article_keywords.insert().values(article_id=article_id, keyword_id=keyword.id)
+                    )
+                    attached_keyword_ids.add(keyword.id)
     
     # Обновляем остальные поля статьи
     for field, value in update_data.items():

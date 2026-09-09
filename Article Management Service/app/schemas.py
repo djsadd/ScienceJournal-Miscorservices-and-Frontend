@@ -246,6 +246,7 @@ class ArticleUpdate(BaseModel):
     author_info_file_id: Optional[str] = None
     cover_letter_file_id: Optional[str] = None
     keyword_ids: Optional[List[int]] = None
+    keywords: Optional[List[KeywordCreate]] = None
     author_ids: Optional[List[int]] = None
 
 
