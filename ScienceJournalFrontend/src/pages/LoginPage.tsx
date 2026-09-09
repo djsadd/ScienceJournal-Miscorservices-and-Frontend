@@ -11,9 +11,59 @@ export function LoginPage() {
   const localizedHref = (path: string) => (path === '/' ? `/${lang}` : `/${lang}${path}`)
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  const loginPageCopy =
+    lang === 'en'
+      ? {
+          title: 'Sign in',
+          eyebrow: 'Authorization',
+          method: 'Email / Username',
+          identifierLabel: 'Email or username',
+          identifierPlaceholder: 'name@example.com or username',
+          passwordLabel: 'Password',
+          passwordPlaceholder: 'Enter password',
+          forgotPassword: 'Forgot password?',
+          remember: 'Remember me on this device',
+          support: 'If you have trouble signing in, contact the editorial office:',
+          copyright: '© 2026 Turan-Astana University News. All rights reserved.',
+          showPassword: 'Show password',
+          hidePassword: 'Hide password',
+        }
+      : lang === 'kz'
+        ? {
+            title: 'Жүйеге кіру',
+            eyebrow: 'Авторизация',
+            method: 'Email / Username',
+            identifierLabel: 'Email немесе username',
+            identifierPlaceholder: 'name@example.com немесе username',
+            passwordLabel: 'Құпиясөз',
+            passwordPlaceholder: 'Құпиясөзді енгізіңіз',
+            forgotPassword: 'Құпиясөзді ұмыттыңыз ба?',
+            remember: 'Осы құрылғыда есте сақтау',
+            support: 'Кіру кезінде мәселе туындаса, редакцияға жазыңыз:',
+            copyright: '© 2026 «Тұран-Астана» университетінің хабарлары. Барлық құқықтар қорғалған.',
+            showPassword: 'Құпиясөзді көрсету',
+            hidePassword: 'Құпиясөзді жасыру',
+          }
+        : {
+            title: 'Вход в систему',
+            eyebrow: 'Авторизация',
+            method: 'Email / Username',
+            identifierLabel: 'Email или username',
+            identifierPlaceholder: 'name@example.com или username',
+            passwordLabel: 'Пароль',
+            passwordPlaceholder: 'Введите пароль',
+            forgotPassword: 'Забыли пароль?',
+            remember: 'Запомнить меня на этом устройстве',
+            support: 'Если у вас возникли проблемы со входом, обратитесь в редакцию:',
+            copyright: '© 2026 Известия университета «Туран-Астана». Все права защищены.',
+            showPassword: 'Показать пароль',
+            hidePassword: 'Скрыть пароль',
+          }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,51 +114,68 @@ export function LoginPage() {
   }
 
   return (
-    <div className="public-container auth-layout">
-      <section className="public-section auth-card">
-        <div className="auth-header">
-          <p className="eyebrow">{t.headerEyebrow}</p>
-          <h1 className="hero__title">{t.headerTitle}</h1>
-          <p className="subtitle">{t.headerSubtitle}</p>
+    <div className="public-container auth-layout auth-layout--login">
+      <section className="public-section auth-card auth-card--login">
+        <div className="auth-header auth-header--login">
+          <h1 className="auth-title">{loginPageCopy.title}</h1>
+          <span className="login-eyebrow">{loginPageCopy.eyebrow}</span>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form auth-form--login" onSubmit={handleSubmit}>
           {errorMsg && (
             <Alert variant="error" title={t.alertTitle} className="auth-alert" >
               {errorMsg}
             </Alert>
           )}
+
+          <div className="login-method-tabs" aria-label={loginPageCopy.eyebrow}>
+            <span className="login-method-tabs__item login-method-tabs__item--active">{loginPageCopy.method}</span>
+          </div>
+
           <label className="form-field">
-            <span className="form-label">{t.fields.identifierLabel}</span>
+            <span className="form-label">{loginPageCopy.identifierLabel}</span>
             <input
               className="text-input"
               type="text"
-              placeholder={t.fields.identifierPlaceholder}
+              placeholder={loginPageCopy.identifierPlaceholder}
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
             />
           </label>
+
           <label className="form-field">
-            <span className="form-label">{t.fields.passwordLabel}</span>
-            <input
-              className="text-input"
-              type="password"
-              placeholder={t.fields.passwordPlaceholder}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <span className="login-password-head">
+              <span className="form-label">{loginPageCopy.passwordLabel}</span>
+              <Link className="auth-link login-forgot-link" to={localizedHref('/auth/forgot-password')}>
+                {loginPageCopy.forgotPassword}
+              </Link>
+            </span>
+            <span className="password-input-wrap">
+              <input
+                className="text-input"
+                type={showPassword ? 'text' : 'password'}
+                placeholder={loginPageCopy.passwordPlaceholder}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                className="password-visibility"
+                type="button"
+                aria-label={showPassword ? loginPageCopy.hidePassword : loginPageCopy.showPassword}
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                👁
+              </button>
+            </span>
           </label>
 
-          <div className="auth-row">
+          <div className="auth-row auth-row--login">
             <label className="checkbox">
               <input type="checkbox" />
-              <span>{t.rememberDevice}</span>
+              <span>{loginPageCopy.remember}</span>
             </label>
-            <Link className="auth-link" to={localizedHref('/auth/forgot-password')}>
-              {t.forgot.trigger}
-            </Link>
           </div>
 
           <button type="submit" className="button button--primary auth-submit" disabled={submitting}>
@@ -124,43 +191,15 @@ export function LoginPage() {
         </form>
       </section>
 
-      <section className="public-section auth-aside">
-        <div className="auth-note">
-          <p className="eyebrow">{t.asideEyebrow}</p>
-          <h2 className="panel-title">{t.asideTitle}</h2>
-          <p className="subtitle">{t.asideSubtitle}</p>
-        </div>
+      <div className="login-support">
+        <span className="login-support__icon" aria-hidden="true">!</span>
+        <span>
+          {loginPageCopy.support}{' '}
+          <a href="mailto:digital@tau-edu.kz">digital@tau-edu.kz</a>
+        </span>
+      </div>
 
-        <div className="auth-badges">
-          <div className="pill">{t.badges[0]}</div>
-          <div className="pill">{t.badges[1]}</div>
-          <div className="pill">{t.badges[2]}</div>
-        </div>
-
-        <div className="auth-steps">
-          <div className="auth-step">
-            <span className="auth-step__number">1</span>
-            <div>
-              <div className="auth-step__title">{t.steps[0].title}</div>
-              <div className="auth-step__text">{t.steps[0].text}</div>
-            </div>
-          </div>
-          <div className="auth-step">
-            <span className="auth-step__number">2</span>
-            <div>
-              <div className="auth-step__title">{t.steps[1].title}</div>
-              <div className="auth-step__text">{t.steps[1].text}</div>
-            </div>
-          </div>
-          <div className="auth-step">
-            <span className="auth-step__number">3</span>
-            <div>
-              <div className="auth-step__title">{t.steps[2].title}</div>
-              <div className="auth-step__text">{t.steps[2].text}</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <p className="login-copyright">{loginPageCopy.copyright}</p>
     </div>
   )
 }

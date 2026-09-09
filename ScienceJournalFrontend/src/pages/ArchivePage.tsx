@@ -9,68 +9,59 @@ export function ArchivePage() {
   const { lang } = useLanguage()
   const t = {
     ru: {
-      eyebrow: 'архив номеров',
-      title: 'Раскрывающийся список томов по годам',
-      registry: {
-        certTitle: 'Свидетельство о регистрации',
-        certText: '№ 17458-Ж, дата 14.01.2019.',
-        issnTitle: 'ISSN',
-        issnText: '2663-631X — международный номер печатного издания.',
-        freqTitle: 'Периодичность',
-        freqText: '4 раза в год. Языки: русский, казахский, английский.',
-      },
+      title: 'Архив выпусков',
+      summary: 'Архив научных статей журнала · ISSN 2958-8103',
+      search: 'Поиск по названию или автору…',
+      all: 'Все',
+      expand: 'Развернуть всё',
+      collapse: 'Свернуть',
       loading: 'Загрузка...',
       error: 'Ошибка',
-      year: 'Год',
-      issuesCount: (n: number) => `${n} выпуск(а)`,
-      volumesOfYear: (y: number) => `Тома ${y}`,
-      volumeTitle: (n: string, m?: number | null) => `Том ${n}${m ? ` (${m} мес.)` : ''}`,
+      issueCount: (n: number) => `${n} выпуск${n === 1 ? '' : 'а'}`,
+      articleCount: (n: number) => `${n} ст.`,
+      pages: 'С.',
+      pdf: 'PDF',
       loadError: 'Не удалось загрузить архив томов',
     },
     en: {
-      eyebrow: 'archive of issues',
-      title: 'Expandable list of volumes by year',
-      registry: {
-        certTitle: 'Registration certificate',
-        certText: 'No. 17458-Ж, dated 14.01.2019.',
-        issnTitle: 'ISSN',
-        issnText: '2663-631X — international print ISSN.',
-        freqTitle: 'Frequency',
-        freqText: '4 issues per year. Languages: Kazakh, Russian, English.',
-      },
+      title: 'Issue archive',
+      summary: 'Scientific journal archive · ISSN 2958-8103',
+      search: 'Search by title or author…',
+      all: 'All',
+      expand: 'Expand all',
+      collapse: 'Collapse',
       loading: 'Loading...',
       error: 'Error',
-      year: 'Year',
-      issuesCount: (n: number) => `${n} issue(s)`,
-      volumesOfYear: (y: number) => `Volumes of ${y}`,
-      volumeTitle: (n: string, m?: number | null) => `Volume ${n}${m ? ` (${m} mo.)` : ''}`,
+      issueCount: (n: number) => `${n} issue${n === 1 ? '' : 's'}`,
+      articleCount: (n: number) => `${n} art.`,
+      pages: 'P.',
+      pdf: 'PDF',
       loadError: 'Failed to load archive',
     },
     kz: {
-      eyebrow: 'шығарылымдар мұрағаты',
-      title: 'Жылдар бойынша томдар тізімі',
-      registry: {
-        certTitle: 'Тіркеу куәлігі',
-        certText: '№ 17458-Ж, 14.01.2019.',
-        issnTitle: 'ISSN',
-        issnText: '2663-631X — баспа нұсқасының халықаралық нөмірі.',
-        freqTitle: 'Мерзімділік',
-        freqText: 'Жылына 4 шығарылым. Тілдер: қазақ, орыс, ағылшын.',
-      },
+      title: 'Шығарылымдар мұрағаты',
+      summary: 'Ғылыми журнал мұрағаты · ISSN 2958-8103',
+      search: 'Атауы немесе авторы бойынша іздеу…',
+      all: 'Барлығы',
+      expand: 'Барлығын ашу',
+      collapse: 'Жабу',
       loading: 'Жүктелуде...',
       error: 'Қате',
-      year: 'Жыл',
-      issuesCount: (n: number) => `${n} шығарылым`,
-      volumesOfYear: (y: number) => `${y} жылғы томдар`,
-      volumeTitle: (n: string, m?: number | null) => `Том ${n}${m ? ` (${m} ай)` : ''}`,
+      issueCount: (n: number) => `${n} шығарылым`,
+      articleCount: (n: number) => `${n} мақ.`,
+      pages: 'Б.',
+      pdf: 'PDF',
       loadError: 'Том мұрағатын жүктеу сәтсіз аяқталды',
     },
   }[lang]
 
   const [openYears, setOpenYears] = useState<Record<number, boolean>>({})
+  const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
   const [volumes, setVolumes] = useState<ApiVolume[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [selectedYear, setSelectedYear] = useState<number | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -80,6 +71,8 @@ export function ArchivePage() {
         setVolumes(data)
         const years = Array.from(new Set((data || []).map((v) => v.year))).sort((a, b) => b - a)
         if (years[0]) setOpenYears({ [years[0]]: true })
+        const firstVolume = (data || []).find((volume) => volume.year === years[0])
+        if (firstVolume) setOpenMonths({ [`${firstVolume.year}-${firstVolume.month || 0}`]: true })
       })
       .catch((e: any) => setError(e?.message || t.loadError))
       .finally(() => setLoading(false))
@@ -88,78 +81,109 @@ export function ArchivePage() {
   const archives: ArchiveYear[] = useMemo(() => {
     if (!volumes) return []
     const byYear: Record<number, ApiVolume[]> = {}
+    const normalizedQuery = query.trim().toLocaleLowerCase()
     volumes.forEach((v: ApiVolume) => {
+      const searchable = [v.title_ru, v.title_en, v.title_kz, v.description, ...(v.articles || []).flatMap((article) => [article.title, article.title_ru, article.title_en, article.title_kz, ...(article.authors || []).map((author: any) => typeof author === 'string' ? author : `${author.first_name || ''} ${author.last_name || ''}`)])]
+        .filter(Boolean).join(' ').toLocaleLowerCase()
+      if (normalizedQuery && !searchable.includes(normalizedQuery)) return
+      if (selectedYear && v.year !== selectedYear) return
       if (!byYear[v.year]) byYear[v.year] = []
       byYear[v.year].push(v)
     })
     return Object.entries(byYear)
       .map(([year, vols]) => ({ year: Number(year), volumes: vols.sort((a, b) => b.number.localeCompare(a.number)) }))
       .sort((a, b) => b.year - a.year)
-  }, [volumes])
+  }, [volumes, query, selectedYear])
+
+  const years = useMemo(() => Array.from(new Set((volumes || []).map((volume) => volume.year))).sort((a, b) => b - a), [volumes])
+  const monthNames = lang === 'en'
+    ? ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    : lang === 'kz'
+      ? ['', 'қаңтар', 'ақпан', 'наурыз', 'сәуір', 'мамыр', 'маусым', 'шілде', 'тамыз', 'қыркүйек', 'қазан', 'қараша', 'желтоқсан']
+      : ['', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+
+  const articleTitle = (article: NonNullable<ApiVolume['articles']>[number]) => article[`title_${lang}`] || article.title || 'Без названия'
+  const articleAuthors = (article: NonNullable<ApiVolume['articles']>[number]) => (article.authors || []).map((author: any) => typeof author === 'string' ? author : [author.first_name, author.patronymic, author.last_name].filter(Boolean).join(' ')).filter(Boolean).join(', ')
 
   const toggleYear = (year: number) => {
     setOpenYears((prev: Record<number, boolean>) => ({ ...prev, [year]: !prev[year] }))
   }
 
+  const toggleMonth = (year: number, month: number | null | undefined) => {
+    const key = `${year}-${month || 0}`
+    setOpenMonths((prev: Record<string, boolean>) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const toggleAllYears = () => {
+    const shouldOpen = years.some((year) => !openYears[year])
+    setOpenYears(Object.fromEntries(years.map((year) => [year, shouldOpen])))
+    if (shouldOpen) {
+      setOpenMonths(Object.fromEntries((volumes || []).map((volume) => [`${volume.year}-${volume.month || 0}`, true])))
+    }
+  }
+
   return (
-    <div className="public-container">
-      <div className="section public-section">
-        <p className="eyebrow">{t.eyebrow}</p>
-        <h1 className="hero__title">{t.title}</h1>
-        <div className="panel" style={{ marginBottom: '1rem' }}>
-          <div className="grid grid-3">
-            <div>
-              <div className="panel-title">{t.registry.certTitle}</div>
-              <p className="subtitle">{t.registry.certText}</p>
-            </div>
-            <div>
-              <div className="panel-title">{t.registry.issnTitle}</div>
-              <p className="subtitle">{t.registry.issnText}</p>
-            </div>
-            <div>
-              <div className="panel-title">{t.registry.freqTitle}</div>
-              <p className="subtitle">{t.registry.freqText}</p>
-            </div>
+    <div className="archive-page">
+      <div className="archive-shell">
+        <header className="archive-heading">
+          <h1>{t.title}</h1>
+          <p>{t.summary}</p>
+        </header>
+        <div className="archive-toolbar">
+          <label className="archive-search"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t.search} /></label>
+          <div className="archive-years-filter">
+            <button className={selectedYear === null ? 'is-active' : ''} onClick={() => setSelectedYear(null)} type="button">{t.all}</button>
+            {years.map((year) => <button className={selectedYear === year ? 'is-active' : ''} key={year} onClick={() => setSelectedYear(year)} type="button">{year}</button>)}
           </div>
+          <div className="archive-actions"><button type="button" onClick={toggleAllYears}>{years.some((year) => !openYears[year]) ? t.expand : t.collapse}</button></div>
         </div>
 
         {loading && <div className="loading">{t.loading}</div>}
         {error && <div className="alert error">{t.error}: {error}</div>}
         {!loading && !error && (
-          <div className="accordion">
+          <div className="archive-groups">
             {archives.map((group) => {
               const isOpen = Boolean(openYears[group.year])
               return (
-                <div className={`accordion-item ${isOpen ? 'accordion-item--open' : ''}`} key={group.year}>
-                  <button className="accordion-header" onClick={() => toggleYear(group.year)} aria-expanded={isOpen}>
-                    <div className="accordion-title">
-                      <span className="panel-title">{t.year} {group.year}</span>
-                      <span className="subtitle">{t.issuesCount(group.volumes.length)}</span>
-                    </div>
-                    <span className="accordion-icon">{isOpen ? '−' : '+'}</span>
+                <section className={`archive-year ${isOpen ? 'is-open' : ''}`} key={group.year}>
+                  <button className="archive-year__header" onClick={() => toggleYear(group.year)} aria-expanded={isOpen} type="button">
+                    <span className="archive-year__name">{group.year}</span>
+                    <span className="archive-year__count">{t.issueCount(group.volumes.length)} · {t.articleCount(group.volumes.reduce((sum, volume) => sum + (volume.articles?.length || 0), 0))}</span>
+                    <span className="archive-year__chevron" aria-hidden="true">⌃</span>
                   </button>
                   {isOpen ? (
-                    <div className="accordion-body">
-                      <div className="volume-chip">{t.volumesOfYear(group.year)}</div>
-                      <ul className="volume-list">
-                        {group.volumes.map((v) => (
-                          <li key={String(v.id ?? `${v.year}-${v.number}-${v.month ?? 'm'}`)} className="volume-item">
-                            <a
-                              href={v.id != null ? `/archive/volumes/${v.id}` : '#'}
-                              style={{ textDecoration: 'none', color: 'inherit', display: 'flex', justifyContent: 'space-between', width: '100%' }}
-                            >
-                              <div>
-                                <div className="volume-title">{t.volumeTitle(v.number, v.month)}</div>
-                                <div className="subtitle">{v.description || v.title_ru || v.title_en || v.title_kz || '—'}</div>
-                              </div>
-                              <div className="meta-label">{v.year}</div>
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
+                    <div className="archive-year__body">
+                      {Array.from(new Set(group.volumes.map((volume) => volume.month || 0))).sort((a, b) => b - a).map((month) => {
+                        const monthKey = `${group.year}-${month}`
+                        const monthVolumes = group.volumes.filter((volume) => (volume.month || 0) === month)
+                        const monthOpen = Boolean(openMonths[monthKey])
+                        return (
+                          <section className={`archive-month ${monthOpen ? 'is-open' : ''}`} key={monthKey}>
+                            <button className="archive-month__header" onClick={() => toggleMonth(group.year, month)} aria-expanded={monthOpen} type="button">
+                              <span className="archive-month__name">{month ? monthNames[month] : 'Без месяца'}</span>
+                              <span className="archive-month__count">{t.issueCount(monthVolumes.length)} · {t.articleCount(monthVolumes.reduce((sum, volume) => sum + (volume.articles?.length || 0), 0))}</span>
+                              <span className="archive-month__chevron" aria-hidden="true">⌃</span>
+                            </button>
+                            {monthOpen && <div className="archive-month__body">
+                              {monthVolumes.map((v) => (
+                                <article className="archive-issue" key={String(v.id ?? `${v.year}-${v.number}-${v.month ?? 'm'}`)}>
+                                  <a className="archive-issue__header" href={v.id != null ? `/archive/volumes/${v.id}` : '#'}><span className="archive-issue__label">Т. {v.number} № {v.number}</span><span className="archive-issue__date">{v.month ? monthNames[v.month] : ''} {v.year}</span><span className="archive-issue__count">{t.articleCount(v.articles?.length || 0)}</span></a>
+                                  {v.articles?.length ? <ol className="archive-articles">
+                                    {v.articles.map((article, index) => <li className="archive-article" key={article.id}>
+                                      <span className="archive-article__number">{index + 1}</span>
+                                      <div className="archive-article__content"><a href={`/archive/volumes/${v.id}/articles/${article.id}`} className="archive-article__title">{articleTitle(article)}</a><p className="archive-article__authors">{articleAuthors(article) || '—'}</p><p className="archive-article__meta">{t.pages} {article.abstract ? '1–' : '—'} &nbsp;·&nbsp; DOI: {article.doi || '—'}</p></div>
+                                      {article.layout_file_url && <a className="archive-pdf" href={article.layout_file_url} target="_blank" rel="noreferrer">▱ {t.pdf}</a>}
+                                    </li>)}
+                                  </ol> : null}
+                                </article>
+                              ))}
+                            </div>}
+                          </section>
+                        )
+                      })}
                     </div>
                   ) : null}
-                </div>
+                </section>
               )
             })}
           </div>

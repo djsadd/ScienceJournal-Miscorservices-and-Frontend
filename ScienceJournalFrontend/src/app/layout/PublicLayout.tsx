@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { api } from '../../api/client'
 import logo from '../../assets/logo.svg'
 import { useLanguage } from '../../shared/LanguageContext'
 import type { Lang } from '../../shared/labels'
@@ -19,10 +20,25 @@ type NavItem = {
 const creativeCommonsLicenseUrl = 'https://creativecommons.org/licenses/by/4.0/'
 const creativeCommonsBadgeUrl = 'https://licensebuttons.net/l/by/4.0/88x31.png'
 const publisherAddress = '010000, Republic of Kazakhstan, Astana, Y. Dukenuly St., 29'
+const journalKickers: Record<Lang, string> = {
+  ru: 'Интернет издания',
+  kz: 'Интернет басылымдары',
+  en: 'Internet editions',
+}
 const journalTitles: Record<Lang, string> = {
-  ru: 'Интернет издания, Известия университета «Туран-Астана»',
+  ru: 'Известия университета «Туран-Астана»',
   kz: '«Тұран-Астана» университетінің хабарлары',
   en: 'Turan-Astana University News',
+}
+const journalSubtitles: Record<Lang, string> = {
+  ru: 'Научный рецензируемый журнал · ISSN 2958-8103',
+  kz: 'Ғылыми рецензияланатын журнал · ISSN 2958-8103',
+  en: 'Peer-reviewed scientific journal · ISSN 2958-8103',
+}
+const authNavLabels: Record<Lang, { cabinet: string; login: string; register: string }> = {
+  ru: { cabinet: 'Личный кабинет', login: 'Войти', register: 'Зарегистрироваться' },
+  kz: { cabinet: 'Жеке кабинет', login: 'Кіру', register: 'Тіркелу' },
+  en: { cabinet: 'Dashboard', login: 'Log in', register: 'Register' },
 }
 const languageCodes: Lang[] = ['ru', 'kz', 'en']
 
@@ -39,6 +55,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(api.getTokens()?.accessToken))
   const [lowVision, setLowVision] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('lowVision')
@@ -51,6 +68,12 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   const { lang, setLang } = useLanguage()
   const location = useLocation()
   const nav = publicNavCopy[lang]
+  const authLabels = authNavLabels[lang]
+  const currentPublicPath = stripLanguagePrefix(location.pathname)
+  const isLoginPage = currentPublicPath === '/login'
+  const isForgotPasswordPage = currentPublicPath === '/auth/forgot-password'
+  const isLoginLikePage = isLoginPage || isForgotPasswordPage
+  const isRegisterPage = currentPublicPath === '/register'
 
   const localizedHref = (href: string, targetLang = lang) => {
     const normalizedHref = href.startsWith('/') ? href : `/${href}`
@@ -72,6 +95,19 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
       localStorage.removeItem('theme')
     } catch {}
   }, [])
+
+  useEffect(() => {
+    setIsAuthenticated(Boolean(api.getTokens()?.accessToken))
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'sj_tokens') {
+        setIsAuthenticated(Boolean(api.getTokens()?.accessToken))
+      }
+    }
+
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [location.pathname])
 
   const topNav: NavItem[] = [
     { href: '/', label: nav.home },
@@ -169,38 +205,18 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
 
   return (
     <div
-      className={`public-shell ${mobileMenuOpen ? 'public-shell--menu-open' : ''} theme-light ${
+      className={`public-shell ${isLoginLikePage ? 'public-shell--login' : ''} ${
+        isRegisterPage ? 'public-shell--register' : ''
+      } ${
+        mobileMenuOpen ? 'public-shell--menu-open' : ''
+      } theme-light ${
         lowVision ? 'low-vision' : ''
       }`}
     >
       <header className="public-header">
-        <div className="public-top" aria-label="Site navigation">
-          <Link to={localizedHref('/')} className="brand brand--compact" onClick={() => setMobileMenuOpen(false)}>
-            <img src={logo} alt={nav.brandAlt} className="brand-logo brand-logo--plain" />
-            <span className="brand-site-title">{journalTitles[lang]}</span>
-          </Link>
-          <nav className="public-nav public-nav--top">{renderNav(topNav)}</nav>
-          <div className="public-actions">
-            {/* Theme toggle removed: site uses light theme only */}
-            <button
-              className={`button button--contrast ${lowVision ? 'button--active' : ''}`}
-              type="button"
-              aria-pressed={lowVision}
-              aria-label={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
-              title={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
-              onClick={() => {
-                setLowVision((v) => {
-                  const next = !v
-                  try {
-                    localStorage.setItem('lowVision', next ? '1' : '0')
-                  } catch {}
-                  return next
-                })
-              }}
-            >
-              👁️
-            </button>
-            {/* Optional text size controls */}
+        <div className="public-header__topline">
+          <div className="public-header__kicker">{journalKickers[lang]}</div>
+          <div className="public-actions public-actions--top">
             <div className="text-size-controls" aria-label="Управление размером текста">
               <button
                 type="button"
@@ -231,6 +247,24 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
                 A-
               </button>
             </div>
+            <button
+              className={`button button--contrast ${lowVision ? 'button--active' : ''}`}
+              type="button"
+              aria-pressed={lowVision}
+              aria-label={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
+              title={lowVision ? 'Отключить версию для слабовидящих' : 'Включить версию для слабовидящих'}
+              onClick={() => {
+                setLowVision((v) => {
+                  const next = !v
+                  try {
+                    localStorage.setItem('lowVision', next ? '1' : '0')
+                  } catch {}
+                  return next
+                })
+              }}
+            >
+              👁️
+            </button>
             <div className="lang-switch">
               {languageCodes.map((code) => (
                 <Link
@@ -246,13 +280,17 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
                 </Link>
               ))}
             </div>
-            <Link
-              to="/cabinet"
-              className="button button--ghost public-actions__desktop"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {nav.cabinet}
-            </Link>
+          </div>
+        </div>
+        <div className="public-top" aria-label="Site navigation">
+          <Link to={localizedHref('/')} className="brand brand--journal" onClick={() => setMobileMenuOpen(false)}>
+            <img src={logo} alt={nav.brandAlt} className="brand-logo brand-logo--journal" />
+            <span className="brand-site-copy">
+              <span className="brand-site-title">{journalTitles[lang]}</span>
+              <span className="brand-site-subtitle">{journalSubtitles[lang]}</span>
+            </span>
+          </Link>
+          <div className="public-actions public-actions--mobile">
             <button
               className="mobile-nav-toggle"
               type="button"
@@ -265,12 +303,44 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
           </div>
         </div>
         <div className="public-subnav">
+          <nav className="public-nav public-nav--top">{renderNav(topNav)}</nav>
           <nav className="public-nav public-nav--secondary">{renderNav(dropdownNav)}</nav>
+          <div className="public-auth-actions public-actions__desktop">
+            {isAuthenticated ? (
+              <Link to="/cabinet" className="public-auth-button public-auth-button--primary">
+                {authLabels.cabinet}
+              </Link>
+            ) : (
+              <>
+                <Link to={localizedHref('/login')} className="public-auth-button">
+                  {authLabels.login}
+                </Link>
+                <Link to={localizedHref('/register')} className="public-auth-button public-auth-button--primary">
+                  {authLabels.register}
+                </Link>
+              </>
+            )}
+          </div>
         </div>
         <div className="public-menu" role="navigation" aria-label="Mobile navigation">
           <nav className="public-nav public-nav--mobile">{renderNav(topNav)}</nav>
           <nav className="public-nav public-nav--mobile">{renderNav(dropdownNav)}</nav>
           <div className="public-menu__actions">
+            <div className="lang-switch lang-switch--menu">
+              {languageCodes.map((code) => (
+                <Link
+                  key={code}
+                  to={languageHref(code)}
+                  className={`lang-chip ${lang === code ? 'lang-chip--active' : ''}`}
+                  onClick={() => {
+                    setLang(code)
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  {code.toUpperCase()}
+                </Link>
+              ))}
+            </div>
             <button
               type="button"
               className="button button--primary"
@@ -278,17 +348,42 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
             >
               {nav.search}
             </button>
-            <Link
-              to="/cabinet"
-              className="button button--ghost"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {nav.cabinet}
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/cabinet"
+                className="button button--ghost"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {authLabels.cabinet}
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to={localizedHref('/login')}
+                  className="button button--ghost"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {authLabels.login}
+                </Link>
+                <Link
+                  to={localizedHref('/register')}
+                  className="button button--ghost"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {authLabels.register}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
-      <main className="public-main">{children}</main>
+      <main
+        className={`public-main ${isLoginLikePage ? 'public-main--login' : ''} ${
+          isRegisterPage ? 'public-main--register' : ''
+        }`}
+      >
+        {children}
+      </main>
 
       {isSearchOpen && (
         <div className="search-modal__backdrop" onClick={() => setIsSearchOpen(false)}>

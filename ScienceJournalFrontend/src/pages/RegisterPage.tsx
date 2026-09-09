@@ -163,6 +163,60 @@ export function RegisterPage() {
   const reviewerScienceOtherLabel =
     lang === 'en' ? 'Specify other field' : lang === 'kz' ? 'Өзге бағытты нақтылаңыз' : 'Укажите иное направление'
   const degreeTitle = lang === 'en' ? 'Academic degrees' : lang === 'kz' ? 'Ғылыми дәрежелер' : 'Учёная степень'
+  const registerPageCopy =
+    lang === 'en'
+      ? {
+          title: 'Registration',
+          role: role === 'reviewer' ? 'reviewer' : role === 'editor' ? 'editor' : 'author',
+          intro:
+            'A personal account opens access to article submission, manuscript status tracking and editorial correspondence.',
+          quote:
+            'The journal publishes original research, reviews and short communications across scientific fields.',
+          requirementsTitle: 'Author requirements',
+          requirements: ['Active work email', 'Organization affiliation', 'ORCID is recommended'],
+          cardTitle: 'Create account',
+          step: 'STEP 1 / 1',
+          personal: '01 - Personal data',
+          affiliation: '02 - Affiliation',
+          degree: '03 - Academic degree',
+          access: '04 - Account access',
+          reviewer: 'Reviewer profile',
+        }
+      : lang === 'kz'
+        ? {
+            title: 'Тіркелу',
+            role: role === 'reviewer' ? 'рецензент' : role === 'editor' ? 'редактор' : 'автор',
+            intro:
+              'Жеке кабинет мақала жіберуге, қолжазба мәртебесін бақылауға және редакциямен хат алмасуға мүмкіндік береді.',
+            quote:
+              'Журнал ғылым салалары бойынша түпнұсқа зерттеулерді, шолуларды және қысқа хабарламаларды жариялайды.',
+            requirementsTitle: 'Авторларға талаптар',
+            requirements: ['Жұмыс email мекенжайы', 'Ұйыммен аффилиация', 'ORCID ұсынылады'],
+            cardTitle: 'Аккаунт жасау',
+            step: 'STEP 1 / 1',
+            personal: '01 - Жеке деректер',
+            affiliation: '02 - Аффилиация',
+            degree: '03 - Ғылыми дәреже',
+            access: '04 - Аккаунтқа кіру',
+            reviewer: 'Рецензент профилі',
+          }
+        : {
+            title: 'Регистрация',
+            role: role === 'reviewer' ? 'рецензента' : role === 'editor' ? 'редактора' : 'автора',
+            intro:
+              'Личный кабинет открывает доступ к подаче статей, отслеживанию статуса рукописей и переписке с редакцией.',
+            quote:
+              '«Известия» публикуют оригинальные исследования, обзоры и краткие сообщения во всех областях науки.',
+            requirementsTitle: 'Требования к авторам',
+            requirements: ['Действующий рабочий email', 'Аффилиация с организацией', 'ORCID рекомендуется'],
+            cardTitle: 'Создание аккаунта',
+            step: 'STEP 1 / 1',
+            personal: '01 - Персональные данные',
+            affiliation: '02 - Аффилиация',
+            degree: '03 - Учёная степень',
+            access: '04 - Доступ к аккаунту',
+            reviewer: 'Профиль рецензента',
+          }
   const academicDegreeLabels: Record<AcademicDegreeOption, string> =
     lang === 'en'
       ? {
@@ -406,162 +460,193 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="public-container auth-layout">
-      <section className="public-section auth-card">
-        <div className="auth-header">
-          <p className="eyebrow">{t.headerEyebrow}</p>
-          <h1 className="hero__title">{t.headerTitle}</h1>
-          <p className="subtitle">{t.headerSubtitle}</p>
+    <div className="public-container auth-layout auth-layout--register">
+      <aside className="register-aside" aria-labelledby="register-aside-title">
+        <div className="register-aside__ornament" aria-hidden="true" />
+        <h1 className="register-aside__title" id="register-aside-title">
+          <span>{registerPageCopy.title}</span>
+          <em>{registerPageCopy.role}</em>
+        </h1>
+        <p className="register-aside__intro">{registerPageCopy.intro}</p>
+        <blockquote className="register-aside__quote">{registerPageCopy.quote}</blockquote>
+        <div className="register-aside__requirements">
+          <h2>{registerPageCopy.requirementsTitle}</h2>
+          <ul>
+            {registerPageCopy.requirements.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+
+      <section className="public-section auth-card auth-card--register">
+        <div className="auth-header auth-header--register">
+          <h1 className="auth-title">{registerPageCopy.cardTitle}</h1>
+          <span className="register-step">{registerPageCopy.step}</span>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <form className="auth-form auth-form--register" onSubmit={handleSubmit} noValidate>
           {error && (
             <Alert variant="error" className="auth-alert">
               {error}
             </Alert>
           )}
 
-          <div className="grid grid-2 auth-grid">
-            <label className="form-field">
-              <span className="form-label">{t.fields.firstName.label}</span>
-              <input
-                className={getInputClassName('firstName')}
-                type="text"
-                placeholder={t.fields.firstName.placeholder}
-                value={firstName}
-                onChange={(e) => {
-                  setFirstName(e.target.value)
-                  clearFormError()
-                  clearFieldError('firstName')
-                }}
-              />
-              {fieldErrors.firstName && <span className="form-error-text">{fieldErrors.firstName}</span>}
-            </label>
-            <label className="form-field">
-              <span className="form-label">{t.fields.lastName.label}</span>
-              <input
-                className={getInputClassName('lastName')}
-                type="text"
-                placeholder={t.fields.lastName.placeholder}
-                value={lastName}
-                onChange={(e) => {
-                  setLastName(e.target.value)
-                  clearFormError()
-                  clearFieldError('lastName')
-                }}
-              />
-              {fieldErrors.lastName && <span className="form-error-text">{fieldErrors.lastName}</span>}
-            </label>
+          <div className="register-form-section">
+            <div className="register-section-label">{registerPageCopy.personal}</div>
+            <div className="grid grid-2 auth-grid">
+              <label className="form-field">
+                <span className="form-label">{t.fields.firstName.label}</span>
+                <input
+                  className={getInputClassName('firstName')}
+                  type="text"
+                  placeholder={t.fields.firstName.placeholder}
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value)
+                    clearFormError()
+                    clearFieldError('firstName')
+                  }}
+                />
+                {fieldErrors.firstName && <span className="form-error-text">{fieldErrors.firstName}</span>}
+              </label>
+              <label className="form-field">
+                <span className="form-label">{t.fields.lastName.label}</span>
+                <input
+                  className={getInputClassName('lastName')}
+                  type="text"
+                  placeholder={t.fields.lastName.placeholder}
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value)
+                    clearFormError()
+                    clearFieldError('lastName')
+                  }}
+                />
+                {fieldErrors.lastName && <span className="form-error-text">{fieldErrors.lastName}</span>}
+              </label>
+            </div>
+
+            <div className="grid grid-2 auth-grid">
+              <label className="form-field">
+                <span className="form-label">{t.fields.username.label}</span>
+                <input
+                  className={getInputClassName('username')}
+                  type="text"
+                  placeholder={t.fields.username.placeholder}
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value)
+                    clearFormError()
+                    clearFieldError('username')
+                  }}
+                />
+                {fieldErrors.username && <span className="form-error-text">{fieldErrors.username}</span>}
+              </label>
+
+              <label className="form-field">
+                <span className="form-label">{t.fields.role.label}</span>
+                <select
+                  className="text-input"
+                  value={role}
+                  onChange={(e) => {
+                    const nextRole = e.target.value
+                    if (!publicRegisterRoles.includes(nextRole as RegisterRole)) return
+                    clearFormError()
+                    setRole(nextRole as RegisterRole)
+                    if (nextRole !== 'reviewer') {
+                      setReviewerScienceFields([])
+                      setReviewerScienceOther('')
+                    }
+                    setFieldErrors((current) => {
+                      const next = { ...current }
+                      delete next.reviewLanguages
+                      delete next.reviewerScienceFields
+                      delete next.reviewerScienceOther
+                      return next
+                    })
+                  }}
+                >
+                  {publicRegisterRoles.map((option) => (
+                    <option value={option} key={option}>
+                      {roleLabels[option]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
-          <label className="form-field">
-            <span className="form-label">{t.fields.username.label}</span>
-            <input
-              className={getInputClassName('username')}
-              type="text"
-              placeholder={t.fields.username.placeholder}
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value)
-                clearFormError()
-                clearFieldError('username')
-              }}
-            />
-            {fieldErrors.username && <span className="form-error-text">{fieldErrors.username}</span>}
-          </label>
+          <div className="register-form-section">
+            <div className="register-section-label">{registerPageCopy.affiliation}</div>
+            <div className="grid grid-2 auth-grid">
+              <label className="form-field">
+                <span className="form-label">{t.fields.organization.label}</span>
+                <input className="text-input" type="text" placeholder={t.fields.organization.placeholder} value={organization} onChange={(e) => setOrganization(e.target.value)} />
+              </label>
+              <label className="form-field">
+                <span className="form-label">{t.fields.institution.label}</span>
+                <input className="text-input" type="text" placeholder={t.fields.institution.placeholder} value={institution} onChange={(e) => setInstitution(e.target.value)} />
+              </label>
+            </div>
 
-          <div className="grid grid-2 auth-grid">
-            <label className="form-field">
-              <span className="form-label">{t.fields.organization.label}</span>
-              <input className="text-input" type="text" placeholder={t.fields.organization.placeholder} value={organization} onChange={(e) => setOrganization(e.target.value)} />
-            </label>
-            <label className="form-field">
-              <span className="form-label">{t.fields.institution.label}</span>
-              <input className="text-input" type="text" placeholder={t.fields.institution.placeholder} value={institution} onChange={(e) => setInstitution(e.target.value)} />
-            </label>
+            <div className="grid grid-2 auth-grid">
+              <label className="form-field">
+                <span className="form-label">{t.fields.email.label}</span>
+                <input
+                  className={getInputClassName('email')}
+                  type="email"
+                  placeholder={t.fields.email.placeholder}
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    clearFormError()
+                    clearFieldError('email')
+                  }}
+                />
+                {fieldErrors.email && <span className="form-error-text">{fieldErrors.email}</span>}
+              </label>
+
+              <label className="form-field">
+                <span className="form-label">ORCID</span>
+                <input
+                  className={getInputClassName('orcid')}
+                  type="text"
+                  placeholder="0000-0000-0000-0000"
+                  value={orcid}
+                  onChange={(e) => {
+                    setOrcid(e.target.value)
+                    clearFormError()
+                    clearFieldError('orcid')
+                  }}
+                />
+                {fieldErrors.orcid && <span className="form-error-text">{fieldErrors.orcid}</span>}
+              </label>
+            </div>
           </div>
 
-          <label className="form-field">
-            <span className="form-label">{t.fields.email.label}</span>
-            <input
-              className={getInputClassName('email')}
-              type="email"
-              placeholder={t.fields.email.placeholder}
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                clearFormError()
-                clearFieldError('email')
-              }}
-            />
-            {fieldErrors.email && <span className="form-error-text">{fieldErrors.email}</span>}
-          </label>
-
-          <label className="form-field">
-            <span className="form-label">ORCID</span>
-            <input
-              className={getInputClassName('orcid')}
-              type="text"
-              placeholder="0000-0000-0000-0000"
-              value={orcid}
-              onChange={(e) => {
-                setOrcid(e.target.value)
-                clearFormError()
-                clearFieldError('orcid')
-              }}
-            />
-            {fieldErrors.orcid && <span className="form-error-text">{fieldErrors.orcid}</span>}
-          </label>
-
-          <div className="form-field">
-            <span className="form-label">{degreeTitle}</span>
-            <div className="choice-chips">
+          <div className="register-form-section">
+            <div className="register-section-label">{registerPageCopy.degree}</div>
+            <div className="form-field">
+              <span className="form-label form-label--sr">{degreeTitle}</span>
+              <div className="choice-chips choice-chips--degree">
                 {academicDegreeOptions.map((degree) => {
                   const label = academicDegreeLabels[degree]
                   return (
-                  <label className={`choice-chip${academicDegrees.includes(degree) ? ' choice-chip--active' : ''}`} key={degree}>
-                    <input type="checkbox" checked={academicDegrees.includes(degree)} onChange={() => toggleAcademicDegree(degree)} />
-                    <span className="choice-chip__label">{label}</span>
-                  </label>
+                    <label className={`choice-chip${academicDegrees.includes(degree) ? ' choice-chip--active' : ''}`} key={degree}>
+                      <input type="checkbox" checked={academicDegrees.includes(degree)} onChange={() => toggleAcademicDegree(degree)} />
+                      <span className="choice-chip__label">{label}</span>
+                    </label>
                   )
                 })}
+              </div>
+              {fieldErrors.academicDegrees && <span className="form-error-text">{fieldErrors.academicDegrees}</span>}
             </div>
-            {fieldErrors.academicDegrees && <span className="form-error-text">{fieldErrors.academicDegrees}</span>}
           </div>
 
-          <label className="form-field">
-            <span className="form-label">{t.fields.role.label}</span>
-            <select
-              className="text-input"
-              value={role}
-              onChange={(e) => {
-                const nextRole = e.target.value
-                if (!publicRegisterRoles.includes(nextRole as RegisterRole)) return
-                clearFormError()
-                setRole(nextRole as RegisterRole)
-                if (nextRole !== 'reviewer') {
-                  setReviewerScienceFields([])
-                  setReviewerScienceOther('')
-                }
-                setFieldErrors((current) => {
-                  const next = { ...current }
-                  delete next.reviewLanguages
-                  delete next.reviewerScienceFields
-                  delete next.reviewerScienceOther
-                  return next
-                })
-              }}
-            >
-              {publicRegisterRoles.map((option) => (
-                <option value={option} key={option}>
-                  {roleLabels[option]}
-                </option>
-              ))}
-            </select>
-          </label>
-
           {role === 'reviewer' && (
-            <>
+            <div className="register-form-section">
+              <div className="register-section-label">{registerPageCopy.reviewer}</div>
               <label className="form-field">
                 <span className="form-label">{t.fields.reviewLanguages.label}</span>
                 <div className="auth-row auth-row--wrap">
@@ -622,53 +707,56 @@ export function RegisterPage() {
                 {fieldErrors.reviewerScienceOther && <span className="form-error-text">{fieldErrors.reviewerScienceOther}</span>}
                 {fieldErrors.reviewerScienceFields && <span className="form-error-text">{fieldErrors.reviewerScienceFields}</span>}
               </label>
-            </>
+            </div>
           )}
 
-          <div className="grid grid-2 auth-grid">
-            <label className="form-field">
-              <span className="form-label">{t.fields.password.label}</span>
-              <input
-                className={getInputClassName('password')}
-                type="password"
-                placeholder={t.fields.password.placeholder}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  clearFormError()
-                  clearFieldError('password')
-                  clearFieldError('confirm')
-                }}
-              />
-              <span className="form-hint">{t.fields.password.hint}</span>
-              {fieldErrors.password && <span className="form-error-text">{fieldErrors.password}</span>}
-            </label>
-            <label className="form-field">
-              <span className="form-label">{t.fields.confirm.label}</span>
-              <input
-                className={getInputClassName('confirm')}
-                type="password"
-                placeholder={t.fields.confirm.placeholder}
-                value={confirm}
-                onChange={(e) => {
-                  setConfirm(e.target.value)
-                  clearFormError()
-                  clearFieldError('confirm')
-                }}
-              />
-              {fieldErrors.confirm && <span className="form-error-text">{fieldErrors.confirm}</span>}
-            </label>
-          </div>
+          <div className="register-form-section">
+            <div className="register-section-label">{registerPageCopy.access}</div>
+            <div className="grid grid-2 auth-grid">
+              <label className="form-field">
+                <span className="form-label">{t.fields.password.label}</span>
+                <input
+                  className={getInputClassName('password')}
+                  type="password"
+                  placeholder={t.fields.password.placeholder}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    clearFormError()
+                    clearFieldError('password')
+                    clearFieldError('confirm')
+                  }}
+                />
+                <span className="form-hint">{t.fields.password.hint}</span>
+                {fieldErrors.password && <span className="form-error-text">{fieldErrors.password}</span>}
+              </label>
+              <label className="form-field">
+                <span className="form-label">{t.fields.confirm.label}</span>
+                <input
+                  className={getInputClassName('confirm')}
+                  type="password"
+                  placeholder={t.fields.confirm.placeholder}
+                  value={confirm}
+                  onChange={(e) => {
+                    setConfirm(e.target.value)
+                    clearFormError()
+                    clearFieldError('confirm')
+                  }}
+                />
+                {fieldErrors.confirm && <span className="form-error-text">{fieldErrors.confirm}</span>}
+              </label>
+            </div>
 
-          <div className="auth-row auth-row--wrap">
-            <label className="checkbox">
-              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
-              <span>{t.fields.accept}</span>
-            </label>
-            <label className="checkbox">
-              <input type="checkbox" checked={notifyStatus} onChange={(e) => setNotifyStatus(e.target.checked)} />
-              <span>{t.fields.notify}</span>
-            </label>
+            <div className="auth-row auth-row--wrap auth-consents">
+              <label className="checkbox">
+                <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
+                <span>{t.fields.accept}</span>
+              </label>
+              <label className="checkbox">
+                <input type="checkbox" checked={notifyStatus} onChange={(e) => setNotifyStatus(e.target.checked)} />
+                <span>{t.fields.notify}</span>
+              </label>
+            </div>
           </div>
           {fieldErrors.acceptTerms && <span className="form-error-text">{fieldErrors.acceptTerms}</span>}
 
@@ -683,34 +771,6 @@ export function RegisterPage() {
             </Link>
           </div>
         </form>
-      </section>
-
-      <section className="public-section auth-aside">
-        <div className="auth-note">
-          <p className="eyebrow">{t.asideEyebrow}</p>
-          <h2 className="panel-title">{t.asideTitle}</h2>
-          <p className="subtitle">{t.asideSubtitle}</p>
-        </div>
-
-        <div className="auth-steps">
-          {t.steps.map((step, index) => (
-            <div className="auth-step" key={step.title}>
-              <span className="auth-step__number">{index + 1}</span>
-              <div>
-                <div className="auth-step__title">{step.title}</div>
-                <div className="auth-step__text">{step.text}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="auth-meta">
-          {t.meta.map((item) => (
-            <div className="auth-meta__item" key={item}>
-              {item}
-            </div>
-          ))}
-        </div>
       </section>
     </div>
   )
