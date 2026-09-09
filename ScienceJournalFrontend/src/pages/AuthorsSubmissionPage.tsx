@@ -1036,7 +1036,7 @@ export function AuthorsSubmissionPage() {
 
           <div className="form-field">
             <label className="form-label">{t.formLanguagesLabel}</label>
-            <div className="lang-switch">
+            <div className="lang-switch submission-language-switch">
               {(['ru', 'kz', 'en'] as Lang[]).map((code) => (
                 <button
                   key={code}

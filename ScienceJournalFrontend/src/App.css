@@ -314,6 +314,29 @@
   color: #8b1831;
 }
 
+.submission-language-switch {
+  gap: 0.4rem;
+}
+
+.submission-language-switch .lang-chip {
+  border: 1px solid #d9deea;
+  background: #ffffff;
+  color: #374151;
+}
+
+.submission-language-switch .lang-chip:hover {
+  border-color: #c98ca7;
+  background: #fff7fa;
+  color: #7a1237;
+}
+
+.submission-language-switch .lang-chip--active,
+.submission-language-switch .lang-chip--active:hover {
+  border-color: #7a1237;
+  background: #7a1237;
+  color: #ffffff;
+}
+
 .article-language-picker {
   display: flex;
   flex-direction: column;
