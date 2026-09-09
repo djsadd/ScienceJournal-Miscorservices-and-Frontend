@@ -797,8 +797,9 @@
 
 .required-star {
   color: #c93c37;
+  display: inline;
   font-weight: 700;
-  margin-left: 0.18rem;
+  white-space: nowrap;
 }
 
 .app-shell .form-label {

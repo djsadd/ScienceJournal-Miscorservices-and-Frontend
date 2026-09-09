@@ -81,6 +81,13 @@ def ensure_editor(user):
         raise HTTPException(status_code=403, detail="Editor role required")
 
 
+def has_any_role(user, allowed_roles: set[str]) -> bool:
+    roles = user.get("roles", [])
+    if isinstance(roles, str):
+        roles = [roles]
+    return any(role in allowed_roles for role in roles)
+
+
 def ensure_service_secret(x_service_secret: str | None):
     if not x_service_secret or x_service_secret != getattr(config, "SHARED_SERVICE_SECRET", ""):
         raise HTTPException(status_code=403, detail="Invalid service secret")
@@ -750,9 +757,8 @@ def create_keyword(
     create without needing an extra click).
     """
     # Allow both authors and editors to create keywords
-    roles = current_user.get("roles", [])
-    if "author" not in roles and "editor" not in roles:
-        raise HTTPException(status_code=403, detail="Author or editor role required")
+    if not has_any_role(current_user, {"author", "editor", "admin"}):
+        raise HTTPException(status_code=403, detail="Author, editor, or admin role required")
     # Try to reuse if identical keyword exists
     existing = (
         db.query(models.Keyword)
@@ -810,9 +816,8 @@ def create_author(
     current_user: dict = Depends(get_current_user),
 ):
     # Allow both authors and editors to create authors
-    roles = current_user.get("roles", [])
-    if "author" not in roles and "editor" not in roles:
-        raise HTTPException(status_code=403, detail="Author or editor role required")
+    if not has_any_role(current_user, {"author", "editor", "admin"}):
+        raise HTTPException(status_code=403, detail="Author, editor, or admin role required")
 
     # For quick create (editors), generate email and set defaults
     if isinstance(author, schemas.AuthorQuickCreate):
@@ -856,9 +861,8 @@ def update_author(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    roles = current_user.get("roles", [])
-    if "author" not in roles and "editor" not in roles:
-        raise HTTPException(status_code=403, detail="Author or editor role required")
+    if not has_any_role(current_user, {"author", "editor", "admin"}):
+        raise HTTPException(status_code=403, detail="Author, editor, or admin role required")
 
     author = db.query(models.Author).filter(models.Author.id == author_id).first()
     if not author:

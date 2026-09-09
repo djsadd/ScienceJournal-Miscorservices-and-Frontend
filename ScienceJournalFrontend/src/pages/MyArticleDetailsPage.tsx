@@ -94,7 +94,7 @@ interface ArticleUpdatePayload {
   generative_ai_info?: string | null
 }
 
-const RequiredMark = () => <span className="required-star" aria-hidden="true">*</span>
+const RequiredMark = () => <span className="required-star" aria-hidden="true">{'\u00a0'}*</span>
 const editableArticleStatuses = ['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision', 'draft']
 const articleTypeOptions: ArticleType[] = ['original', 'review']
 const articleLanguageOptions = getArticleLanguageOptions('ru').map((option) => ({
@@ -103,7 +103,7 @@ const articleLanguageOptions = getArticleLanguageOptions('ru').map((option) => (
 }))
 
 const updateErrorText = {
-  invalidForm: 'Сорри, исправьте ошибки в обязательных полях и попробуйте отправить статью снова.',
+  invalidForm: 'Пожалуйста, заполните обязательные поля и повторите отправку статьи.',
   articleType: 'Выберите тип статьи',
   articleLanguage: 'Выберите язык статьи',
   title: 'Заполните название статьи',

@@ -10,6 +10,7 @@ type Keyword = { id?: number; ru: string; kz: string; en: string }
 type Lang = 'ru' | 'kz' | 'en'
 type LocaleKey = 'ru' | 'en' | 'kz'
 type ArticleType = 'original' | 'review'
+type ArticleFileKind = 'manuscript' | 'antiplagiarism' | 'authorInfo' | 'coverLetter'
 
 type AuthorApi = {
   id: number
@@ -65,7 +66,7 @@ type AuthorForm = {
   researcherId: string
 }
 
-const RequiredMark = () => <span className="required-star" aria-hidden="true">*</span>
+const RequiredMark = () => <span className="required-star" aria-hidden="true">{'\u00a0'}*</span>
 
 const pageCopy: Record<LocaleKey, any> = {
   ru: {
@@ -200,7 +201,7 @@ const pageCopy: Record<LocaleKey, any> = {
     },
     errors: {
       server: 'Ошибка сервера',
-      invalidForm: 'Сорри, исправьте ошибки в обязательных полях и попробуйте отправить статью снова.',
+      invalidForm: 'Пожалуйста, заполните обязательные поля и повторите отправку статьи.',
       submitFailed: 'Не удалось отправить статью. Данные формы сохранены, исправьте ошибку и попробуйте снова.',
       articleLanguage: 'Выберите язык статьи',
       articleType: 'Выберите тип статьи',
@@ -347,7 +348,7 @@ const pageCopy: Record<LocaleKey, any> = {
     },
     errors: {
       server: 'Server error',
-      invalidForm: 'Sorry, fix the required fields and try submitting the article again.',
+      invalidForm: 'Please complete the required fields and submit the article again.',
       submitFailed: 'Failed to submit the article. Form data was kept, fix the issue and try again.',
       articleLanguage: 'Select article language',
       articleType: 'Select article type',
@@ -494,7 +495,7 @@ const pageCopy: Record<LocaleKey, any> = {
     },
     errors: {
       server: 'Сервер қатесі',
-      invalidForm: 'Кешіріңіз, міндетті өрістердегі қателерді түзетіп, мақаланы қайта жіберіңіз.',
+      invalidForm: 'Міндетті өрістерді толтырып, мақаланы қайта жіберіңіз.',
       submitFailed: 'Мақаланы жіберу мүмкін болмады. Форма деректері сақталды, қатені түзетіп, қайта көріңіз.',
       articleLanguage: 'Мақала тілін таңдаңыз',
       articleType: 'Мақала түрін таңдаңыз',
@@ -763,15 +764,16 @@ export function AuthorsSubmissionPage() {
     return api.request<FileOut>('/files', 'POST', { body: formData })
   }
 
-  const getFileNameFromInputIndex = (idx: number): string | null => {
+  const getFileFromInputKind = (kind: ArticleFileKind, root: ParentNode = document): File | null => {
     try {
-      const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="file"].file-input[data-upload-slot="article-file"]'))
-      const file = inputs[idx]?.files?.[0]
-      return file ? file.name : null
+      const input = root.querySelector<HTMLInputElement>(`input[type="file"].file-input[data-file-kind="${kind}"]`)
+      return input?.files?.[0] ?? null
     } catch {
       return null
     }
   }
+
+  const getFileNameFromInputKind = (kind: ArticleFileKind): string | null => getFileFromInputKind(kind)?.name ?? null
 
   const validateSubmissionFields = (): boolean => {
     const nextErrors: Record<string, string> = {}
@@ -786,8 +788,8 @@ export function AuthorsSubmissionPage() {
       || selectedKeywords.some((keyword) => !keyword.ru.trim() || !keyword.kz.trim() || !keyword.en.trim())
     ) nextErrors.keywords = t.errors.keywordsFull
     if (authorList.length === 0) nextErrors.authorList = t.errors.authors
-    const manuscript = getFileNameFromInputIndex(0)
-    const authorInfo = getFileNameFromInputIndex(1)
+    const manuscript = getFileNameFromInputKind('manuscript')
+    const authorInfo = getFileNameFromInputKind('authorInfo')
     if (!manuscript) nextErrors.manuscript = t.errors.manuscript
     else if (!manuscript.toLowerCase().endsWith('.docx')) nextErrors.manuscript = t.errors.manuscriptExt
     if (!authorInfo) nextErrors.authorInfo = t.errors.authorInfo
@@ -819,8 +821,8 @@ export function AuthorsSubmissionPage() {
       || selectedKeywords.some((keyword) => !keyword.ru.trim() || !keyword.kz.trim() || !keyword.en.trim())
     ) nextErrors.keywords = t.errors.keywordsFull
     if (authorList.length === 0) nextErrors.authorList = t.errors.authors
-    const manuscript = getFileNameFromInputIndex(0)
-    const authorInfo = getFileNameFromInputIndex(1)
+    const manuscript = getFileNameFromInputKind('manuscript')
+    const authorInfo = getFileNameFromInputKind('authorInfo')
     if (!manuscript) nextErrors.manuscript = t.errors.manuscript
     else if (!manuscript.toLowerCase().endsWith('.docx')) nextErrors.manuscript = t.errors.manuscriptExt
     if (!authorInfo) nextErrors.authorInfo = t.errors.authorInfo
@@ -877,13 +879,10 @@ export function AuthorsSubmissionPage() {
                 setSubmitError(null)
                 if (!validateSubmissionFields()) return
                 const form = e.currentTarget as HTMLFormElement
-                const fileInputs = Array.from(
-                  form.querySelectorAll<HTMLInputElement>('input[type="file"].file-input[data-upload-slot="article-file"]'),
-                )
-                const manuscriptFile = fileInputs[0]?.files?.[0] ?? null
-                const authorInfoFile = fileInputs[1]?.files?.[0] ?? null
-                const coverLetterFile = fileInputs[2]?.files?.[0] ?? null
-                const antiplagiarismFile = fileInputs[3]?.files?.[0] ?? null
+                const manuscriptFile = getFileFromInputKind('manuscript', form)
+                const authorInfoFile = getFileFromInputKind('authorInfo', form)
+                const coverLetterFile = getFileFromInputKind('coverLetter', form)
+                const antiplagiarismFile = getFileFromInputKind('antiplagiarism', form)
 
                 const manuscriptFileId = manuscriptFile ? (await uploadFile(manuscriptFile)).id : null
                 const authorInfoFileId = authorInfoFile ? (await uploadFile(authorInfoFile)).id : null
@@ -1107,6 +1106,7 @@ export function AuthorsSubmissionPage() {
               type="file"
               className={`file-input ${errors.manuscript ? 'file-input--error' : ''}`}
               data-upload-slot="article-file"
+              data-file-kind="manuscript"
               data-error-key="manuscript"
               accept=".docx"
               style={errors.manuscript ? { outline: '2px solid red' } : undefined}
@@ -1115,7 +1115,7 @@ export function AuthorsSubmissionPage() {
           </div>
           <div className="form-field">
             <label className="form-label">{t.files.antiplagiarism}</label>
-            <input type="file" className="file-input" data-upload-slot="article-file" data-error-key="antiplagiarism" style={errors.antiplagiarism ? { outline: '2px solid red' } : undefined} />
+            <input type="file" className="file-input" data-upload-slot="article-file" data-file-kind="antiplagiarism" data-error-key="antiplagiarism" style={errors.antiplagiarism ? { outline: '2px solid red' } : undefined} />
             {errors.antiplagiarism ? (<p className="form-hint" style={{ color: 'red' }}>{errors.antiplagiarism}</p>) : null}
           </div>
 
@@ -1127,12 +1127,12 @@ export function AuthorsSubmissionPage() {
           )}
           <div className="form-field">
             <label className="form-label">{t.files.authorInfo}<RequiredMark /></label>
-            <input type="file" className={`file-input ${errors.authorInfo ? 'file-input--error' : ''}`} data-upload-slot="article-file" data-error-key="authorInfo" style={errors.authorInfo ? { outline: '2px solid red' } : undefined} />
+            <input type="file" className={`file-input ${errors.authorInfo ? 'file-input--error' : ''}`} data-upload-slot="article-file" data-file-kind="authorInfo" data-error-key="authorInfo" style={errors.authorInfo ? { outline: '2px solid red' } : undefined} />
             {errors.authorInfo ? (<p className="form-hint" style={{ color: 'red' }}>{errors.authorInfo}</p>) : null}
           </div>
           <div className="form-field">
             <label className="form-label">{t.files.coverLetter}</label>
-            <input type="file" className="file-input" data-upload-slot="article-file" data-error-key="coverLetter" accept=".pdf" style={errors.coverLetter ? { outline: '2px solid red' } : undefined} />
+            <input type="file" className="file-input" data-upload-slot="article-file" data-file-kind="coverLetter" data-error-key="coverLetter" accept=".pdf" style={errors.coverLetter ? { outline: '2px solid red' } : undefined} />
             {errors.coverLetter ? (<p className="form-hint" style={{ color: 'red' }}>{errors.coverLetter}</p>) : null}
           </div>
 
@@ -1438,10 +1438,10 @@ export function AuthorsSubmissionPage() {
                   <div className="table__row"><div className="table__cell">{t.confirm.keywords}</div><div className="table__cell">{selectedKeywords.length ? selectedKeywords.map((kw) => confirmLang === 'ru' ? kw.ru : confirmLang === 'kz' ? kw.kz : kw.en).filter(Boolean).join(', ') : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.responsibleAuthor}</div><div className="table__cell">{(() => { const responsible = authorList.find((a) => a.id === pendingPayload.responsible_user_id); if (!responsible) return pendingPayload.responsible_user_id ?? t.common.notAvailable; const name = [responsible.prefix, responsible.firstName, responsible.middleName, responsible.lastName].filter(Boolean).join(' '); return `${name} (${responsible.email})`; })()}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.authors}</div><div className="table__cell">{authorList.length ? authorList.map((a) => [a.prefix, a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')).join('; ') : t.common.notAvailable}</div></div>
-                  <div className="table__row"><div className="table__cell">{t.confirm.manuscript}</div><div className="table__cell">{getFileNameFromInputIndex(0) || (pendingPayload.manuscript_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
-                  <div className="table__row"><div className="table__cell">{t.confirm.antiplagiarism}</div><div className="table__cell">{getFileNameFromInputIndex(3) || (pendingPayload.antiplagiarism_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
-                  <div className="table__row"><div className="table__cell">{t.confirm.authorInfo}</div><div className="table__cell">{getFileNameFromInputIndex(1) || (pendingPayload.author_info_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
-                  <div className="table__row"><div className="table__cell">{t.confirm.coverLetter}</div><div className="table__cell">{getFileNameFromInputIndex(2) || (pendingPayload.cover_letter_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
+                  <div className="table__row"><div className="table__cell">{t.confirm.manuscript}</div><div className="table__cell">{getFileNameFromInputKind('manuscript') || (pendingPayload.manuscript_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
+                  <div className="table__row"><div className="table__cell">{t.confirm.antiplagiarism}</div><div className="table__cell">{getFileNameFromInputKind('antiplagiarism') || (pendingPayload.antiplagiarism_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
+                  <div className="table__row"><div className="table__cell">{t.confirm.authorInfo}</div><div className="table__cell">{getFileNameFromInputKind('authorInfo') || (pendingPayload.author_info_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
+                  <div className="table__row"><div className="table__cell">{t.confirm.coverLetter}</div><div className="table__cell">{getFileNameFromInputKind('coverLetter') || (pendingPayload.cover_letter_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.aiInfo}</div><div className="table__cell">{pendingPayload.generative_ai_info || t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.confirmations}</div><div className="table__cell">{pendingPayload.confirmations ? (['copyright', 'originality', 'consent'] as const).filter((k) => pendingPayload.confirmations[k]).map((k) => t.confirmations.labels[k]).join(', ') || t.common.notAvailable : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.comments}</div><div className="table__cell">{pendingPayload.comments || t.common.notAvailable}</div></div>
