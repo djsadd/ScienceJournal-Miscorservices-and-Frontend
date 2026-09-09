@@ -5293,6 +5293,60 @@
   padding: 0 0 0.65rem 3.6rem;
 }
 
+.archive-month {
+  border-bottom: 1px solid #f0e6e8;
+}
+
+.archive-month:last-child {
+  border-bottom: 0;
+}
+
+.archive-month__header {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr 1rem;
+  align-items: center;
+  width: 100%;
+  min-height: 45px;
+  padding: 0 0.7rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.archive-month__header:hover {
+  background: #fffafb;
+}
+
+.archive-month__name {
+  color: #5a454b;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.archive-month__count {
+  color: #b09ba0;
+  font-size: 0.62rem;
+}
+
+.archive-month__chevron {
+  color: #b994a0;
+  font-size: 0.72rem;
+  transform: rotate(180deg);
+  transition: transform 0.2s ease;
+}
+
+.archive-month.is-open .archive-month__chevron {
+  transform: rotate(0);
+}
+
+.archive-month__body {
+  padding: 0 0.7rem 0.65rem 0;
+}
+
 .archive-issue {
   margin-bottom: 0.8rem;
   border: 1px solid #eee3e5;
@@ -5412,6 +5466,16 @@
 
   .archive-year__body {
     padding-left: 0;
+  }
+
+  .archive-month__header {
+    grid-template-columns: 7.2rem 1fr 1rem;
+    padding-right: 0;
+    padding-left: 0.35rem;
+  }
+
+  .archive-month__body {
+    padding-right: 0;
   }
 
   .archive-issue__header {
