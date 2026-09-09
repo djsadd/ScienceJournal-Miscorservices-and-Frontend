@@ -938,7 +938,7 @@ export function AuthorsSubmissionPage() {
                 <button
                   key={code}
                   type="button"
-                  className={`lang-chip ${activeLang === code ? 'lang-chip--active' : ''}`}
+                  className={`submission-language-chip ${activeLang === code ? 'submission-language-chip--active' : ''}`}
                   onClick={() => setActiveLang(code)}
                 >
                   {langLabels[code]}
@@ -1041,7 +1041,7 @@ export function AuthorsSubmissionPage() {
                 <button
                   key={code}
                   type="button"
-                  className={`lang-chip ${activeLang === code ? 'lang-chip--active' : ''}`}
+                  className={`submission-language-chip ${activeLang === code ? 'submission-language-chip--active' : ''}`}
                   onClick={() => setActiveLang(code)}
                 >
                   {langLabels[code]}

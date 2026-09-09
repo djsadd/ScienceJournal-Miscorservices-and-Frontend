@@ -318,20 +318,33 @@
   gap: 0.4rem;
 }
 
-.submission-language-switch .lang-chip {
+.submission-language-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  min-width: 92px;
+  padding: 0.48rem 0.75rem;
+  border-radius: 8px;
   border: 1px solid #d9deea;
   background: #ffffff;
   color: #374151;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.submission-language-switch .lang-chip:hover {
+.submission-language-chip:hover {
   border-color: #c98ca7;
   background: #fff7fa;
   color: #7a1237;
 }
 
-.submission-language-switch .lang-chip--active,
-.submission-language-switch .lang-chip--active:hover {
+.submission-language-chip--active,
+.submission-language-chip--active:hover {
   border-color: #7a1237;
   background: #7a1237;
   color: #ffffff;
