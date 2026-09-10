@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Article, ArticleStatus, Volume } from '../shared/types'
-import { StatCard } from '../shared/components/StatCard'
 import { api } from '../api/client'
 import { useLanguage } from '../shared/LanguageContext'
 import type { Lang } from '../shared/labels'
@@ -37,66 +36,48 @@ interface AdminStats {
   by_role: Record<string, number>
 }
 
+interface NotificationDto {
+  id: number
+  title: string
+  message?: string | null
+  related_entity?: string | null
+  status: 'unread' | 'read'
+  created_at: string
+}
+
 type DashboardCopy = {
   title: string
-  subtitle: string
   loading: string
   error: string
   empty: string
-  open: string
+  all: string
+  manuscriptNumber: string
   roleNames: Record<RoleKey, string>
   status: Record<string, string>
-  author: {
-    section: string
-    description: string
-    action: string
-    path: string
-    stats: { total: string; review: string; revision: string }
-    recent: string
+  stats: {
+    manuscripts: string
+    reviews: string
+    published: string
+    unread: string
+    users: string
+    active: string
+    pending: string
+    volumes: string
   }
-  editor: {
-    section: string
-    description: string
-    action: string
-    path: string
-    stats: { incoming: string; review: string; decision: string }
-    recent: string
-  }
-  reviewer: {
-    section: string
-    description: string
-    action: string
-    path: string
-    stats: { pending: string; active: string; overdue: string }
-    recent: string
-  }
-  layout: {
-    section: string
-    description: string
-    action: string
-    path: string
-    stats: { activeVolumes: string; articles: string; ready: string }
-    recent: string
-  }
-  admin: {
-    section: string
-    description: string
-    action: string
-    path: string
-    stats: { total: string; active: string; pending: string }
-    recent: string
-  }
+  recent: Record<RoleKey, { title: string; path: string }>
+  notifications: string
+  notificationEmpty: string
   locale: string
 }
 
 const copies: Record<Lang, DashboardCopy> = {
   ru: {
     title: 'Главная',
-    subtitle: 'Короткая сводка по выбранной роли без лишних блоков.',
     loading: 'Загрузка...',
     error: 'Не удалось загрузить данные',
     empty: 'Пока нет данных для отображения.',
-    open: 'Открыть',
+    all: 'Все',
+    manuscriptNumber: '№',
     roleNames: {
       author: 'Автор',
       editor: 'Редактор',
@@ -111,63 +92,46 @@ const copies: Record<Lang, DashboardCopy> = {
       in_review: 'На рецензировании',
       editor_check: 'Проверка редактора',
       reviewer_check: 'Проверка рецензента',
-      revisions: 'Правки',
-      send_for_revision: 'На доработке',
-      sent_for_revision: 'На доработке',
-      accepted: 'Принято',
+      revisions: 'Требует доработки',
+      send_for_revision: 'Требует доработки',
+      sent_for_revision: 'Требует доработки',
+      accepted: 'Принята',
       published: 'Опубликовано',
       rejected: 'Отклонено',
       withdrawn: 'Отозвано',
+      pending: 'Ожидает',
+      in_progress: 'В работе',
+      completed: 'Завершено',
+      active: 'Активно',
     },
-    author: {
-      section: 'Мои рукописи',
-      description: 'Статусы последних материалов и то, что требует внимания.',
-      action: 'Перейти к подачам',
-      path: '/cabinet/submissions',
-      stats: { total: 'Всего материалов', review: 'На проверке', revision: 'Нужны правки' },
-      recent: 'Последние материалы',
+    stats: {
+      manuscripts: 'Рукописи',
+      reviews: 'На рецензии',
+      published: 'Опубликовано',
+      unread: 'Непрочитано',
+      users: 'Пользователи',
+      active: 'Активные',
+      pending: 'Ожидают',
+      volumes: 'Выпуски',
     },
-    editor: {
-      section: 'Редакционная очередь',
-      description: 'Новые материалы и рукописи, ожидающие решения.',
-      action: 'Открыть назначения',
-      path: '/cabinet/editorial2',
-      stats: { incoming: 'Новые', review: 'На рецензии', decision: 'Требуют решения' },
-      recent: 'Ближайшие задачи',
+    recent: {
+      author: { title: 'Последние рукописи', path: '/cabinet/submissions' },
+      editor: { title: 'Последние рукописи', path: '/cabinet/editorial2' },
+      reviewer: { title: 'Последние рецензии', path: '/cabinet/reviews' },
+      layout: { title: 'Активные выпуски', path: '/cabinet/volumes' },
+      admin: { title: 'Роли в системе', path: '/cabinet/admin/users' },
     },
-    reviewer: {
-      section: 'Мои рецензии',
-      description: 'Активные проверки и приглашения к рецензированию.',
-      action: 'Открыть рецензии',
-      path: '/cabinet/reviews',
-      stats: { pending: 'Приглашения', active: 'В работе', overdue: 'Просрочено' },
-      recent: 'Последние рецензии',
-    },
-    layout: {
-      section: 'Верстка выпуска',
-      description: 'Активные номера и опубликованные материалы в них.',
-      action: 'Открыть доску',
-      path: '/cabinet/layout',
-      stats: { activeVolumes: 'Активные номера', articles: 'Статей в номерах', ready: 'Готовы к выпуску' },
-      recent: 'Активные номера',
-    },
-    admin: {
-      section: 'Пользователи',
-      description: 'Минимальная сводка по аккаунтам и заявкам.',
-      action: 'Управлять пользователями',
-      path: '/cabinet/admin/users',
-      stats: { total: 'Всего пользователей', active: 'Активные', pending: 'Ожидают подтверждения' },
-      recent: 'Роли в системе',
-    },
+    notifications: 'Уведомления',
+    notificationEmpty: 'Новых уведомлений нет',
     locale: 'ru-RU',
   },
   en: {
     title: 'Home',
-    subtitle: 'A short summary for the selected role only.',
     loading: 'Loading...',
     error: 'Could not load data',
     empty: 'No data to show yet.',
-    open: 'Open',
+    all: 'All',
+    manuscriptNumber: 'No.',
     roleNames: {
       author: 'Author',
       editor: 'Editor',
@@ -182,63 +146,46 @@ const copies: Record<Lang, DashboardCopy> = {
       in_review: 'Under review',
       editor_check: 'Editor check',
       reviewer_check: 'Reviewer check',
-      revisions: 'Revisions',
-      send_for_revision: 'Revision',
-      sent_for_revision: 'Revision',
+      revisions: 'Needs revision',
+      send_for_revision: 'Needs revision',
+      sent_for_revision: 'Needs revision',
       accepted: 'Accepted',
       published: 'Published',
       rejected: 'Rejected',
       withdrawn: 'Withdrawn',
+      pending: 'Pending',
+      in_progress: 'In progress',
+      completed: 'Completed',
+      active: 'Active',
     },
-    author: {
-      section: 'My manuscripts',
-      description: 'Recent materials and statuses that need attention.',
-      action: 'Go to submissions',
-      path: '/cabinet/submissions',
-      stats: { total: 'Total materials', review: 'Under review', revision: 'Need revision' },
-      recent: 'Recent materials',
+    stats: {
+      manuscripts: 'Manuscripts',
+      reviews: 'In review',
+      published: 'Published',
+      unread: 'Unread',
+      users: 'Users',
+      active: 'Active',
+      pending: 'Pending',
+      volumes: 'Issues',
     },
-    editor: {
-      section: 'Editorial queue',
-      description: 'New materials and manuscripts waiting for a decision.',
-      action: 'Open assignments',
-      path: '/cabinet/editorial2',
-      stats: { incoming: 'New', review: 'Under review', decision: 'Need decision' },
-      recent: 'Next tasks',
+    recent: {
+      author: { title: 'Recent manuscripts', path: '/cabinet/submissions' },
+      editor: { title: 'Recent manuscripts', path: '/cabinet/editorial2' },
+      reviewer: { title: 'Recent reviews', path: '/cabinet/reviews' },
+      layout: { title: 'Active issues', path: '/cabinet/volumes' },
+      admin: { title: 'System roles', path: '/cabinet/admin/users' },
     },
-    reviewer: {
-      section: 'My reviews',
-      description: 'Active reviews and review invitations.',
-      action: 'Open reviews',
-      path: '/cabinet/reviews',
-      stats: { pending: 'Invitations', active: 'In progress', overdue: 'Overdue' },
-      recent: 'Recent reviews',
-    },
-    layout: {
-      section: 'Issue layout',
-      description: 'Active issues and published articles inside them.',
-      action: 'Open board',
-      path: '/cabinet/layout',
-      stats: { activeVolumes: 'Active issues', articles: 'Articles in issues', ready: 'Ready issues' },
-      recent: 'Active issues',
-    },
-    admin: {
-      section: 'Users',
-      description: 'A minimal account and approval summary.',
-      action: 'Manage users',
-      path: '/cabinet/admin/users',
-      stats: { total: 'Total users', active: 'Active', pending: 'Pending approval' },
-      recent: 'System roles',
-    },
+    notifications: 'Notifications',
+    notificationEmpty: 'No new notifications',
     locale: 'en-US',
   },
   kz: {
     title: 'Басты бет',
-    subtitle: 'Таңдалған рөл бойынша қысқа мәлімет.',
     loading: 'Жүктелуде...',
     error: 'Деректерді жүктеу мүмкін болмады',
     empty: 'Әзірге көрсетілетін деректер жоқ.',
-    open: 'Ашу',
+    all: 'Барлығы',
+    manuscriptNumber: '№',
     roleNames: {
       author: 'Автор',
       editor: 'Редактор',
@@ -253,54 +200,37 @@ const copies: Record<Lang, DashboardCopy> = {
       in_review: 'Рецензияда',
       editor_check: 'Редактор тексеруі',
       reviewer_check: 'Рецензент тексеруі',
-      revisions: 'Түзету',
-      send_for_revision: 'Доработкада',
-      sent_for_revision: 'Доработкада',
+      revisions: 'Түзету қажет',
+      send_for_revision: 'Түзету қажет',
+      sent_for_revision: 'Түзету қажет',
       accepted: 'Қабылданды',
       published: 'Жарияланды',
       rejected: 'Қабылданбады',
       withdrawn: 'Қайтарылды',
+      pending: 'Күтуде',
+      in_progress: 'Жұмыста',
+      completed: 'Аяқталды',
+      active: 'Белсенді',
     },
-    author: {
-      section: 'Менің қолжазбаларым',
-      description: 'Соңғы материалдар және назар қажет ететін күйлер.',
-      action: 'Өтінімдерге өту',
-      path: '/cabinet/submissions',
-      stats: { total: 'Барлық материалдар', review: 'Тексерісте', revision: 'Түзету керек' },
-      recent: 'Соңғы материалдар',
+    stats: {
+      manuscripts: 'Қолжазбалар',
+      reviews: 'Рецензияда',
+      published: 'Жарияланды',
+      unread: 'Оқылмаған',
+      users: 'Пайдаланушылар',
+      active: 'Белсенді',
+      pending: 'Күтуде',
+      volumes: 'Сандар',
     },
-    editor: {
-      section: 'Редакциялық кезек',
-      description: 'Жаңа материалдар және шешім күтіп тұрған қолжазбалар.',
-      action: 'Тапсырмаларды ашу',
-      path: '/cabinet/editorial2',
-      stats: { incoming: 'Жаңа', review: 'Рецензияда', decision: 'Шешім керек' },
-      recent: 'Жақын тапсырмалар',
+    recent: {
+      author: { title: 'Соңғы қолжазбалар', path: '/cabinet/submissions' },
+      editor: { title: 'Соңғы қолжазбалар', path: '/cabinet/editorial2' },
+      reviewer: { title: 'Соңғы рецензиялар', path: '/cabinet/reviews' },
+      layout: { title: 'Белсенді сандар', path: '/cabinet/volumes' },
+      admin: { title: 'Жүйедегі рөлдер', path: '/cabinet/admin/users' },
     },
-    reviewer: {
-      section: 'Менің рецензияларым',
-      description: 'Белсенді тексерулер және рецензия шақырулары.',
-      action: 'Рецензияларды ашу',
-      path: '/cabinet/reviews',
-      stats: { pending: 'Шақырулар', active: 'Жұмыста', overdue: 'Мерзімі өтті' },
-      recent: 'Соңғы рецензиялар',
-    },
-    layout: {
-      section: 'Нөмір беттеу',
-      description: 'Белсенді нөмірлер және олардағы жарияланған мақалалар.',
-      action: 'Тақтаны ашу',
-      path: '/cabinet/layout',
-      stats: { activeVolumes: 'Белсенді нөмірлер', articles: 'Нөмірдегі мақалалар', ready: 'Дайын нөмірлер' },
-      recent: 'Белсенді нөмірлер',
-    },
-    admin: {
-      section: 'Пайдаланушылар',
-      description: 'Аккаунттар мен өтінімдер бойынша қысқа мәлімет.',
-      action: 'Пайдаланушыларды басқару',
-      path: '/cabinet/admin/users',
-      stats: { total: 'Барлық пайдаланушы', active: 'Белсенді', pending: 'Растау күтеді' },
-      recent: 'Жүйедегі рөлдер',
-    },
+    notifications: 'Хабарламалар',
+    notificationEmpty: 'Жаңа хабарлама жоқ',
     locale: 'kk-KZ',
   },
 }
@@ -308,7 +238,6 @@ const copies: Record<Lang, DashboardCopy> = {
 const roleKeys: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
 const isRoleKey = (value: string): value is RoleKey => roleKeys.includes(value as RoleKey)
 const reviewStatuses = ['under_review', 'in_review', 'editor_check', 'reviewer_check']
-const revisionStatuses = ['revisions', 'send_for_revision', 'sent_for_revision']
 
 const readStoredRole = (): RoleKey | null => {
   if (typeof window === 'undefined') return null
@@ -337,19 +266,59 @@ const formatDate = (value: string | null | undefined, locale: string) => {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString(locale)
+  return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
+
+const formatRelativeTime = (value: string | null | undefined, locale: string) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const diffMs = date.getTime() - Date.now()
+  const divisions: { amount: number; unit: Intl.RelativeTimeFormatUnit }[] = [
+    { amount: 60_000, unit: 'minute' },
+    { amount: 3_600_000, unit: 'hour' },
+    { amount: 86_400_000, unit: 'day' },
+  ]
+  const abs = Math.abs(diffMs)
+  const division = divisions.find((item) => abs < item.amount * 24) ?? divisions[2]
+  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+    Math.round(diffMs / division.amount),
+    division.unit,
+  )
+}
+
+const stripLinks = (text?: string | null): string | undefined => {
+  if (!text) return undefined
+  const cleaned = text
+    .replace(/Откройте:\s*https?:\/\/\S+/gi, '')
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+  return cleaned || undefined
+}
+
+const notificationTargetPath = (relatedEntity?: string | null) => {
+  if (!relatedEntity) return '/cabinet/notifications'
+  const [type, rawId] = relatedEntity.split(':')
+  const id = Number(rawId)
+  if (!Number.isInteger(id) || id <= 0) return '/cabinet/notifications'
+  if (type === 'review') return `/cabinet/reviews/${id}`
+  if (type === 'article') return `/cabinet/my-articles/${id}`
+  return '/cabinet/notifications'
+}
+
+const getStatusClass = (status: string) => `status-chip status-chip--${status.replace(/[^a-z0-9_-]/gi, '_')}`
 
 export function Dashboard() {
   const { lang } = useLanguage()
   const l: Lang = (['ru', 'en', 'kz'] as const).includes(lang) ? (lang as Lang) : 'ru'
   const t = copies[l]
-  const [me, setMe] = useState<MeResponse | null>(null)
   const [activeRole, setActiveRole] = useState<RoleKey>(() => readStoredRole() ?? 'author')
   const [articles, setArticles] = useState<Article[]>([])
   const [reviews, setReviews] = useState<ReviewItem[]>([])
   const [volumes, setVolumes] = useState<Volume[]>([])
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null)
+  const [notifications, setNotifications] = useState<NotificationDto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -362,6 +331,7 @@ export function Dashboard() {
       setReviews([])
       setVolumes([])
       setAdminStats(null)
+      setNotifications([])
 
       try {
         const [meResp, rolesResp] = await Promise.all([
@@ -370,7 +340,6 @@ export function Dashboard() {
         ])
         if (!mounted) return
 
-        setMe(meResp)
         const allowedRoles = normalizeAllowedRoles(rolesResp?.roles ?? [meResp.role], meResp.role)
         const storedRole = readStoredRole()
         const nextRole = storedRole && allowedRoles.includes(storedRole)
@@ -378,22 +347,56 @@ export function Dashboard() {
           : allowedRoles[0] ?? meResp.role ?? 'author'
         setActiveRole(nextRole)
 
+        const notificationsPromise = api
+          .getNotifications<NotificationDto[]>({ limit: 5, offset: 0 })
+          .catch(() => [])
+
         if (nextRole === 'author') {
-          const data = await api.get<Record<string, unknown>[]>('/articles/my')
-          if (mounted) setArticles(data.map(normalizeArticle))
+          const [data, latestNotifications] = await Promise.all([
+            api.get<Record<string, unknown>[]>('/articles/my'),
+            notificationsPromise,
+          ])
+          if (mounted) {
+            setArticles(data.map(normalizeArticle))
+            setNotifications(latestNotifications)
+          }
         } else if (nextRole === 'editor') {
-          const data = await api.getUnassignedArticles<{ items?: Record<string, unknown>[] } | Record<string, unknown>[]>({ status: 'all', page_size: 20 })
+          const [data, latestNotifications] = await Promise.all([
+            api.getUnassignedArticles<{ items?: Record<string, unknown>[] } | Record<string, unknown>[]>({ status: 'all', page_size: 20 }),
+            notificationsPromise,
+          ])
           const items = Array.isArray(data) ? data : Array.isArray(data.items) ? data.items : []
-          if (mounted) setArticles(items.map(normalizeArticle))
+          if (mounted) {
+            setArticles(items.map(normalizeArticle))
+            setNotifications(latestNotifications)
+          }
         } else if (nextRole === 'reviewer') {
-          const data = await api.getMyReviews<{ items?: ReviewItem[] }>({ page: 1, page_size: 20 })
-          if (mounted) setReviews(Array.isArray(data.items) ? data.items : [])
+          const [data, latestNotifications] = await Promise.all([
+            api.getMyReviews<{ items?: ReviewItem[] }>({ page: 1, page_size: 20 }),
+            notificationsPromise,
+          ])
+          if (mounted) {
+            setReviews(Array.isArray(data.items) ? data.items : [])
+            setNotifications(latestNotifications)
+          }
         } else if (nextRole === 'layout') {
-          const data = await api.getVolumes<Volume[]>({ active_only: true })
-          if (mounted) setVolumes(Array.isArray(data) ? data : [])
+          const [data, latestNotifications] = await Promise.all([
+            api.getVolumes<Volume[]>({ active_only: true }),
+            notificationsPromise,
+          ])
+          if (mounted) {
+            setVolumes(Array.isArray(data) ? data : [])
+            setNotifications(latestNotifications)
+          }
         } else if (nextRole === 'admin') {
-          const data = await api.getAdminUserStats<AdminStats>()
-          if (mounted) setAdminStats(data)
+          const [data, latestNotifications] = await Promise.all([
+            api.getAdminUserStats<AdminStats>(),
+            notificationsPromise,
+          ])
+          if (mounted) {
+            setAdminStats(data)
+            setNotifications(latestNotifications)
+          }
         }
       } catch (e) {
         console.error('Dashboard load error', e)
@@ -408,50 +411,41 @@ export function Dashboard() {
     }
   }, [t.error])
 
-  const roleCopy = t[activeRole]
+  const unreadCount = notifications.filter((item) => item.status === 'unread').length
 
   const stats = useMemo(() => {
-    if (activeRole === 'author') {
-      return [
-        { label: t.author.stats.total, value: articles.length },
-        { label: t.author.stats.review, value: articles.filter((a) => reviewStatuses.includes(a.status)).length },
-        { label: t.author.stats.revision, value: articles.filter((a) => revisionStatuses.includes(a.status)).length },
-      ]
-    }
-    if (activeRole === 'editor') {
-      return [
-        { label: t.editor.stats.incoming, value: articles.filter((a) => a.status === 'submitted').length },
-        { label: t.editor.stats.review, value: articles.filter((a) => reviewStatuses.includes(a.status)).length },
-        { label: t.editor.stats.decision, value: articles.filter((a) => revisionStatuses.includes(a.status) || a.status === 'accepted').length },
-      ]
-    }
     if (activeRole === 'reviewer') {
       return [
-        { label: t.reviewer.stats.pending, value: reviews.filter((r) => r.status === 'pending').length },
-        { label: t.reviewer.stats.active, value: reviews.filter((r) => r.status === 'in_progress').length },
-        {
-          label: t.reviewer.stats.overdue,
-          value: reviews.filter((r) => {
-            const deadline = r.deadline ? new Date(r.deadline) : null
-            return deadline ? deadline.getTime() < Date.now() && ['pending', 'in_progress'].includes(r.status) : false
-          }).length,
-        },
+        { label: t.stats.manuscripts, value: reviews.length },
+        { label: t.stats.reviews, value: reviews.filter((r) => ['pending', 'in_progress'].includes(r.status)).length },
+        { label: t.stats.published, value: reviews.filter((r) => ['submitted', 'completed'].includes(r.status)).length },
+        { label: t.stats.unread, value: unreadCount },
       ]
     }
     if (activeRole === 'layout') {
       const articlesInVolumes = volumes.reduce((sum, volume) => sum + (volume.articles?.length ?? 0), 0)
       return [
-        { label: t.layout.stats.activeVolumes, value: volumes.length },
-        { label: t.layout.stats.articles, value: articlesInVolumes },
-        { label: t.layout.stats.ready, value: volumes.filter((v) => v.is_active).length },
+        { label: t.stats.volumes, value: volumes.length },
+        { label: t.stats.manuscripts, value: articlesInVolumes },
+        { label: t.stats.published, value: volumes.filter((v) => v.is_active).length },
+        { label: t.stats.unread, value: unreadCount },
+      ]
+    }
+    if (activeRole === 'admin') {
+      return [
+        { label: t.stats.users, value: adminStats?.total ?? 0 },
+        { label: t.stats.active, value: adminStats?.active ?? 0 },
+        { label: t.stats.pending, value: adminStats?.pending ?? 0 },
+        { label: t.stats.unread, value: unreadCount },
       ]
     }
     return [
-      { label: t.admin.stats.total, value: adminStats?.total ?? 0 },
-      { label: t.admin.stats.active, value: adminStats?.active ?? 0 },
-      { label: t.admin.stats.pending, value: adminStats?.pending ?? 0 },
+      { label: t.stats.manuscripts, value: articles.length },
+      { label: t.stats.reviews, value: articles.filter((a) => reviewStatuses.includes(a.status)).length },
+      { label: t.stats.published, value: articles.filter((a) => a.status === 'published' || a.status === 'accepted').length },
+      { label: t.stats.unread, value: unreadCount },
     ]
-  }, [activeRole, adminStats, articles, reviews, t, volumes])
+  }, [activeRole, adminStats, articles, reviews, t, unreadCount, volumes])
 
   const rows = useMemo(() => {
     if (activeRole === 'reviewer') {
@@ -459,7 +453,8 @@ export function Dashboard() {
         id: String(review.id),
         title: review.article_title || `#${review.article_id ?? review.id}`,
         meta: formatDate(review.deadline ?? review.created_at, t.locale),
-        chip: review.status,
+        statusKey: review.status,
+        statusLabel: t.status[review.status] ?? review.status,
         path: `/cabinet/reviews/${review.id}`,
       }))
     }
@@ -468,7 +463,8 @@ export function Dashboard() {
         id: String(volume.id ?? `${volume.year}-${volume.number}`),
         title: volume.title_ru || volume.title_en || volume.title_kz || `${volume.year}, №${volume.number}`,
         meta: `${volume.articles?.length ?? 0}`,
-        chip: volume.is_active ? t.layout.stats.activeVolumes : t.layout.stats.ready,
+        statusKey: volume.is_active ? 'active' : 'draft',
+        statusLabel: volume.is_active ? t.status.active : t.status.draft,
         path: volume.id ? `/cabinet/volumes/${volume.id}` : '/cabinet/volumes',
       }))
     }
@@ -477,7 +473,8 @@ export function Dashboard() {
         id: role,
         title: isRoleKey(role) ? t.roleNames[role] : role,
         meta: String(count),
-        chip: role,
+        statusKey: 'active',
+        statusLabel: t.status.active,
         path: '/cabinet/admin/users',
       }))
     }
@@ -485,42 +482,36 @@ export function Dashboard() {
       id: article.id,
       title: article.title || `#${article.id}`,
       meta: formatDate(article.submittedAt, t.locale),
-      chip: t.status[article.status] ?? article.status,
+      statusKey: article.status,
+      statusLabel: t.status[article.status] ?? article.status,
       path: activeRole === 'editor' ? `/cabinet/editorial2/${article.id}` : `/cabinet/my-articles/${article.id}`,
     }))
   }, [activeRole, adminStats, articles, reviews, t, volumes])
 
+  const section = t.recent[activeRole]
+
   return (
     <div className="app-container dashboard-home">
-      <section className="section-header dashboard-home__header">
+      <section className="section-header dashboard-home__header" aria-label={t.title}>
         <div>
           <p className="eyebrow">{t.roleNames[activeRole]}</p>
           <h1 className="page-title">{t.title}</h1>
-          <p className="subtitle">{t.subtitle}</p>
         </div>
-        <span className="pill">{loading ? t.loading : error ? t.error : (me?.full_name || me?.username || t.roleNames[activeRole])}</span>
       </section>
 
-      <section className="panel dashboard-home__summary">
-        <div className="dashboard-home__summary-top">
-          <div>
-            <h2 className="panel-title">{roleCopy.section}</h2>
-            <p className="subtitle">{roleCopy.description}</p>
+      <section className="dashboard-home__stats" aria-label={t.title}>
+        {stats.map((stat) => (
+          <div className="dashboard-home__stat" key={stat.label}>
+            <div className="dashboard-home__stat-value">{loading ? '...' : stat.value}</div>
+            <div className="dashboard-home__stat-label">{stat.label}</div>
           </div>
-          <Link className="button button--primary" to={roleCopy.path}>
-            {roleCopy.action}
-          </Link>
-        </div>
-        <div className="grid grid-3 dashboard-home__stats">
-          {stats.map((stat) => (
-            <StatCard key={stat.label} label={stat.label} value={loading ? '...' : stat.value} />
-          ))}
-        </div>
+        ))}
       </section>
 
-      <section className="panel dashboard-home__recent">
-        <div className="dashboard-home__recent-top">
-          <h2 className="panel-title">{roleCopy.recent}</h2>
+      <section className="dashboard-home__block">
+        <div className="dashboard-home__block-head">
+          <h2>{section.title}</h2>
+          <Link to={section.path}>{t.all} -&gt;</Link>
         </div>
         {error ? (
           <div className="dashboard-home__empty">{error}</div>
@@ -532,14 +523,50 @@ export function Dashboard() {
               <Link className="dashboard-home__row" to={row.path} key={row.id}>
                 <span className="dashboard-home__row-main">
                   <span className="dashboard-home__row-title">{row.title}</span>
-                  {row.meta ? <span className="dashboard-home__row-meta">{row.meta}</span> : null}
+                  {row.meta ? (
+                    <span className="dashboard-home__row-meta">
+                      {t.manuscriptNumber} {row.id} · {row.meta}
+                    </span>
+                  ) : null}
                 </span>
-                <span className="dashboard-home__row-side">
-                  <span className="status-chip status-chip--draft">{row.chip}</span>
-                  <span className="dashboard-home__open">{t.open}</span>
+                <span className={getStatusClass(row.statusKey)}>
+                  <span className="status-chip__dot" aria-hidden="true" />
+                  {row.statusLabel}
                 </span>
               </Link>
             ))}
+          </div>
+        )}
+      </section>
+
+      <section className="dashboard-home__block">
+        <div className="dashboard-home__block-head">
+          <h2>{t.notifications}</h2>
+          <Link to="/cabinet/notifications">{t.all} -&gt;</Link>
+        </div>
+        {notifications.length === 0 ? (
+          <div className="dashboard-home__empty">{loading ? t.loading : t.notificationEmpty}</div>
+        ) : (
+          <div className="dashboard-home__notifications">
+            {notifications.slice(0, 3).map((notification) => {
+              const message = stripLinks(notification.message)
+              return (
+                <Link
+                  className={`dashboard-home__notification ${notification.status === 'unread' ? 'dashboard-home__notification--unread' : ''}`}
+                  to={notificationTargetPath(notification.related_entity)}
+                  key={notification.id}
+                >
+                  <span className="dashboard-home__notification-dot" aria-hidden="true" />
+                  <span className="dashboard-home__notification-body">
+                    <span className="dashboard-home__notification-title">{notification.title}</span>
+                    {message ? <span className="dashboard-home__notification-message">{message}</span> : null}
+                    <time dateTime={notification.created_at}>
+                      {formatRelativeTime(notification.created_at, t.locale)}
+                    </time>
+                  </span>
+                </Link>
+              )
+            })}
           </div>
         )}
       </section>

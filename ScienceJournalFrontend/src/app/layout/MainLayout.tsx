@@ -40,6 +40,11 @@ type RoleRequestDto = {
   admin_approved: boolean
 }
 
+type CurrentUserDto = {
+  username: string
+  full_name?: string | null
+}
+
 type SidebarCopy = {
   roleOptions: Record<RoleKey, string>
   roleSwitcherLabel: string
@@ -197,7 +202,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Приватность',
     logout: 'Выйти',
     langLabel: 'Язык',
-    brandTitle: 'Известия университета Туран-Астана',
+    brandTitle: 'Кабинет',
     brandSubtitle: '',
     brandAlt: 'Логотип журнала',
     mobileMenuOpen: 'Меню',
@@ -328,7 +333,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Privacy',
     logout: 'Logout',
     langLabel: 'Language',
-    brandTitle: 'Turan-Astana University news',
+    brandTitle: 'Cabinet',
     brandSubtitle: '',
     brandAlt: 'Turan-Astana University news logo',
     mobileMenuOpen: 'Menu',
@@ -459,7 +464,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Құпиялылық',
     logout: 'Шығу',
     langLabel: 'Тіл',
-    brandTitle: 'Туран-Астана университетінің хабарлары',
+    brandTitle: 'Кабинет',
     brandSubtitle: '',
     brandAlt: 'Журнал логотипы',
     mobileMenuOpen: 'Мәзір',
@@ -485,6 +490,76 @@ const notificationLocale: Record<LangKey, string> = {
   ru: 'ru-RU',
   en: 'en-US',
   kz: 'kk-KZ',
+}
+
+const getInitials = (value: string) => {
+  const parts = value.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return 'TA'
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join('')
+}
+
+const NavIcon = ({ path }: { path?: string }) => {
+  const common = {
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    xmlns: 'http://www.w3.org/2000/svg',
+    'aria-hidden': true,
+  }
+
+  if (path === '/cabinet') {
+    return (
+      <svg {...common}>
+        <path d="M5 5H10V10H5V5Z" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M14 5H19V10H14V5Z" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M5 14H10V19H5V14Z" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M14 14H19V19H14V14Z" stroke="currentColor" strokeWidth="1.6" />
+      </svg>
+    )
+  }
+
+  if (path === '/cabinet/profile') {
+    return (
+      <svg {...common}>
+        <path d="M12 12.25C14.07 12.25 15.75 10.57 15.75 8.5C15.75 6.43 14.07 4.75 12 4.75C9.93 4.75 8.25 6.43 8.25 8.5C8.25 10.57 9.93 12.25 12 12.25Z" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M5.75 19.25C6.55 16.7 8.9 15 12 15C15.1 15 17.45 16.7 18.25 19.25" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (path === '/cabinet/notifications') {
+    return (
+      <svg {...common}>
+        <path d="M17 10C17 7.24 14.76 5 12 5C9.24 5 7 7.24 7 10V13.5L5.5 16H18.5L17 13.5V10Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M10 18C10.42 18.63 11.1 19 12 19C12.9 19 13.58 18.63 14 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (path === '/cabinet/submission') {
+    return (
+      <svg {...common}>
+        <path d="M12 5V19" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M5 12H19" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (path?.includes('contract')) {
+    return (
+      <svg {...common}>
+        <path d="M7 4.75H15L18 7.75V19.25H7V4.75Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M15 5V8H18" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M9.5 14.5L11 16L15 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M7 4.75H15L18 7.75V19.25H7V4.75Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M15 5V8H18" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
 const stripNotificationLinks = (text?: string | null): string | undefined => {
@@ -564,6 +639,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [areNotificationsLoading, setAreNotificationsLoading] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [pageTitle, setPageTitle] = useState('')
+  const [currentUserName, setCurrentUserName] = useState('')
   const [lowVision, setLowVision] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('lowVision')
@@ -613,6 +689,22 @@ export function MainLayout({ children }: MainLayoutProps) {
       isMounted = false
     }
   }, [loadRoles])
+
+  useEffect(() => {
+    let isMounted = true
+    api.get<CurrentUserDto>('/auth/me')
+      .then((user) => {
+        if (!isMounted) return
+        setCurrentUserName(user.full_name || user.username || '')
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setCurrentUserName('')
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -788,7 +880,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className={`app-shell ${lowVision ? 'low-vision' : ''} ${isDesktopViewport && !isSidebarVisible ? 'app-shell--sidebar-hidden' : ''}`}>
       <aside id="cabinet-sidebar" className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''} ${isDesktopViewport && !isSidebarVisible ? 'sidebar--hidden' : ''}`}>
         <div className="sidebar__brand">
-          <Link to="/" className="brand--compact">
+          <Link to="/cabinet" className="brand--compact">
             <div className="brand-mark">
               <img src={logo} alt={copy.brandAlt} className="brand-logo brand-logo--plain" />
             </div>
@@ -816,6 +908,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                       }
                       onClick={closeSidebar}
                     >
+                      <span className="sidebar__link-icon">
+                        <NavIcon path={item.path} />
+                      </span>
                       <span className="sidebar__link-label">{item.label}</span>
                       <span className="sidebar__link-meta">
                         {item.path === '/cabinet/notifications' && unreadCount > 0 ? (
@@ -830,6 +925,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                       className="sidebar__link sidebar__link--static"
                       onClick={closeSidebar}
                     >
+                      <span className="sidebar__link-icon">
+                        <NavIcon path={item.path} />
+                      </span>
                       <span className="sidebar__link-label">{item.label}</span>
                       <span className="sidebar__link-meta">{item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}</span>
                     </div>
@@ -841,20 +939,34 @@ export function MainLayout({ children }: MainLayoutProps) {
         </nav>
 
         <div className="sidebar__footer">
-          <div className="sidebar__footer-title">{copy.resourcesTitle}</div>
-          <div className="sidebar__footer-links">
-            <a href="#">{copy.terms}</a>
-            <a href="#">{copy.privacy}</a>
-          </div>
           <button
-            className="button button--ghost button--compact"
+            className="sidebar__footer-action"
             type="button"
             onClick={() => {
               api.logout()
               navigate('/login')
             }}
           >
+            <span className="sidebar__footer-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 6H6.75C5.78 6 5 6.78 5 7.75V16.25C5 17.22 5.78 18 6.75 18H10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M14 8L18 12L14 16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M18 12H10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </span>
             {copy.logout}
+          </button>
+          <button
+            className="sidebar__footer-action"
+            type="button"
+            onClick={toggleSidebar}
+          >
+            <span className="sidebar__footer-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            {sidebarToggleLabel}
           </button>
         </div>
       </aside>
@@ -904,9 +1016,11 @@ export function MainLayout({ children }: MainLayoutProps) {
               </svg>
             </button>
             {pageTitle ? (
-              <h1 className="app-header-title" title={pageTitle}>
-                {pageTitle}
-              </h1>
+              <div className="cabinet-breadcrumbs" aria-label="Breadcrumb">
+                <Link to="/cabinet">{copy.brandTitle}</Link>
+                <span>/</span>
+                <span>{pageTitle}</span>
+              </div>
             ) : null}
           </div>
           <div className="header-controls">
@@ -926,7 +1040,15 @@ export function MainLayout({ children }: MainLayoutProps) {
                   setIsRoleMenuOpen((prev) => !prev)
                 }}
               >
-                <span>{copy.roleOptions[activeRole]}</span>
+                <span className="mobile-shell-role__avatar">
+                  {getInitials(currentUserName || copy.roleOptions[activeRole])}
+                </span>
+                <span className="mobile-shell-role__text">
+                  <span className="mobile-shell-role__name">
+                    {currentUserName || copy.roleOptions[activeRole]}
+                  </span>
+                  <span className="mobile-shell-role__role">{copy.roleOptions[activeRole]}</span>
+                </span>
                 <svg
                   className="mobile-shell-role__chevron"
                   viewBox="0 0 16 16"
