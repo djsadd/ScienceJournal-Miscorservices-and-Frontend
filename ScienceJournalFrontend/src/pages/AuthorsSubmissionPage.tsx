@@ -843,7 +843,7 @@ export function AuthorsSubmissionPage() {
   void validateForm
 
   return (
-    <div className="public-container">
+    <div className="public-container submission-page">
       {false && (
       <div className="section public-section">
         <p className="eyebrow">Подача статьи</p>
@@ -865,13 +865,19 @@ export function AuthorsSubmissionPage() {
         </Link>
       </div>
 
-        <div className="section public-section">
-          <h1 className="hero__title">{t.pageTitle}</h1>
-          <p className="subtitle">{t.pageSubtitle}</p>
-          <Link to="/cabinet/submissions" className="button button--ghost">
-            {t.backToCabinet}
-          </Link>
+        <div className="section public-section submission-sheet">
+          <header className="submission-sheet__header">
+            <div>
+              <p className="submission-sheet__eyebrow">Новая подача</p>
+              <h1 className="hero__title">{t.pageTitle}</h1>
+              <p className="subtitle">{t.pageSubtitle}</p>
+            </div>
+            <Link to="/cabinet/submissions" className="submission-sheet__back">
+              <span aria-hidden="true">←</span> {t.backToCabinet}
+            </Link>
+          </header>
           <form
+            id="article-submission-form"
             className="auth-form"
             onSubmit={async (e) => {
               e.preventDefault()
@@ -948,6 +954,9 @@ export function AuthorsSubmissionPage() {
               {submitError}
             </div>
           ) : null}
+          <section className="submission-step">
+            <div className="submission-step__heading"><span>01</span><h2>Тип и язык статьи</h2></div>
+            <div className="submission-step__grid submission-step__grid--two">
           {false && (
           <div className="form-field">
             <label className="form-label">Язык формы</label>
@@ -1003,7 +1012,11 @@ export function AuthorsSubmissionPage() {
             <p className="form-hint">{t.articleLanguage.hint}</p>
             {errors.articleLanguage ? (<p className="form-hint" style={{ color: 'red' }}>{errors.articleLanguage}</p>) : null}
           </div>
+            </div>
+          </section>
 
+          <section className="submission-step">
+            <div className="submission-step__heading"><span>02</span><h2>Ключевые слова</h2></div>
           <div className="form-field form-field--article-file">
             <label className="form-label">{t.keywords.label}<RequiredMark /></label>
             <div className="form-field">
@@ -1054,7 +1067,10 @@ export function AuthorsSubmissionPage() {
             <p className="form-hint">{t.keywords.hint}</p>
             {errors.keywords ? (<p className="form-hint" style={{ color: 'red' }}>{errors.keywords}</p>) : null}
           </div>
+          </section>
 
+          <section className="submission-step">
+            <div className="submission-step__heading"><span>03</span><h2>Содержание рукописи</h2></div>
           <div className="form-field">
             <label className="form-label">{t.formLanguagesLabel}</label>
             <div className="lang-switch submission-language-switch">
@@ -1098,8 +1114,11 @@ export function AuthorsSubmissionPage() {
             />
             {errors[`abstract_${activeLang}`] ? (<p className="form-hint" style={{ color: 'red' }}>{errors[`abstract_${activeLang}`]}</p>) : null}
           </div>
+          </section>
 
-
+          <section className="submission-step">
+            <div className="submission-step__heading"><span>04</span><h2>Файлы</h2></div>
+            <div className="submission-step__grid submission-step__grid--files">
           <div className="form-field">
             <label className="form-label">{t.files.manuscript}<RequiredMark /></label>
             <input
@@ -1135,7 +1154,11 @@ export function AuthorsSubmissionPage() {
             <input type="file" className="file-input" data-upload-slot="article-file" data-file-kind="coverLetter" data-error-key="coverLetter" accept=".pdf" style={errors.coverLetter ? { outline: '2px solid red' } : undefined} />
             {errors.coverLetter ? (<p className="form-hint" style={{ color: 'red' }}>{errors.coverLetter}</p>) : null}
           </div>
+            </div>
+          </section>
 
+          <section className="submission-step">
+            <div className="submission-step__heading"><span>05</span><h2>Декларации</h2></div>
           <div className="form-field">
             <label className="form-label">{t.aiInfoLabel}</label>
             <textarea
@@ -1178,13 +1201,11 @@ export function AuthorsSubmissionPage() {
             </label>
             {errors.confirmConsent ? (<p className="form-hint" style={{ color: 'red' }}>{errors.confirmConsent}</p>) : null}
 
-          <button className="button button--primary" type="submit">
-            {t.submit}
-          </button>
+          </section>
         </form>
       </div>
 
-      <div className="section public-section">
+      <div className="section public-section submission-sheet submission-authors">
         <div className="section-heading">
           <div>
             <p className="eyebrow">{t.authors.eyebrow}</p>
@@ -1232,6 +1253,22 @@ export function AuthorsSubmissionPage() {
         )}
       </div>
       {errors.authorList ? (<p className="form-hint" style={{ color: 'red' }}>{errors.authorList}</p>) : null}
+
+      <div className="submission-final-action">
+        <div className="submission-final-action__copy">
+          <span>06</span>
+          <strong>Всё готово к подаче?</strong>
+          <p>Перед отправкой проверьте данные статьи, список авторов и прикреплённые файлы.</p>
+        </div>
+        <button
+          className="button button--primary submission-sheet__submit"
+          type="submit"
+          form="article-submission-form"
+        >
+          <span>{t.submit}</span>
+          <span className="submission-sheet__submit-arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
 
       {modalOpen ? (
         <div className="modal-backdrop" onClick={() => setModalOpen(false)}>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { getArticleLanguageLabel, getArticleLanguageOptions } from '../shared/articleLanguages'
 import { getCountryLabel, type CountryValue } from '../shared/countries'
@@ -13,6 +13,25 @@ interface ApiKeyword {
 }
 type Keyword = { id?: number; ru: string; kz: string; en: string }
 type ArticleType = 'original' | 'review'
+
+type AuthorForm = {
+  id?: number
+  email: string
+  prefix: string
+  firstName: string
+  middleName: string
+  lastName: string
+  phone: string
+  address: string
+  country: string
+  affiliation1: string
+  affiliation2: string
+  affiliation3: string
+  isCorresponding: boolean
+  orcid: string
+  scopusId: string
+  researcherId: string
+}
 
 interface ApiAuthor {
   id: number
@@ -94,13 +113,59 @@ interface ArticleUpdatePayload {
   generative_ai_info?: string | null
 }
 
-const RequiredMark = () => <span className="required-star" aria-hidden="true">{'\u00a0'}*</span>
+const RequiredMark = () => <span className="required-star" aria-hidden="true">{'\u2060'}*</span>
 const editableArticleStatuses = ['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision', 'draft']
 const articleTypeOptions: ArticleType[] = ['original', 'review']
 const articleLanguageOptions = getArticleLanguageOptions('ru').map((option) => ({
   value: option.code,
   label: option.label,
 }))
+
+const emptyAuthorForm = (): AuthorForm => ({
+  email: '',
+  prefix: '',
+  firstName: '',
+  middleName: '',
+  lastName: '',
+  phone: '',
+  address: '',
+  country: '',
+  affiliation1: '',
+  affiliation2: '',
+  affiliation3: '',
+  isCorresponding: true,
+  orcid: '',
+  scopusId: '',
+  researcherId: '',
+})
+
+function IconButton({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string
+  icon: 'edit' | 'trash'
+  onClick: () => void
+}) {
+  return (
+    <button type="button" className={`icon-button icon-button--${icon}`} onClick={onClick} aria-label={label} title={label}>
+      {icon === 'edit' ? (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5 16.9V19H7.1L17.3 8.8L15.2 6.7L5 16.9Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+          <path d="M14.5 7.4L16.1 5.8C16.55 5.35 17.28 5.35 17.73 5.8L18.2 6.27C18.65 6.72 18.65 7.45 18.2 7.9L16.6 9.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M8 9V18M12 9V18M16 9V18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M5 6H19" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M9 6L9.7 4.75H14.3L15 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M7 6L7.6 20H16.4L17 6" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
+  )
+}
 
 const updateErrorText = {
   invalidForm: 'Пожалуйста, заполните обязательные поля и повторите отправку статьи.',
@@ -130,57 +195,21 @@ export function MyArticleDetailsPage() {
   const [revokeMessage, setRevokeMessage] = useState<string | null>(null)
   const [revokeLoading, setRevokeLoading] = useState(false)
   // keywords state similar to submission form
-  const [allKeywords, setAllKeywords] = useState<Keyword[]>([])
   const [selectedKeywords, setSelectedKeywords] = useState<Keyword[]>([])
-  const [keywordInput, setKeywordInput] = useState('')
   const [kwModalOpen, setKwModalOpen] = useState(false)
+  const [editingKeywordIndex, setEditingKeywordIndex] = useState<number | null>(null)
   const [newKeyword, setNewKeyword] = useState<Keyword>({ ru: '', kz: '', en: '' })
   // authors edit state (reused from submission page)
-  type AuthorForm = {
-    id?: number
-    email: string
-    prefix: string
-    firstName: string
-    middleName: string
-    lastName: string
-    phone: string
-    address: string
-    country: string
-    affiliation1: string
-    affiliation2: string
-    affiliation3: string
-    isCorresponding: boolean
-    orcid: string
-    scopusId: string
-    researcherId: string
-  }
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
-  const [allAuthors, setAllAuthors] = useState<ApiAuthor[]>([])
-  const [authorQuery, setAuthorQuery] = useState('')
-  const [authorForm, setAuthorForm] = useState<AuthorForm>({
-    email: '',
-    prefix: '',
-    firstName: '',
-    middleName: '',
-    lastName: '',
-    phone: '',
-    address: '',
-    country: '',
-    affiliation1: '',
-    affiliation2: '',
-    affiliation3: '',
-    isCorresponding: true,
-    orcid: '',
-    scopusId: '',
-    researcherId: '',
-  })
+  const [editingAuthorEmail, setEditingAuthorEmail] = useState<string | null>(null)
+  const [authorForm, setAuthorForm] = useState<AuthorForm>(emptyAuthorForm)
   const [authorList, setAuthorList] = useState<AuthorForm[]>([])
   // file replacement state
   const [fileManuscript, setFileManuscript] = useState<File | null>(null)
   const [fileAntiplagiarism, setFileAntiplagiarism] = useState<File | null>(null)
   const [fileAuthorInfo, setFileAuthorInfo] = useState<File | null>(null)
   const [fileCoverLetter, setFileCoverLetter] = useState<File | null>(null)
-  const [lang, setLang] = useState<'ru' | 'en' | 'kz'>(() => {
+  const [lang] = useState<'ru' | 'en' | 'kz'>(() => {
     const params = new URLSearchParams(window.location.search)
     const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
     return fromQuery && ['ru', 'en', 'kz'].includes(fromQuery) ? fromQuery : 'ru'
@@ -197,18 +226,13 @@ export function MyArticleDetailsPage() {
         console.warn('Не удалось загрузить файлы автора', err)
         return null as unknown
       }),
-      api.get<ApiKeyword[]>(`/articles/keywords`).catch(() => []),
     ])
-      .then(([articleData, filesData, keywordsData]) => {
+      .then(([articleData, filesData]) => {
         console.log('Детальная статья /articles/my/{id}:', articleData)
         console.log('Файлы автора /articles/my/{id}/file:', filesData)
         setArticle(articleData)
         const safeFiles = Array.isArray(filesData) ? (filesData as ApiMyFile[]) : []
         setMyFiles(safeFiles)
-        const mappedAll = Array.isArray(keywordsData)
-          ? (keywordsData as ApiKeyword[]).map((k) => ({ id: k.id, ru: k.title_ru, kz: k.title_kz, en: k.title_en }))
-          : []
-        setAllKeywords(mappedAll)
         const mappedSelected = (articleData.keywords ?? []).map((k) => ({ id: k.id, ru: k.title_ru, kz: k.title_kz, en: k.title_en }))
         setSelectedKeywords(mappedSelected)
         // initialize authors list for editing
@@ -239,25 +263,10 @@ export function MyArticleDetailsPage() {
       .finally(() => setLoading(false))
   }, [id])
 
-  // load all authors for search
-  useEffect(() => {
-    let mounted = true
-    api
-      .get<ApiAuthor[]>('/articles/authors')
-      .then((data) => {
-        if (!mounted || !Array.isArray(data)) return
-        setAllAuthors(data)
-      })
-      .catch((e) => console.error('Не удалось загрузить авторов', e))
-    return () => {
-      mounted = false
-    }
-  }, [])
-
   if (loading) {
     return (
-      <div className="app-container">
-        <div className="panel">
+      <div className="public-container manuscript-edit-page">
+        <div className="section public-section manuscript-edit-section">
           <p className="panel-title">Загрузка статьи...</p>
         </div>
       </div>
@@ -266,8 +275,8 @@ export function MyArticleDetailsPage() {
 
   if (error || !article) {
     return (
-      <div className="app-container">
-        <div className="panel">
+      <div className="public-container manuscript-edit-page">
+        <div className="section public-section manuscript-edit-section">
           <p className="panel-title">{error ?? 'Статья не найдена'}</p>
           <button className="button button--ghost" onClick={() => navigate(-1)}>
             Назад
@@ -393,58 +402,155 @@ export function MyArticleDetailsPage() {
     }
   }
 
-  const computeKeywordMatches = (): Keyword[] => {
-    const q = keywordInput.trim().toLowerCase()
-    if (!q) return []
-    return allKeywords.filter((kw) => {
-      const title = kw.ru.toLowerCase()
-      const exists = selectedKeywords.some((s) => (s.id ?? s.ru) === (kw.id ?? kw.ru))
-      return !exists && title.includes(q)
-    })
-  }
-
-  const addKeyword = (kw: Keyword) => {
-    const exists = selectedKeywords.some((s) => (s.id ?? s.ru) === (kw.id ?? kw.ru))
-    if (exists) return
-    setSelectedKeywords((prev) => [...prev, kw])
-    setKeywordInput('')
-  }
-
   const removeKeyword = (kw: Keyword) => {
     setSelectedKeywords((prev) => prev.filter((s) => (s.id ?? s.ru) !== (kw.id ?? kw.ru)))
   }
 
-  const saveNewKeyword = async () => {
+  const openKeywordCreate = () => {
+    setEditingKeywordIndex(null)
+    setNewKeyword({ ru: '', kz: '', en: '' })
+    setKwModalOpen(true)
+  }
+
+  const openKeywordEdit = (keyword: Keyword, index: number) => {
+    setEditingKeywordIndex(index)
+    setNewKeyword(keyword)
+    setKwModalOpen(true)
+  }
+
+  const saveKeywordModal = async () => {
     if (!newKeyword.ru.trim() || !newKeyword.kz.trim() || !newKeyword.en.trim()) return
+    const normalizedKeyword: Keyword = {
+      id: newKeyword.id,
+      ru: newKeyword.ru.trim(),
+      kz: newKeyword.kz.trim(),
+      en: newKeyword.en.trim(),
+    }
+
+    if (editingKeywordIndex !== null) {
+      setSelectedKeywords((prev) =>
+        prev.map((keyword, index) => (index === editingKeywordIndex ? normalizedKeyword : keyword)),
+      )
+      setKwModalOpen(false)
+      setEditingKeywordIndex(null)
+      setNewKeyword({ ru: '', kz: '', en: '' })
+      return
+    }
+
     try {
       const created = await api.post<ApiKeyword>('/articles/keywords', {
-        title_ru: newKeyword.ru.trim(),
-        title_kz: newKeyword.kz.trim(),
-        title_en: newKeyword.en.trim(),
+        title_ru: normalizedKeyword.ru,
+        title_kz: normalizedKeyword.kz,
+        title_en: normalizedKeyword.en,
       })
       const mapped: Keyword = { id: created.id, ru: created.title_ru, kz: created.title_kz, en: created.title_en }
-      setAllKeywords((prev) => [...prev, mapped])
       setSelectedKeywords((prev) => [...prev, mapped])
       setNewKeyword({ ru: '', kz: '', en: '' })
       setKwModalOpen(false)
-      setKeywordInput('')
     } catch (err) {
       console.error('Не удалось создать ключевое слово', err)
     }
   }
 
+  const openAuthorCreate = () => {
+    setEditingAuthorEmail(null)
+    setAuthorForm(emptyAuthorForm())
+    setAuthorModalOpen(true)
+  }
+
+  const openAuthorEdit = (author: AuthorForm) => {
+    setEditingAuthorEmail(author.email)
+    setAuthorForm({ ...author })
+    setAuthorModalOpen(true)
+  }
+
+  const saveAuthorModal = async () => {
+    if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()) return
+
+    const nextAuthor: AuthorForm = {
+      ...authorForm,
+      email: authorForm.email.trim(),
+      prefix: authorForm.prefix.trim(),
+      firstName: authorForm.firstName.trim(),
+      middleName: authorForm.middleName.trim(),
+      lastName: authorForm.lastName.trim(),
+      phone: authorForm.phone.trim(),
+      address: authorForm.address.trim(),
+      country: authorForm.country.trim(),
+      affiliation1: authorForm.affiliation1.trim(),
+      affiliation2: authorForm.affiliation2.trim(),
+      affiliation3: authorForm.affiliation3.trim(),
+      orcid: authorForm.orcid.trim(),
+      scopusId: authorForm.scopusId.trim(),
+      researcherId: authorForm.researcherId.trim(),
+    }
+
+    const payload = {
+      email: nextAuthor.email,
+      prefix: nextAuthor.prefix || null,
+      first_name: nextAuthor.firstName,
+      patronymic: nextAuthor.middleName || null,
+      last_name: nextAuthor.lastName,
+      phone: nextAuthor.phone || null,
+      address: nextAuthor.address || null,
+      country: nextAuthor.country,
+      affiliation1: nextAuthor.affiliation1,
+      affiliation2: nextAuthor.affiliation2 || null,
+      affiliation3: nextAuthor.affiliation3 || null,
+      is_corresponding: nextAuthor.isCorresponding,
+      orcid: nextAuthor.orcid || null,
+      scopus_author_id: nextAuthor.scopusId || null,
+      researcher_id: nextAuthor.researcherId || null,
+    }
+
+    try {
+      if (editingAuthorEmail) {
+        if (nextAuthor.id) {
+          await api.updateAuthor(nextAuthor.id, payload).catch((err) => {
+            console.error('Failed to update author', err)
+          })
+        }
+        setAuthorList((prev) => prev.map((author) => (author.email === editingAuthorEmail ? nextAuthor : author)))
+      } else {
+        const created = await api.post<ApiAuthor>('/articles/authors', payload)
+        const mapped: AuthorForm = {
+          id: created.id,
+          email: created.email,
+          prefix: created.prefix ?? '',
+          firstName: created.first_name,
+          middleName: created.patronymic ?? '',
+          lastName: created.last_name,
+          phone: created.phone ?? '',
+          address: created.address ?? '',
+          country: getCountryLabel(created.country),
+          affiliation1: created.affiliation1,
+          affiliation2: created.affiliation2 ?? '',
+          affiliation3: created.affiliation3 ?? '',
+          isCorresponding: created.is_corresponding,
+          orcid: created.orcid ?? '',
+          scopusId: created.scopus_author_id ?? '',
+          researcherId: created.researcher_id ?? '',
+        }
+        setAuthorList((prev) => [...prev, mapped])
+      }
+      setAuthorModalOpen(false)
+      setEditingAuthorEmail(null)
+      setAuthorForm(emptyAuthorForm())
+    } catch (err) {
+      console.error('Failed to save author', err)
+    }
+  }
+
   return (
-    <div className="app-container">
-      <section className="section-header">
+    <div className="public-container manuscript-edit-page">
+      <section className="section public-section manuscript-edit-hero">
         <div>
           <p className="eyebrow">Моя статья</p>
-          <h1 className="page-title">
+          <h1 className="hero__title">
             {lang === 'ru' ? article.title_ru : lang === 'en' ? article.title_en : article.title_kz}
           </h1>
-          <p className="subtitle">Детальная страница рукописи. Отображается только выбранный язык.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div className="pill">#{article.id}</div>
+        <div className="manuscript-edit-hero__actions">
           {article.status === 'submitted' && (
             <button
               type="button"
@@ -464,68 +570,39 @@ export function MyArticleDetailsPage() {
         </div>
       ) : null}
 
-      <div className="panel panel--compact">
-        <div className="lang-toggle-row">
-          <span className="lang-toggle-row__label">Язык рукописи</span>
-          <div className="lang-toggle">
-            <button
-              type="button"
-              className={`lang-toggle__item ${lang === 'ru' ? 'lang-toggle__item--active' : ''}`}
-              onClick={() => setLang('ru')}
-            >
-              Русский
-            </button>
-            <button
-              type="button"
-              className={`lang-toggle__item ${lang === 'kz' ? 'lang-toggle__item--active' : ''}`}
-              onClick={() => setLang('kz')}
-            >
-              Казахский
-            </button>
-            <button
-              type="button"
-              className={`lang-toggle__item ${lang === 'en' ? 'lang-toggle__item--active' : ''}`}
-              onClick={() => setLang('en')}
-            >
-              Английский
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="panel">
+      <div className="section public-section manuscript-edit-section">
         <p className="eyebrow">Заголовок</p>
         {canEdit ? (
           <>
             <div className="form-field">
-              <label className="form-label">Заголовок (RU)<RequiredMark /></label>
+              <label className="form-label">Название на русском<RequiredMark /></label>
               <input
                 className={`text-input ${fieldErrors.title_ru ? 'text-input--error' : ''}`}
                 value={article.title_ru}
                 onChange={(e) => setArticle({ ...article, title_ru: e.target.value })}
-                placeholder="Заголовок на русском"
+                placeholder="Введите название на русском"
                 data-error-key="title_ru"
               />
               {fieldErrors.title_ru ? <span className="form-error-text">{fieldErrors.title_ru}</span> : null}
             </div>
             <div className="form-field">
-              <label className="form-label">Title (EN)<RequiredMark /></label>
+              <label className="form-label">Название на английском<RequiredMark /></label>
               <input
                 className={`text-input ${fieldErrors.title_en ? 'text-input--error' : ''}`}
                 value={article.title_en}
                 onChange={(e) => setArticle({ ...article, title_en: e.target.value })}
-                placeholder="Title in English"
+                placeholder="Введите название на английском"
                 data-error-key="title_en"
               />
               {fieldErrors.title_en ? <span className="form-error-text">{fieldErrors.title_en}</span> : null}
             </div>
             <div className="form-field">
-              <label className="form-label">Тақырып (KZ)<RequiredMark /></label>
+              <label className="form-label">Название на казахском<RequiredMark /></label>
               <input
                 className={`text-input ${fieldErrors.title_kz ? 'text-input--error' : ''}`}
                 value={article.title_kz}
                 onChange={(e) => setArticle({ ...article, title_kz: e.target.value })}
-                placeholder="Тақырып қазақ тілінде"
+                placeholder="Введите название на казахском"
                 data-error-key="title_kz"
               />
               {fieldErrors.title_kz ? <span className="form-error-text">{fieldErrors.title_kz}</span> : null}
@@ -533,7 +610,7 @@ export function MyArticleDetailsPage() {
           </>
         ) : (
           <div className="form-field">
-            <div className="form-label">{lang === 'ru' ? 'Заголовок (RU)' : lang === 'en' ? 'Title (EN)' : 'Тақырып (KZ)'}</div>
+            <div className="form-label">{lang === 'ru' ? 'Название на русском' : lang === 'en' ? 'Название на английском' : 'Название на казахском'}</div>
             <div className="form-hint">
               {lang === 'ru' && article.title_ru}
               {lang === 'en' && article.title_en}
@@ -543,7 +620,7 @@ export function MyArticleDetailsPage() {
         )}
       </div>
 
-      <div className="panel">
+      <div className="section public-section manuscript-edit-section">
         <p className="eyebrow">Основная информация</p>
         <div className="grid grid-2">
           <div className="form-field">
@@ -631,42 +708,42 @@ export function MyArticleDetailsPage() {
         {/* Кнопку отзыва перенесли в верхний заголовок для лучшей видимости */}
       </div>
 
-      <div className="panel">
+      <div className="section public-section manuscript-edit-section">
         <p className="eyebrow">Аннотация</p>
         {canEdit ? (
           <>
             <div className="form-field">
-              <label className="form-label">Аннотация (RU)<RequiredMark /></label>
+              <label className="form-label">Аннотация на русском<RequiredMark /></label>
               <textarea
                 className={`text-input ${fieldErrors.abstract_ru ? 'text-input--error' : ''}`}
                 rows={4}
                 value={article.abstract_ru}
                 onChange={(e) => setArticle({ ...article, abstract_ru: e.target.value })}
-                placeholder="Аннотация на русском"
+                placeholder="Введите аннотацию на русском"
                 data-error-key="abstract_ru"
               />
               {fieldErrors.abstract_ru ? <span className="form-error-text">{fieldErrors.abstract_ru}</span> : null}
             </div>
             <div className="form-field">
-              <label className="form-label">Abstract (EN)<RequiredMark /></label>
+              <label className="form-label">Аннотация на английском<RequiredMark /></label>
               <textarea
                 className={`text-input ${fieldErrors.abstract_en ? 'text-input--error' : ''}`}
                 rows={4}
                 value={article.abstract_en}
                 onChange={(e) => setArticle({ ...article, abstract_en: e.target.value })}
-                placeholder="Abstract in English"
+                placeholder="Введите аннотацию на английском"
                 data-error-key="abstract_en"
               />
               {fieldErrors.abstract_en ? <span className="form-error-text">{fieldErrors.abstract_en}</span> : null}
             </div>
             <div className="form-field">
-              <label className="form-label">Аннотация (KZ)<RequiredMark /></label>
+              <label className="form-label">Аннотация на казахском<RequiredMark /></label>
               <textarea
                 className={`text-input ${fieldErrors.abstract_kz ? 'text-input--error' : ''}`}
                 rows={4}
                 value={article.abstract_kz}
                 onChange={(e) => setArticle({ ...article, abstract_kz: e.target.value })}
-                placeholder="Аннотация на казахском"
+                placeholder="Введите аннотацию на казахском"
                 data-error-key="abstract_kz"
               />
               {fieldErrors.abstract_kz ? <span className="form-error-text">{fieldErrors.abstract_kz}</span> : null}
@@ -675,7 +752,7 @@ export function MyArticleDetailsPage() {
         ) : (
           <div className="form-field">
             <div className="form-label">
-              {lang === 'ru' ? 'Аннотация (RU)' : lang === 'en' ? 'Abstract (EN)' : 'Аннотация (KZ)'}
+              {lang === 'ru' ? 'Аннотация на русском' : lang === 'en' ? 'Аннотация на английском' : 'Аннотация на казахском'}
             </div>
             <p className="article-abstract">
               {lang === 'ru' && (article.abstract_ru || 'Аннотация не заполнена.')}
@@ -686,61 +763,40 @@ export function MyArticleDetailsPage() {
         )}
       </div>
 
-      <div className="panel">
+      <div className="section public-section manuscript-edit-section">
         <p className="eyebrow" data-error-key="keywords">Ключевые слова{canEdit ? <RequiredMark /> : null}</p>
         {canEdit ? (
           <>
             {selectedKeywords.length > 0 ? (
-              <div className="pill-list" style={{ marginBottom: '0.5rem' }}>
-                {selectedKeywords.map((kw) => (
-                  <span key={kw.id ?? kw.ru} className="pill pill--ghost">
-                    {lang === 'ru' ? kw.ru : lang === 'en' ? kw.en : kw.kz}
-                    <button
-                      type="button"
-                      aria-label="Удалить"
-                      className="pill__close"
-                      onClick={() => removeKeyword(kw)}
-                      style={{ marginLeft: 8 }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+              <div className="table editable-keyword-table">
+                <div className="table__head">
+                  <span>На русском</span>
+                  <span>На казахском</span>
+                  <span>На английском</span>
+                  <span>Действия</span>
+                </div>
+                <div className="table__body">
+                  {selectedKeywords.map((kw, index) => (
+                    <div className="table__row" key={`${kw.id ?? kw.ru}-${index}`}>
+                      <div className="table__cell">{kw.ru || '—'}</div>
+                      <div className="table__cell">{kw.kz || '—'}</div>
+                      <div className="table__cell">{kw.en || '—'}</div>
+                      <div className="table__cell">
+                        <div className="row-icon-actions">
+                          <IconButton label="Редактировать ключевое слово" icon="edit" onClick={() => openKeywordEdit(kw, index)} />
+                          <IconButton label="Удалить ключевое слово" icon="trash" onClick={() => removeKeyword(kw)} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="table__empty">Ключевые слова не выбраны.</div>
             )}
-            <div className="form-field">
-              <input
-                className="text-input"
-                placeholder="Введите ключевое слово"
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
-              />
-            </div>
-            {keywordInput.trim() ? (
-              <div className="pill-list">
-                {computeKeywordMatches().length > 0 ? (
-                  computeKeywordMatches().map((kw) => (
-                    <button
-                      key={kw.id ?? kw.ru}
-                      type="button"
-                      className="status-chip status-chip--submitted"
-                      onClick={() => addKeyword(kw)}
-                    >
-                      {kw.ru}
-                    </button>
-                  ))
-                ) : (
-                  <span className="table__empty">Совпадений не найдено.</span>
-                )}
-              </div>
-            ) : null}
-            {keywordInput.trim() && computeKeywordMatches().length === 0 ? (
-              <button type="button" className="button button--ghost" onClick={() => setKwModalOpen(true)}>
-                Добавить новое ключевое слово
-              </button>
-            ) : null}
+            <button type="button" className="button button--ghost manuscript-edit-add-button" onClick={openKeywordCreate}>
+              Добавить ключевые слова
+            </button>
             {fieldErrors.keywords ? <span className="form-error-text">{fieldErrors.keywords}</span> : null}
           </>
         ) : (
@@ -762,7 +818,7 @@ export function MyArticleDetailsPage() {
         )}
       </div>
 
-      <div className="panel">
+      <div className="section public-section manuscript-edit-section">
         <p className="eyebrow">Согласия и проверки</p>
         <div className="grid grid-3">
           <div className="form-field">
@@ -845,7 +901,7 @@ export function MyArticleDetailsPage() {
         </div>
       </div>
 
-      <div className="panel">
+      <div className="section public-section manuscript-edit-section">
         <p className="eyebrow" data-error-key="authorList">Авторы{canEdit ? <RequiredMark /> : null}</p>
         {!canEdit ? (
           <>
@@ -883,73 +939,18 @@ export function MyArticleDetailsPage() {
               <div>
                 <h3 className="panel-title">Редактирование состава авторов</h3>
               </div>
-              <button className="button button--primary button--compact" type="button" onClick={() => setAuthorModalOpen(true)}>
+              <button className="button button--primary button--compact" type="button" onClick={openAuthorCreate}>
                 Добавить автора
               </button>
-            </div>
-            <div className="form-field">
-              <label className="form-label">Поиск автора в базе</label>
-              <input
-                className="text-input"
-                value={authorQuery}
-                onChange={(e) => setAuthorQuery(e.target.value)}
-                placeholder="Начните вводить ФИО или email автора"
-              />
-              {authorQuery.trim() ? (
-                <div className="pill-list">
-                  {allAuthors
-                    .filter((a) => {
-                      const full = [a.prefix, a.first_name, a.patronymic, a.last_name].filter(Boolean).join(' ').toLowerCase()
-                      return full.includes(authorQuery.trim().toLowerCase()) || a.email.toLowerCase().includes(authorQuery.trim().toLowerCase())
-                    })
-                    .map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        className="status-chip status-chip--submitted"
-                        onClick={() => {
-                          const exists = authorList.some((x) => x.email === a.email)
-                          if (!exists) {
-                            setAuthorList((prev) => [
-                              ...prev,
-                              {
-                                id: a.id,
-                                email: a.email,
-                                prefix: a.prefix ?? '',
-                                firstName: a.first_name,
-                                middleName: a.patronymic ?? '',
-                                lastName: a.last_name,
-                                phone: a.phone ?? '',
-                                address: a.address ?? '',
-                                country: getCountryLabel(a.country),
-                                affiliation1: a.affiliation1,
-                                affiliation2: a.affiliation2 ?? '',
-                                affiliation3: a.affiliation3 ?? '',
-                                isCorresponding: a.is_corresponding,
-                                orcid: a.orcid ?? '',
-                                scopusId: a.scopus_author_id ?? '',
-                                researcherId: a.researcher_id ?? '',
-                              },
-                            ])
-                          }
-                          setAuthorQuery('')
-                        }}
-                      >
-                        {[a.prefix, a.first_name, a.patronymic, a.last_name].filter(Boolean).join(' ')} ({a.email})
-                      </button>
-                    ))}
-                </div>
-              ) : null}
             </div>
             {authorList.length === 0 ? (
               <div className="table__empty">Авторы пока не добавлены.</div>
             ) : (
-              <div className="table">
+              <div className="table manuscript-edit-authors-table">
                 <div className="table__head">
                   <span>Имя</span>
                   <span>Email</span>
-                  <span>Аффилиации</span>
-                  <span>Корр. автор</span>
+                  <span>Действия</span>
                 </div>
                 <div className="table__body">
                   {authorList.map((a, idx) => (
@@ -962,8 +963,12 @@ export function MyArticleDetailsPage() {
                         <div className="table__meta">{a.phone}</div>
                       </div>
                       <div className="table__cell">{a.email}</div>
-                      <div className="table__cell">{[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '—'}</div>
-                      <div className="table__cell">{a.isCorresponding ? 'Да' : 'Нет'}</div>
+                      <div className="table__cell">
+                        <div className="row-icon-actions">
+                          <IconButton label="Редактировать автора" icon="edit" onClick={() => openAuthorEdit(a)} />
+                          <IconButton label="Удалить автора" icon="trash" onClick={() => setAuthorList((prev) => prev.filter((author) => author.email !== a.email))} />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -974,7 +979,7 @@ export function MyArticleDetailsPage() {
         )}
       </div>
 
-      <div className="panel">
+      <div className="section public-section manuscript-edit-section">
         <p className="eyebrow">Файлы</p>
         <div className="grid grid-3">
           <div className="form-field">
@@ -1123,14 +1128,14 @@ export function MyArticleDetailsPage() {
       </div>
 
       {canEdit && (
-        <div className="panel">
+        <div className="section public-section manuscript-edit-section manuscript-edit-submit">
           <div className="section-heading">
             <div>
               <p className="eyebrow">Действия автора</p>
               <h3 className="panel-title">Отправить обновлённую рукопись</h3>
             </div>
           </div>
-          <div className="pill-list">
+          <div className="section-actions">
             <button
               type="button"
               className="button button--primary"
@@ -1141,21 +1146,6 @@ export function MyArticleDetailsPage() {
           </div>
         </div>
       )}
-
-      <div className="panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Быстрые действия</p>
-            <h3 className="panel-title">Навигация</h3>
-          </div>
-          <div className="pill pill--ghost">Мои статьи</div>
-        </div>
-        <div className="pill-list">
-          <Link className="button button--ghost button--compact" to="/cabinet/submissions">
-            К списку статей
-          </Link>
-        </div>
-      </div>
 
       {showRevokeConfirm && (
         <div className="modal-backdrop" onClick={() => setShowRevokeConfirm(false)}>
@@ -1197,7 +1187,7 @@ export function MyArticleDetailsPage() {
         <div className="modal-backdrop" onClick={() => setKwModalOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Новое ключевое слово</h3>
+              <h3>{editingKeywordIndex === null ? 'Добавить ключевые слова' : 'Редактировать ключевое слово'}</h3>
               <button className="modal__close" onClick={() => setKwModalOpen(false)} aria-label="Закрыть">×</button>
             </div>
             <div className="modal__body">
@@ -1233,8 +1223,8 @@ export function MyArticleDetailsPage() {
               <button className="button button--ghost" type="button" onClick={() => setKwModalOpen(false)}>
                 Отмена
               </button>
-              <button className="button button--primary" type="button" onClick={saveNewKeyword} disabled={!newKeyword.ru.trim() || !newKeyword.kz.trim() || !newKeyword.en.trim()}>
-                Добавить
+              <button className="button button--primary" type="button" onClick={saveKeywordModal} disabled={!newKeyword.ru.trim() || !newKeyword.kz.trim() || !newKeyword.en.trim()}>
+                {editingKeywordIndex === null ? 'Добавить' : 'Сохранить'}
               </button>
             </div>
           </div>
@@ -1245,7 +1235,7 @@ export function MyArticleDetailsPage() {
         <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
           <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Добавить автора</h3>
+              <h3>{editingAuthorEmail ? 'Редактировать автора' : 'Добавить автора'}</h3>
               <button className="modal__close" onClick={() => setAuthorModalOpen(false)} aria-label="Закрыть">
                 ×
               </button>
@@ -1396,57 +1386,10 @@ export function MyArticleDetailsPage() {
               <button
                 className="button button--primary"
                 type="button"
-                onClick={async () => {
-                  if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()) return
-                  try {
-                    const payload = {
-                      email: authorForm.email.trim(),
-                      prefix: authorForm.prefix.trim() || null,
-                      first_name: authorForm.firstName.trim(),
-                      patronymic: authorForm.middleName.trim() || null,
-                      last_name: authorForm.lastName.trim(),
-                      phone: authorForm.phone.trim() || null,
-                      address: authorForm.address.trim() || null,
-                      country: authorForm.country.trim(),
-                      affiliation1: authorForm.affiliation1.trim(),
-                      affiliation2: authorForm.affiliation2.trim() || null,
-                      affiliation3: authorForm.affiliation3.trim() || null,
-                      is_corresponding: authorForm.isCorresponding,
-                      orcid: authorForm.orcid.trim() || null,
-                      scopus_author_id: authorForm.scopusId.trim() || null,
-                      researcher_id: authorForm.researcherId.trim() || null,
-                    }
-                    const created = await api.post<ApiAuthor>('/articles/authors', payload)
-                    setAllAuthors((prev) => [...prev, created])
-                    setAuthorList((prev) => [
-                      ...prev,
-                      {
-                        id: created.id,
-                        email: created.email,
-                        prefix: created.prefix ?? '',
-                        firstName: created.first_name,
-                        middleName: created.patronymic ?? '',
-                        lastName: created.last_name,
-                        phone: created.phone ?? '',
-                        address: created.address ?? '',
-                        country: getCountryLabel(created.country),
-                        affiliation1: created.affiliation1,
-                        affiliation2: created.affiliation2 ?? '',
-                        affiliation3: created.affiliation3 ?? '',
-                        isCorresponding: created.is_corresponding,
-                        orcid: created.orcid ?? '',
-                        scopusId: created.scopus_author_id ?? '',
-                        researcherId: created.researcher_id ?? '',
-                      },
-                    ])
-                    setAuthorModalOpen(false)
-                  } catch (err) {
-                    console.error('Failed to create author', err)
-                  }
-                }}
+                onClick={saveAuthorModal}
                 disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()}
               >
-                Сохранить автора
+                {editingAuthorEmail ? 'Сохранить автора' : 'Добавить автора'}
               </button>
             </div>
           </div>
