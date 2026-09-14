@@ -425,6 +425,9 @@ const getBoolText = (value: boolean | null | undefined, t: (typeof copy)[LangKey
 const getDisplayName = (user: Pick<AdminUser, 'full_name' | 'first_name' | 'last_name' | 'username'>) =>
   user.full_name || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
 
+const getUserRoles = (user: Pick<AdminUser, 'role' | 'roles'>): string[] =>
+  user.roles?.length ? Array.from(new Set(user.roles)) : [user.role]
+
 export default function AdminUsersPage() {
   const { lang } = useLanguage()
   const locale = (lang === 'en' || lang === 'kz' ? lang : 'ru') as LangKey
@@ -511,7 +514,7 @@ export default function AdminUsersPage() {
         [user.full_name, user.first_name, user.last_name, user.username, user.email, user.organization, user.institution]
           .filter(Boolean)
           .some((value) => String(value).toLowerCase().includes(query))
-      const matchesRole = roleFilter === 'all' || user.role === roleFilter
+      const matchesRole = roleFilter === 'all' || getUserRoles(user).includes(roleFilter)
       const matchesStatus =
         statusFilter === 'all' ||
         (statusFilter === 'active' && user.is_active) ||
@@ -730,7 +733,11 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
                   <div className="table__cell">
-                    <span className="pill">{roleText[user.role]}</span>
+                    <div className="pill-list admin-users__role-list">
+                      {getUserRoles(user).map((role) => (
+                        <span className="pill" key={role}>{roleText[role as AdminRole] ?? role}</span>
+                      ))}
+                    </div>
                   </div>
                   <div className="table__cell">
                     <span className={`status-chip status-chip--${user.is_active ? 'accepted' : 'rejected'}`}>
