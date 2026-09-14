@@ -203,6 +203,11 @@ export default function EditorArticleDetailPage() {
     last_name?: string | null
     institution?: string | null
   }
+  type ReviewerProfileFields = {
+    orcid?: string | null
+    reviewer_science_fields?: string[]
+    reviewer_science_other?: string | null
+  }
   type ReviewStatus = 'pending' | 'in_progress' | 'completed' | 'resubmission' | string
   type ArticleReviewerAssignment = {
     id: number
@@ -371,9 +376,23 @@ export default function EditorArticleDetailPage() {
     setAvailableLoading(true)
     setAvailableError(null)
     api.getReviewers<ReviewerFullInfo[]>()
-      .then((list) => {
-        try { console.log('[Reviewers] fetched', list) } catch {}
-        setAvailableReviewers(list)
+      .then(async (list) => {
+        const reviewers = await Promise.all(
+          list.map(async (reviewer) => {
+            try {
+              const profile = await api.get<ReviewerProfileFields>(`/users/${reviewer.user_id}`)
+              return {
+                ...reviewer,
+                reviewer_science_fields: profile.reviewer_science_fields || reviewer.reviewer_science_fields || [],
+                reviewer_science_other: profile.reviewer_science_other || reviewer.reviewer_science_other || null,
+              }
+            } catch {
+              return reviewer
+            }
+          }),
+        )
+        try { console.log('[Reviewers] fetched', reviewers) } catch {}
+        setAvailableReviewers(reviewers)
       })
       .catch((e: any) => {
         const message = e?.bodyJson?.detail || e?.message || 'Не удалось загрузить рецензентов'
