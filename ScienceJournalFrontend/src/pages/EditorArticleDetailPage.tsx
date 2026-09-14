@@ -193,6 +193,7 @@ export default function EditorArticleDetailPage() {
     organization?: string | null
     roles: string[]
     preferred_language: 'ru' | 'kz' | 'en'
+    orcid?: string | null
     reviewer_science_fields?: string[]
     reviewer_science_other?: string | null
     is_active?: boolean | null
@@ -383,6 +384,7 @@ export default function EditorArticleDetailPage() {
               const profile = await api.get<ReviewerProfileFields>(`/users/${reviewer.user_id}`)
               return {
                 ...reviewer,
+                orcid: profile.orcid || reviewer.orcid || null,
                 reviewer_science_fields: profile.reviewer_science_fields || reviewer.reviewer_science_fields || [],
                 reviewer_science_other: profile.reviewer_science_other || reviewer.reviewer_science_other || null,
               }
@@ -392,7 +394,7 @@ export default function EditorArticleDetailPage() {
           }),
         )
         try { console.log('[Reviewers] fetched', reviewers) } catch {}
-        setAvailableReviewers(reviewers)
+        setAvailableReviewers(reviewers.filter((reviewer) => reviewer.is_active === true))
       })
       .catch((e: any) => {
         const message = e?.bodyJson?.detail || e?.message || 'Не удалось загрузить рецензентов'
@@ -1138,15 +1140,15 @@ export default function EditorArticleDetailPage() {
                   <span>Рецензент</span>
                   <span>Email</span>
                   <span>Организация</span>
+                  <span>ORCID</span>
                   <span>Область науки</span>
                   <span>Язык</span>
-                  <span>Активен</span>
                   <span>Действия</span>
                 </div>
                 <div className="table__body">
                   {availableReviewers.length === 0 ? (
                     <div className="table__row">
-                      <div className="table__cell" style={{ gridColumn: '1 / -1' }}>Ничего не найдено.</div>
+                      <div className="table__cell" style={{ gridColumn: '1 / -1' }}>Активные рецензенты не найдены.</div>
                     </div>
                   ) : (
                     availableReviewers.map((r) => {
@@ -1159,9 +1161,13 @@ export default function EditorArticleDetailPage() {
                         </div>
                         <div className="table__cell">{r.email ?? '—'}</div>
                         <div className="table__cell">{r.organization ?? '—'}</div>
+                        <div className="table__cell reviewer-modal__mono">
+                          {r.orcid ? (
+                            <a href={`https://orcid.org/${r.orcid}`} target="_blank" rel="noreferrer">{r.orcid}</a>
+                          ) : '—'}
+                        </div>
                         <div className="table__cell">{formatReviewerScience(r)}</div>
                         <div className="table__cell">{r.preferred_language?.toUpperCase?.() ?? '—'}</div>
-                        <div className="table__cell">{r.is_active == null ? '—' : r.is_active ? 'Да' : 'Нет'}</div>
                         <div className="table__cell table__cell--actions reviewer-modal__actions">
                           {isAssigned ? (
                             <span className="badge badge--success">Назначен</span>
