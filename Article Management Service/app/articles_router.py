@@ -470,6 +470,11 @@ def update_published_article_for_editor(
     for field, value in update_data.items():
         setattr(existing_article, field, value)
 
+    # Reload relationship collections changed through association-table SQL so
+    # the snapshot contains the newly submitted authors and keywords.
+    db.flush()
+    db.expire(existing_article, ["authors", "keywords"])
+
     # Create a new version snapshot and keep article status published
     max_version = (
         db.query(models.ArticleVersion)
@@ -1266,6 +1271,11 @@ def update_article(
     if existing_article.status not in [models.ArticleStatus.published]:
         existing_article.status = models.ArticleStatus.submitted
     
+    # Связи меняются прямыми SQL-запросами выше. Перезагружаем коллекции,
+    # иначе снимок версии может получить старых авторов и ключевые слова.
+    db.flush()
+    db.expire(existing_article, ["authors", "keywords"])
+
     # Создаем новую версию с префиксом TAU-V{номер}
     max_version = (
         db.query(models.ArticleVersion)

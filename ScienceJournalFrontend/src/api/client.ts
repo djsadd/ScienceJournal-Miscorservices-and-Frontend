@@ -246,7 +246,7 @@ export const api = {
     last_name: string | null
     phone: string | null
     address: string | null
-    country: string | null
+    country_id: number | null
     affiliation1: string | null
     affiliation2: string | null
     affiliation3: string | null

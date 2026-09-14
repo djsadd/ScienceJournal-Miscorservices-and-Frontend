@@ -911,8 +911,7 @@ export default function EditorArticleDetailPage() {
 
 
           <CollapsibleSection title="Рецензенты" defaultOpen>
-            <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-              <h3 className="panel-title" style={{ margin: 0 }}>Рецензенты</h3>
+            <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1rem' }}>
               {data.status !== 'rejected' && (
                 <button className="button button--primary" onClick={() => setIsAddReviewerOpen(true)}>Добавить рецензента</button>
               )}

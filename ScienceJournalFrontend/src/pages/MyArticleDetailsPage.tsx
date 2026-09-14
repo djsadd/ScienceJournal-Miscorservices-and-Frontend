@@ -13,6 +13,7 @@ interface ApiKeyword {
 }
 type Keyword = { id?: number; ru: string; kz: string; en: string }
 type ArticleType = 'original' | 'review'
+type CountryOption = { id: number; name: string; alpha_2: string; alpha_3: string }
 
 type AuthorForm = {
   id?: number
@@ -139,6 +140,29 @@ const emptyAuthorForm = (): AuthorForm => ({
   researcherId: '',
 })
 
+const getCountryId = (country: CountryValue): string => {
+  if (!country || typeof country === 'string') return ''
+  return country.id == null ? '' : String(country.id)
+}
+
+const toAuthorPayload = (author: AuthorForm) => ({
+  email: author.email.trim(),
+  prefix: author.prefix.trim() || null,
+  first_name: author.firstName.trim(),
+  patronymic: author.middleName.trim() || null,
+  last_name: author.lastName.trim(),
+  phone: author.phone.trim() || null,
+  address: author.address.trim() || null,
+  country_id: Number(author.country),
+  affiliation1: author.affiliation1.trim(),
+  affiliation2: author.affiliation2.trim() || null,
+  affiliation3: author.affiliation3.trim() || null,
+  is_corresponding: author.isCorresponding,
+  orcid: author.orcid.trim() || null,
+  scopus_author_id: author.scopusId.trim() || null,
+  researcher_id: author.researcherId.trim() || null,
+})
+
 function IconButton({
   label,
   icon,
@@ -175,6 +199,7 @@ const updateErrorText = {
   abstract: 'Заполните аннотацию',
   keywords: 'Добавьте минимум 5 ключевых слов и заполните каждое слово на трех языках',
   authors: 'Добавьте сведения об авторах',
+  correspondingAuthor: 'Выберите одного ответственного автора',
   manuscript: 'Загрузите рукопись',
   authorInfo: 'Загрузите файл со сведениями об авторах',
   copyright: 'Подтвердите, что статья ранее не публиковалась и не рассматривается другим журналом',
@@ -204,6 +229,9 @@ export function MyArticleDetailsPage() {
   const [editingAuthorEmail, setEditingAuthorEmail] = useState<string | null>(null)
   const [authorForm, setAuthorForm] = useState<AuthorForm>(emptyAuthorForm)
   const [authorList, setAuthorList] = useState<AuthorForm[]>([])
+  const [countries, setCountries] = useState<CountryOption[]>([])
+  const [authorModalError, setAuthorModalError] = useState<string | null>(null)
+  const [authorSaving, setAuthorSaving] = useState(false)
   // file replacement state
   const [fileManuscript, setFileManuscript] = useState<File | null>(null)
   const [fileAntiplagiarism, setFileAntiplagiarism] = useState<File | null>(null)
@@ -226,13 +254,15 @@ export function MyArticleDetailsPage() {
         console.warn('Не удалось загрузить файлы автора', err)
         return null as unknown
       }),
+      api.get<CountryOption[]>('/countries'),
     ])
-      .then(([articleData, filesData]) => {
+      .then(([articleData, filesData, countryData]) => {
         console.log('Детальная статья /articles/my/{id}:', articleData)
         console.log('Файлы автора /articles/my/{id}/file:', filesData)
         setArticle(articleData)
         const safeFiles = Array.isArray(filesData) ? (filesData as ApiMyFile[]) : []
         setMyFiles(safeFiles)
+        setCountries(countryData)
         const mappedSelected = (articleData.keywords ?? []).map((k) => ({ id: k.id, ru: k.title_ru, kz: k.title_kz, en: k.title_en }))
         setSelectedKeywords(mappedSelected)
         // initialize authors list for editing
@@ -245,7 +275,7 @@ export function MyArticleDetailsPage() {
           lastName: a.last_name,
           phone: a.phone ?? '',
           address: a.address ?? '',
-          country: getCountryLabel(a.country),
+          country: getCountryId(a.country),
           affiliation1: a.affiliation1,
           affiliation2: a.affiliation2 ?? '',
           affiliation3: a.affiliation3 ?? '',
@@ -331,6 +361,7 @@ export function MyArticleDetailsPage() {
       || selectedKeywords.some((keyword) => !keyword.ru.trim() || !keyword.kz.trim() || !keyword.en.trim())
     ) nextErrors.keywords = updateErrorText.keywords
     if (authorList.length === 0) nextErrors.authorList = updateErrorText.authors
+    else if (!authorList.some((author) => author.isCorresponding)) nextErrors.authorList = updateErrorText.correspondingAuthor
     if (!fileManuscript && !hasStoredFile('manuscript', article.manuscript_file_url)) nextErrors.manuscript = updateErrorText.manuscript
     if (!fileAuthorInfo && !hasStoredFile('author_info', article.author_info_file_url)) nextErrors.authorInfo = updateErrorText.authorInfo
     if (!article.not_published_elsewhere) nextErrors.confirmCopyright = updateErrorText.copyright
@@ -351,6 +382,12 @@ export function MyArticleDetailsPage() {
     if (!validateUpdate()) return
     try {
       setSubmitError(null)
+      const synchronizedAuthors = await Promise.all(
+        authorList.map(async (author) => {
+          if (!author.id) throw new Error(`У автора ${author.email} отсутствует ID`)
+          return api.updateAuthor<ApiAuthor>(author.id, toAuthorPayload(author))
+        }),
+      )
       // optionally upload newly selected files
       const uploadFile = async (file: File) => {
         const formData = new FormData()
@@ -386,7 +423,7 @@ export function MyArticleDetailsPage() {
       const extended: any = {
         ...payload,
         keyword_ids: selectedKeywords.map((k) => k.id).filter((id): id is number => typeof id === 'number'),
-        author_ids: authorList.map((a) => a.id).filter((id): id is number => typeof id === 'number'),
+        author_ids: synchronizedAuthors.map((author) => author.id),
       }
       // Include file field ids only if new files selected
       if (manuscript_file_id !== undefined) extended.manuscript_file_id = manuscript_file_id
@@ -455,12 +492,14 @@ export function MyArticleDetailsPage() {
   const openAuthorCreate = () => {
     setEditingAuthorEmail(null)
     setAuthorForm(emptyAuthorForm())
+    setAuthorModalError(null)
     setAuthorModalOpen(true)
   }
 
   const openAuthorEdit = (author: AuthorForm) => {
     setEditingAuthorEmail(author.email)
     setAuthorForm({ ...author })
+    setAuthorModalError(null)
     setAuthorModalOpen(true)
   }
 
@@ -485,34 +524,16 @@ export function MyArticleDetailsPage() {
       researcherId: authorForm.researcherId.trim(),
     }
 
-    const payload = {
-      email: nextAuthor.email,
-      prefix: nextAuthor.prefix || null,
-      first_name: nextAuthor.firstName,
-      patronymic: nextAuthor.middleName || null,
-      last_name: nextAuthor.lastName,
-      phone: nextAuthor.phone || null,
-      address: nextAuthor.address || null,
-      country: nextAuthor.country,
-      affiliation1: nextAuthor.affiliation1,
-      affiliation2: nextAuthor.affiliation2 || null,
-      affiliation3: nextAuthor.affiliation3 || null,
-      is_corresponding: nextAuthor.isCorresponding,
-      orcid: nextAuthor.orcid || null,
-      scopus_author_id: nextAuthor.scopusId || null,
-      researcher_id: nextAuthor.researcherId || null,
-    }
-
+    setAuthorModalError(null)
+    setAuthorSaving(true)
     try {
       if (editingAuthorEmail) {
-        if (nextAuthor.id) {
-          await api.updateAuthor(nextAuthor.id, payload).catch((err) => {
-            console.error('Failed to update author', err)
-          })
-        }
-        setAuthorList((prev) => prev.map((author) => (author.email === editingAuthorEmail ? nextAuthor : author)))
+        setAuthorList((prev) => prev.map((author) => {
+          if (author.email === editingAuthorEmail) return nextAuthor
+          return nextAuthor.isCorresponding ? { ...author, isCorresponding: false } : author
+        }))
       } else {
-        const created = await api.post<ApiAuthor>('/articles/authors', payload)
+        const created = await api.post<ApiAuthor>('/articles/authors', toAuthorPayload(nextAuthor))
         const mapped: AuthorForm = {
           id: created.id,
           email: created.email,
@@ -522,7 +543,7 @@ export function MyArticleDetailsPage() {
           lastName: created.last_name,
           phone: created.phone ?? '',
           address: created.address ?? '',
-          country: getCountryLabel(created.country),
+          country: getCountryId(created.country),
           affiliation1: created.affiliation1,
           affiliation2: created.affiliation2 ?? '',
           affiliation3: created.affiliation3 ?? '',
@@ -531,13 +552,19 @@ export function MyArticleDetailsPage() {
           scopusId: created.scopus_author_id ?? '',
           researcherId: created.researcher_id ?? '',
         }
-        setAuthorList((prev) => [...prev, mapped])
+        setAuthorList((prev) => [
+          ...prev.map((author) => mapped.isCorresponding ? { ...author, isCorresponding: false } : author),
+          mapped,
+        ])
       }
       setAuthorModalOpen(false)
       setEditingAuthorEmail(null)
       setAuthorForm(emptyAuthorForm())
     } catch (err) {
       console.error('Failed to save author', err)
+      setAuthorModalError('Не удалось сохранить автора. Проверьте заполненные данные и повторите попытку.')
+    } finally {
+      setAuthorSaving(false)
     }
   }
 
@@ -1299,11 +1326,16 @@ export function MyArticleDetailsPage() {
               </div>
               <div className="form-field">
                 <label className="form-label">Страна<RequiredMark /></label>
-                <input
+                <select
                   className="text-input"
                   value={authorForm.country}
                   onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))}
-                />
+                >
+                  <option value="">Выберите страну</option>
+                  {[...countries].sort((a, b) => a.name.localeCompare(b.name, 'ru')).map((country) => (
+                    <option key={country.id} value={String(country.id)}>{country.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-field">
@@ -1379,6 +1411,7 @@ export function MyArticleDetailsPage() {
                 />
               </div>
             </div>
+            {authorModalError ? <div className="alert error">{authorModalError}</div> : null}
             <div className="modal__footer">
               <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>
                 Отмена
@@ -1387,7 +1420,7 @@ export function MyArticleDetailsPage() {
                 className="button button--primary"
                 type="button"
                 onClick={saveAuthorModal}
-                disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()}
+                disabled={authorSaving || !authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()}
               >
                 {editingAuthorEmail ? 'Сохранить автора' : 'Добавить автора'}
               </button>
