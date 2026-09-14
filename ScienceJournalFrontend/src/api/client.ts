@@ -322,6 +322,10 @@ export const api = {
     request<T>('/users/me/details', 'PATCH', { json: body }),
   updateMyReviewerScience: <T>(body: { reviewer_science_fields: string[]; reviewer_science_other?: string | null }) =>
     request<T>('/users/me/reviewer-science', 'PATCH', { json: body }),
+  updateReviewerProfileAsAdmin: <T>(
+    userId: number | string,
+    body: { orcid?: string | null; reviewer_science_fields: string[]; reviewer_science_other?: string | null },
+  ) => request<T>(`/users/${userId}/reviewer-profile`, 'PATCH', { json: body }),
   requestMyRole: <T>(role: string) =>
     request<T>('/users/me/role-requests', 'POST', { json: { role } }),
   getMyRoleRequests: <T>() => request<T>('/users/me/role-requests', 'GET'),

@@ -5,6 +5,19 @@ import { useLanguage } from '../shared/LanguageContext'
 import ConfirmModal from '../shared/components/ConfirmModal'
 
 type AdminRole = 'author' | 'reviewer' | 'editor' | 'layout' | 'admin'
+type ReviewerScienceField =
+  | 'economics'
+  | 'politology'
+  | 'jurisprudence'
+  | 'pedagogy'
+  | 'philology'
+  | 'psychology'
+  | 'sociology'
+  | 'management'
+  | 'philosophy'
+  | 'cultural_studies'
+  | 'information_technology'
+  | 'other'
 
 type AdminUser = {
   id: number
@@ -26,6 +39,9 @@ type AdminUser = {
   profile_id?: number | null
   is_council_member?: boolean | null
   is_collegium_member?: boolean | null
+  orcid?: string | null
+  reviewer_science_fields?: ReviewerScienceField[]
+  reviewer_science_other?: string | null
 }
 
 type AdminUserStats = {
@@ -46,6 +62,29 @@ type LangKey = 'ru' | 'en' | 'kz'
 
 const roleOptions: AdminRole[] = ['author', 'reviewer', 'editor', 'layout', 'admin']
 const PAGE_SIZE = 10
+const orcidPattern = /^(\d{4}-){3}[\dX]{4}$/i
+const reviewerScienceFieldOptions: ReviewerScienceField[] = [
+  'economics', 'politology', 'jurisprudence', 'pedagogy', 'philology', 'psychology',
+  'sociology', 'management', 'philosophy', 'cultural_studies', 'information_technology', 'other',
+]
+
+const reviewerScienceFieldLabels: Record<LangKey, Record<ReviewerScienceField, string>> = {
+  ru: {
+    economics: 'Экономика', politology: 'Политология', jurisprudence: 'Юриспруденция', pedagogy: 'Педагогика',
+    philology: 'Филология', psychology: 'Психология', sociology: 'Социология', management: 'Менеджмент',
+    philosophy: 'Философия', cultural_studies: 'Культурология', information_technology: 'Информационные технологии', other: 'Иное',
+  },
+  en: {
+    economics: 'Economics', politology: 'Political science', jurisprudence: 'Jurisprudence', pedagogy: 'Pedagogy',
+    philology: 'Philology', psychology: 'Psychology', sociology: 'Sociology', management: 'Management',
+    philosophy: 'Philosophy', cultural_studies: 'Cultural studies', information_technology: 'Information technology', other: 'Other',
+  },
+  kz: {
+    economics: 'Экономика', politology: 'Саясаттану', jurisprudence: 'Құқықтану', pedagogy: 'Педагогика',
+    philology: 'Филология', psychology: 'Психология', sociology: 'Әлеуметтану', management: 'Менеджмент',
+    philosophy: 'Философия', cultural_studies: 'Мәдениеттану', information_technology: 'Ақпараттық технологиялар', other: 'Өзге',
+  },
+}
 
 const roleLabels: Record<LangKey, Record<AdminRole, string>> = {
   ru: {
@@ -138,6 +177,16 @@ const copy: Record<
     nextPage: string
     pageMeta: string
     pageSummary: string
+    reviewerProfile: string
+    reviewerProfileHint: string
+    scienceFields: string
+    otherScienceField: string
+    saveReviewerProfile: string
+    reviewerProfileSaved: string
+    reviewerProfileError: string
+    invalidOrcid: string
+    scienceRequired: string
+    otherRequired: string
   }
 > = {
   ru: {
@@ -205,6 +254,16 @@ const copy: Record<
     nextPage: 'Вперед',
     pageMeta: 'Стр. {current} / {total}',
     pageSummary: 'Показано {from}-{to} из {total}',
+    reviewerProfile: 'Профиль рецензента',
+    reviewerProfileHint: 'Укажите ORCID и выберите одну или несколько областей науки.',
+    scienceFields: 'Область науки',
+    otherScienceField: 'Укажите другую область науки',
+    saveReviewerProfile: 'Сохранить профиль',
+    reviewerProfileSaved: 'Данные рецензента сохранены',
+    reviewerProfileError: 'Не удалось сохранить данные рецензента',
+    invalidOrcid: 'Введите ORCID в формате 0000-0000-0000-0000',
+    scienceRequired: 'Выберите хотя бы одну область науки',
+    otherRequired: 'Укажите другую область науки',
   },
   en: {
     title: 'Users',
@@ -271,6 +330,16 @@ const copy: Record<
     nextPage: 'Next',
     pageMeta: 'Page {current} / {total}',
     pageSummary: 'Showing {from}-{to} of {total}',
+    reviewerProfile: 'Reviewer profile',
+    reviewerProfileHint: 'Enter the ORCID and select one or more science fields.',
+    scienceFields: 'Science fields',
+    otherScienceField: 'Specify another science field',
+    saveReviewerProfile: 'Save profile',
+    reviewerProfileSaved: 'Reviewer details saved',
+    reviewerProfileError: 'Failed to save reviewer details',
+    invalidOrcid: 'Enter ORCID in the format 0000-0000-0000-0000',
+    scienceRequired: 'Select at least one science field',
+    otherRequired: 'Specify another science field',
   },
   kz: {
     title: 'Пайдаланушылар',
@@ -337,6 +406,16 @@ const copy: Record<
     nextPage: 'Келесі',
     pageMeta: 'Бет {current} / {total}',
     pageSummary: '{total} ішінен {from}-{to} көрсетілді',
+    reviewerProfile: 'Рецензент профилі',
+    reviewerProfileHint: 'ORCID енгізіп, бір немесе бірнеше ғылым саласын таңдаңыз.',
+    scienceFields: 'Ғылым саласы',
+    otherScienceField: 'Басқа ғылым саласын көрсетіңіз',
+    saveReviewerProfile: 'Профильді сақтау',
+    reviewerProfileSaved: 'Рецензент деректері сақталды',
+    reviewerProfileError: 'Рецензент деректерін сақтау мүмкін болмады',
+    invalidOrcid: 'ORCID мәнін 0000-0000-0000-0000 форматында енгізіңіз',
+    scienceRequired: 'Кемінде бір ғылым саласын таңдаңыз',
+    otherRequired: 'Басқа ғылым саласын көрсетіңіз',
   },
 }
 
@@ -371,6 +450,11 @@ export default function AdminUsersPage() {
   const [draftRoles, setDraftRoles] = useState<Record<number, AdminRole>>({})
   const [passwordDrafts, setPasswordDrafts] = useState<Record<number, string>>({})
   const [passwordResults, setPasswordResults] = useState<Record<number, string>>({})
+  const [reviewerOrcid, setReviewerOrcid] = useState('')
+  const [reviewerScienceFields, setReviewerScienceFields] = useState<ReviewerScienceField[]>([])
+  const [reviewerScienceOther, setReviewerScienceOther] = useState('')
+  const [reviewerProfileMessage, setReviewerProfileMessage] = useState<string | null>(null)
+  const [reviewerProfileError, setReviewerProfileError] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -399,6 +483,9 @@ export default function AdminUsersPage() {
       const data = await api.getAdminUserDetail<AdminUser>(userId)
       setSelectedUser(data)
       setDraftRoles((prev) => ({ ...prev, [data.id]: data.role }))
+      setReviewerOrcid(data.orcid || '')
+      setReviewerScienceFields(data.reviewer_science_fields || [])
+      setReviewerScienceOther(data.reviewer_science_other || '')
     } catch (err) {
       console.error(err)
       setDetailError(err instanceof ApiError ? `${t.detailError}: ${err.status}` : t.detailError)
@@ -452,12 +539,16 @@ export default function AdminUsersPage() {
     setSelectedUser(null)
     setDetailError(null)
     setConfirmDeleteOpen(false)
+    setReviewerProfileMessage(null)
+    setReviewerProfileError(null)
   }
 
   const openModal = (userId: number) => {
     setSelectedUserId(userId)
     setSelectedUser(users.find((user) => user.id === userId) ?? null)
     setDetailError(null)
+    setReviewerProfileMessage(null)
+    setReviewerProfileError(null)
   }
 
   const handleRoleUpdate = async (userId: number) => {
@@ -501,6 +592,40 @@ export default function AdminUsersPage() {
       setConfirmDeleteOpen(false)
       await load()
       closeModal()
+    } finally {
+      setSavingKey(null)
+    }
+  }
+
+  const handleReviewerProfileSave = async (userId: number) => {
+    setReviewerProfileMessage(null)
+    setReviewerProfileError(null)
+    const normalizedOrcid = reviewerOrcid.trim().replace(/^https?:\/\/orcid\.org\//i, '').toUpperCase()
+    if (normalizedOrcid && !orcidPattern.test(normalizedOrcid)) {
+      setReviewerProfileError(t.invalidOrcid)
+      return
+    }
+    if (reviewerScienceFields.length === 0) {
+      setReviewerProfileError(t.scienceRequired)
+      return
+    }
+    if (reviewerScienceFields.includes('other') && !reviewerScienceOther.trim()) {
+      setReviewerProfileError(t.otherRequired)
+      return
+    }
+
+    setSavingKey(`reviewer-profile-${userId}`)
+    try {
+      await api.updateReviewerProfileAsAdmin(userId, {
+        orcid: normalizedOrcid || null,
+        reviewer_science_fields: reviewerScienceFields,
+        reviewer_science_other: reviewerScienceFields.includes('other') ? reviewerScienceOther.trim() : null,
+      })
+      await Promise.all([load(), loadUserDetails(userId)])
+      setReviewerProfileMessage(t.reviewerProfileSaved)
+    } catch (err) {
+      console.error(err)
+      setReviewerProfileError(err instanceof ApiError ? `${t.reviewerProfileError}: ${err.status}` : t.reviewerProfileError)
     } finally {
       setSavingKey(null)
     }
@@ -744,6 +869,68 @@ export default function AdminUsersPage() {
                       <div>{modalUser.roles?.length ? modalUser.roles.map((role) => roleText[role as AdminRole] ?? role).join(', ') : t.notSpecified}</div>
                     </div>
                   </section>
+
+                  {(modalUser.role === 'reviewer' || modalUser.roles?.includes('reviewer')) ? (
+                    <section className="panel admin-user-modal__controls">
+                      <div className="admin-user-modal__section-title">{t.reviewerProfile}</div>
+                      <p className="table__meta">{t.reviewerProfileHint}</p>
+                      <label className="form-field">
+                        <span className="form-label">ORCID</span>
+                        <input
+                          className="text-input"
+                          placeholder="0000-0000-0000-0000"
+                          value={reviewerOrcid}
+                          onChange={(event) => setReviewerOrcid(event.target.value)}
+                          disabled={savingKey === `reviewer-profile-${modalUser.id}`}
+                        />
+                      </label>
+                      <div className="form-field">
+                        <span className="form-label">{t.scienceFields}</span>
+                        <div className="choice-chips">
+                          {reviewerScienceFieldOptions.map((field) => (
+                            <label className={`choice-chip${reviewerScienceFields.includes(field) ? ' choice-chip--active' : ''}`} key={field}>
+                              <input
+                                type="checkbox"
+                                checked={reviewerScienceFields.includes(field)}
+                                disabled={savingKey === `reviewer-profile-${modalUser.id}`}
+                                onChange={() => {
+                                  setReviewerScienceFields((current) =>
+                                    current.includes(field) ? current.filter((item) => item !== field) : [...current, field],
+                                  )
+                                  setReviewerProfileMessage(null)
+                                  setReviewerProfileError(null)
+                                }}
+                              />
+                              <span className="choice-chip__label">{reviewerScienceFieldLabels[locale][field]}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      {reviewerScienceFields.includes('other') ? (
+                        <label className="form-field">
+                          <span className="form-label">{t.otherScienceField}</span>
+                          <input
+                            className="text-input"
+                            value={reviewerScienceOther}
+                            onChange={(event) => setReviewerScienceOther(event.target.value)}
+                            disabled={savingKey === `reviewer-profile-${modalUser.id}`}
+                          />
+                        </label>
+                      ) : null}
+                      {reviewerProfileError ? <div className="form-error-text">{reviewerProfileError}</div> : null}
+                      {reviewerProfileMessage ? <div className="alert alert--success">{reviewerProfileMessage}</div> : null}
+                      <div className="actions">
+                        <button
+                          type="button"
+                          className="button button--primary button--compact"
+                          disabled={savingKey === `reviewer-profile-${modalUser.id}`}
+                          onClick={() => handleReviewerProfileSave(modalUser.id)}
+                        >
+                          {t.saveReviewerProfile}
+                        </button>
+                      </div>
+                    </section>
+                  ) : null}
 
                   <section className="panel admin-user-modal__controls">
                     <div className="admin-user-modal__section-title">{t.accountState}</div>

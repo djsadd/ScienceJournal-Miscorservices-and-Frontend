@@ -122,7 +122,6 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Мои подачи', path: '/cabinet/submissions' },
             { label: 'Новая подача', path: '/cabinet/submission' },
-            { label: 'Договор автора', path: '/authors/contract' },
           ],
         },
       ],
@@ -253,7 +252,6 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'My submissions', path: '/cabinet/submissions' },
             { label: 'New submission', path: '/cabinet/submission' },
-            { label: 'Author contract', path: '/authors/contract' },
           ],
         },
       ],
@@ -384,7 +382,6 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Менің өтінімдерім', path: '/cabinet/submissions' },
             { label: 'Жаңа өтінім', path: '/cabinet/submission' },
-            { label: 'Автор шарты', path: '/authors/contract' },
           ],
         },
       ],

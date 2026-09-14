@@ -601,6 +601,37 @@ async def update_reviewer_science(
     return profile
 
 
+@router.patch("/{user_id}/reviewer-profile", response_model=schemas.UserProfileOut)
+async def update_reviewer_profile_as_admin(
+    user_id: int,
+    payload: schemas.AdminReviewerProfileUpdate,
+    current=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if "admin" not in current.get("roles", []):
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    if "reviewer" not in (profile.roles or []):
+        raise HTTPException(status_code=400, detail="User does not have reviewer role")
+
+    fields = normalize_reviewer_science_fields(payload.reviewer_science_fields)
+    other = normalize_reviewer_science_other(payload.reviewer_science_other)
+    if not fields:
+        raise HTTPException(status_code=400, detail="Select at least one science field")
+    if "other" in fields and not other:
+        raise HTTPException(status_code=400, detail="Fill in the 'other' science field")
+
+    profile.orcid = normalize_orcid(payload.orcid)
+    profile.reviewer_science_fields = fields
+    profile.reviewer_science_other = other if "other" in fields else None
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
 @router.get("/{user_id}", response_model=schemas.UserProfileOut)
 def get_profile(user_id: int, db: Session = Depends(get_db)):
     profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()

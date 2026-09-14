@@ -58,6 +58,10 @@ class ReviewerScienceUpdate(BaseModel):
     reviewer_science_other: str | None = None
 
 
+class AdminReviewerProfileUpdate(ReviewerScienceUpdate):
+    orcid: str | None = None
+
+
 class UserAcademicProfileUpdate(BaseModel):
     academic_degrees: List[str] = []
     orcid: str | None = None
