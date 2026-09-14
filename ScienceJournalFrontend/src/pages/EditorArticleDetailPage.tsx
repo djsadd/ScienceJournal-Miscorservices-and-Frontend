@@ -527,9 +527,17 @@ export default function EditorArticleDetailPage() {
         <div>
           <p className="eyebrow">Редактор</p>
         </div>
-        <div className="lang-switch">
+        <div className="lang-switch editor-form-lang-switch" aria-label="Язык формы статьи">
           {(['ru','en','kz'] as const).map((l) => (
-            <button key={l} className={`lang-chip ${lang === l ? 'lang-chip--active' : ''}`} onClick={() => setArticleFormLang(l)}>{l.toUpperCase()}</button>
+            <button
+              type="button"
+              key={l}
+              className={`lang-chip ${lang === l ? 'lang-chip--active' : ''}`}
+              aria-pressed={lang === l}
+              onClick={() => setArticleFormLang(l)}
+            >
+              {l.toUpperCase()}
+            </button>
           ))}
         </div>
       </section>

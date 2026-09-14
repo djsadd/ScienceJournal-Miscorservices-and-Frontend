@@ -314,6 +314,38 @@
   color: #8b1831;
 }
 
+.editor-form-lang-switch {
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border: 1px solid #dfc7cd;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.editor-form-lang-switch .lang-chip {
+  border: 1px solid #ead5df;
+  background: #fff8fa;
+  color: #6f263f;
+}
+
+.editor-form-lang-switch .lang-chip:hover {
+  border-color: #a73255;
+  background: #f8e8ed;
+  color: #6f102f;
+}
+
+.editor-form-lang-switch .lang-chip--active,
+.editor-form-lang-switch .lang-chip--active:hover {
+  border-color: #8b1831;
+  background: #8b1831;
+  color: #ffffff;
+}
+
+.editor-form-lang-switch .lang-chip:focus-visible {
+  outline: 3px solid rgba(139, 24, 49, 0.24);
+  outline-offset: 2px;
+}
+
 .confirm-language-switch {
   gap: 0.4rem;
   flex-wrap: wrap;
