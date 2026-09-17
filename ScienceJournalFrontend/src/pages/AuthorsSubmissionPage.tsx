@@ -552,8 +552,8 @@ export function AuthorsSubmissionPage() {
   const [confirmConsent, setConfirmConsent] = useState(false)
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [manuscriptWarningOpen, setManuscriptWarningOpen] = useState(false)
-  const [manuscriptFileName, setManuscriptFileName] = useState('')
   const manuscriptFileRef = useRef<HTMLInputElement>(null)
+  const allowManuscriptPickerRef = useRef(false)
   const [authorForm, setAuthorForm] = useState<AuthorForm>({
     email: '',
     prefix: '',
@@ -1150,22 +1150,17 @@ export function AuthorsSubmissionPage() {
               data-file-kind="manuscript"
               data-error-key="manuscript"
               accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={(event) => {
-                setManuscriptFileName(event.target.files?.[0]?.name ?? '')
-                setErrors((current) => ({ ...current, manuscript: '' }))
+              onClick={(event) => {
+                if (allowManuscriptPickerRef.current) {
+                  allowManuscriptPickerRef.current = false
+                  return
+                }
+                event.preventDefault()
+                setManuscriptWarningOpen(true)
               }}
-              style={{ display: 'none' }}
-            />
-            <button
-              type="button"
-              className="button button--ghost"
-              data-error-key="manuscript"
-              onClick={() => setManuscriptWarningOpen(true)}
+              onChange={() => setErrors((current) => ({ ...current, manuscript: '' }))}
               style={errors.manuscript ? { borderColor: 'red', color: 'red' } : undefined}
-            >
-              {t.files.manuscript}
-            </button>
-            <p className="form-hint">{manuscriptFileName || t.files.fileNotSelected}</p>
+            />
             {errors.manuscript ? (<p className="form-hint" style={{ color: 'red' }}>{errors.manuscript}</p>) : null}
           </div>
           <div className="form-field">
@@ -1415,6 +1410,7 @@ export function AuthorsSubmissionPage() {
                 className="button button--primary"
                 onClick={() => {
                   setManuscriptWarningOpen(false)
+                  allowManuscriptPickerRef.current = true
                   manuscriptFileRef.current?.click()
                 }}
               >
