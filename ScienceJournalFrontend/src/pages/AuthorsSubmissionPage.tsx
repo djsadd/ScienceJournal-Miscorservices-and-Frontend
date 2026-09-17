@@ -1,5 +1,6 @@
 ﻿import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useRef } from 'react'
 import { ApiError, api } from '../api/client'
 import { getArticleLanguageLabel, getArticleLanguageOptions } from '../shared/articleLanguages'
 import { useEffect } from 'react'
@@ -106,10 +107,14 @@ const pageCopy: Record<LocaleKey, any> = {
       addRow: '+ Добавить еще ключевое слово',
     },
     files: {
-      manuscript: 'Загрузить рукопись (.docx)',
+      manuscript: 'Загрузить рукопись статьи (Манускрипт)',
       antiplagiarism: 'Загрузить файл антиплагиата',
-      authorInfo: 'Файл со сведениями об авторах (*.doc, *.docx)',
+      authorInfo: 'Файлы сведения об авторах (Title page)',
       coverLetter: 'Сопроводительное письмо (*.pdf)',
+      manuscriptWarningTitle: 'Важно перед загрузкой',
+      manuscriptWarningText: 'В файле рукописи не должна содержаться информация об авторах.',
+      chooseManuscript: 'Понятно, выбрать файл',
+      fileNotSelected: 'Файл не выбран',
     },
     aiInfoLabel: 'Сведения о применении генеративного ИИ',
     aiInfoPlaceholder: 'Опишите, где и как использовался генеративный ИИ, если он применялся.',
@@ -210,10 +215,11 @@ const pageCopy: Record<LocaleKey, any> = {
       keywordsMin: 'Добавьте минимум 5 ключевых слов',
       keywordsFull: 'Добавьте минимум 5 ключевых слов и заполните каждое слово на трех языках',
       authors: 'Добавьте минимум одного автора',
-      manuscript: 'Загрузите файл рукописи в формате .docx',
-      manuscriptExt: 'Поддерживается только формат .docx',
+      manuscript: 'Загрузите файл рукописи в формате .doc или .docx',
+      manuscriptExt: 'Поддерживаются только форматы .doc и .docx',
       antiplagiarism: 'Загрузите файл антиплагиата',
       authorInfo: 'Загрузите сведения об авторах',
+      authorInfoExt: 'Поддерживаются только форматы .doc и .docx',
       coverLetter: 'Загрузите сопроводительное письмо',
       copyright: 'Подтвердите отсутствие параллельной подачи',
       originality: 'Подтвердите отсутствие плагиата',
@@ -257,10 +263,14 @@ const pageCopy: Record<LocaleKey, any> = {
       addRow: '+ Add another keyword',
     },
     files: {
-      manuscript: 'Upload manuscript (.docx)',
+      manuscript: 'Upload article manuscript (*.doc, *.docx)',
       antiplagiarism: 'Upload anti-plagiarism file',
-      authorInfo: 'Author information file (*.doc, *.docx)',
+      authorInfo: 'Author information (Title page)',
       coverLetter: 'Cover letter (*.pdf)',
+      manuscriptWarningTitle: 'Important before uploading',
+      manuscriptWarningText: 'The manuscript file must not contain any information about the authors.',
+      chooseManuscript: 'I understand, choose file',
+      fileNotSelected: 'No file selected',
     },
     aiInfoLabel: 'Generative AI usage details',
     aiInfoPlaceholder: 'Describe where and how generative AI was used, if applicable.',
@@ -357,10 +367,11 @@ const pageCopy: Record<LocaleKey, any> = {
       keywordsMin: 'Add at least 5 keywords',
       keywordsFull: 'Add at least 5 keywords and fill each keyword in all three languages',
       authors: 'Add at least one author',
-      manuscript: 'Upload the manuscript file in .docx format',
-      manuscriptExt: 'Only .docx format is supported',
+      manuscript: 'Upload the manuscript file in .doc or .docx format',
+      manuscriptExt: 'Only .doc and .docx formats are supported',
       antiplagiarism: 'Upload the anti-plagiarism file',
       authorInfo: 'Upload the author information file',
+      authorInfoExt: 'Only .doc and .docx formats are supported',
       coverLetter: 'Upload the cover letter',
       copyright: 'Confirm that there is no parallel submission',
       originality: 'Confirm that there is no plagiarism',
@@ -404,10 +415,14 @@ const pageCopy: Record<LocaleKey, any> = {
       addRow: '+ Тағы бір кілт сөз қосу',
     },
     files: {
-      manuscript: 'Қолжазбаны жүктеу (.docx)',
+      manuscript: 'Мақала қолжазбасын жүктеу (Манускрипт) (*.doc, *.docx)',
       antiplagiarism: 'Антиплагиат файлын жүктеу',
-      authorInfo: 'Авторлар туралы файл (*.doc, *.docx)',
+      authorInfo: 'Авторлар туралы мәлімет (Title page)',
       coverLetter: 'Ілеспе хат (*.pdf)',
+      manuscriptWarningTitle: 'Жүктеу алдындағы маңызды ескерту',
+      manuscriptWarningText: 'Қолжазба файлында авторлар туралы ақпарат болмауы керек.',
+      chooseManuscript: 'Түсінікті, файлды таңдау',
+      fileNotSelected: 'Файл таңдалмады',
     },
     aiInfoLabel: 'Генеративті ЖИ қолдану туралы мәлімет',
     aiInfoPlaceholder: 'Егер қолданылса, генеративті ЖИ қай жерде және қалай пайдаланылғанын сипаттаңыз.',
@@ -504,10 +519,11 @@ const pageCopy: Record<LocaleKey, any> = {
       keywordsMin: 'Кемінде 5 кілт сөз қосыңыз',
       keywordsFull: 'Кемінде 5 кілт сөз қосып, әр сөзді үш тілде толтырыңыз',
       authors: 'Кемінде бір автор қосыңыз',
-      manuscript: '.docx форматындағы қолжазба файлын жүктеңіз',
-      manuscriptExt: 'Тек .docx форматы қолдау табады',
+      manuscript: '.doc немесе .docx форматындағы қолжазба файлын жүктеңіз',
+      manuscriptExt: 'Тек .doc және .docx форматтары қолдау табады',
       antiplagiarism: 'Антиплагиат файлын жүктеңіз',
       authorInfo: 'Авторлар туралы файлды жүктеңіз',
+      authorInfoExt: 'Тек .doc және .docx форматтары қолдау табады',
       coverLetter: 'Ілеспе хатты жүктеңіз',
       copyright: 'Қатар жіберілім жоқ екенін растаңыз',
       originality: 'Плагиат жоқ екенін растаңыз',
@@ -535,6 +551,9 @@ export function AuthorsSubmissionPage() {
   const [confirmOriginality, setConfirmOriginality] = useState(false)
   const [confirmConsent, setConfirmConsent] = useState(false)
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
+  const [manuscriptWarningOpen, setManuscriptWarningOpen] = useState(false)
+  const [manuscriptFileName, setManuscriptFileName] = useState('')
+  const manuscriptFileRef = useRef<HTMLInputElement>(null)
   const [authorForm, setAuthorForm] = useState<AuthorForm>({
     email: '',
     prefix: '',
@@ -791,8 +810,9 @@ export function AuthorsSubmissionPage() {
     const manuscript = getFileNameFromInputKind('manuscript')
     const authorInfo = getFileNameFromInputKind('authorInfo')
     if (!manuscript) nextErrors.manuscript = t.errors.manuscript
-    else if (!manuscript.toLowerCase().endsWith('.docx')) nextErrors.manuscript = t.errors.manuscriptExt
+    else if (!/\.docx?$/i.test(manuscript)) nextErrors.manuscript = t.errors.manuscriptExt
     if (!authorInfo) nextErrors.authorInfo = t.errors.authorInfo
+    else if (!/\.docx?$/i.test(authorInfo)) nextErrors.authorInfo = t.errors.authorInfoExt
     if (!confirmCopyright) nextErrors.confirmCopyright = t.errors.copyright
     if (!confirmOriginality) nextErrors.confirmOriginality = t.errors.originality
     if (!confirmConsent) nextErrors.confirmConsent = t.errors.consent
@@ -824,8 +844,9 @@ export function AuthorsSubmissionPage() {
     const manuscript = getFileNameFromInputKind('manuscript')
     const authorInfo = getFileNameFromInputKind('authorInfo')
     if (!manuscript) nextErrors.manuscript = t.errors.manuscript
-    else if (!manuscript.toLowerCase().endsWith('.docx')) nextErrors.manuscript = t.errors.manuscriptExt
+    else if (!/\.docx?$/i.test(manuscript)) nextErrors.manuscript = t.errors.manuscriptExt
     if (!authorInfo) nextErrors.authorInfo = t.errors.authorInfo
+    else if (!/\.docx?$/i.test(authorInfo)) nextErrors.authorInfo = t.errors.authorInfoExt
     if (!confirmCopyright) nextErrors.confirmCopyright = t.errors.copyright
     if (!confirmOriginality) nextErrors.confirmOriginality = t.errors.originality
     if (!confirmConsent) nextErrors.confirmConsent = t.errors.consent
@@ -1122,14 +1143,29 @@ export function AuthorsSubmissionPage() {
           <div className="form-field">
             <label className="form-label">{t.files.manuscript}<RequiredMark /></label>
             <input
+              ref={manuscriptFileRef}
               type="file"
               className={`file-input ${errors.manuscript ? 'file-input--error' : ''}`}
               data-upload-slot="article-file"
               data-file-kind="manuscript"
               data-error-key="manuscript"
-              accept=".docx"
-              style={errors.manuscript ? { outline: '2px solid red' } : undefined}
+              accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={(event) => {
+                setManuscriptFileName(event.target.files?.[0]?.name ?? '')
+                setErrors((current) => ({ ...current, manuscript: '' }))
+              }}
+              style={{ display: 'none' }}
             />
+            <button
+              type="button"
+              className="button button--ghost"
+              data-error-key="manuscript"
+              onClick={() => setManuscriptWarningOpen(true)}
+              style={errors.manuscript ? { borderColor: 'red', color: 'red' } : undefined}
+            >
+              {t.files.manuscript}
+            </button>
+            <p className="form-hint">{manuscriptFileName || t.files.fileNotSelected}</p>
             {errors.manuscript ? (<p className="form-hint" style={{ color: 'red' }}>{errors.manuscript}</p>) : null}
           </div>
           <div className="form-field">
@@ -1146,7 +1182,7 @@ export function AuthorsSubmissionPage() {
           )}
           <div className="form-field">
             <label className="form-label">{t.files.authorInfo}<RequiredMark /></label>
-            <input type="file" className={`file-input ${errors.authorInfo ? 'file-input--error' : ''}`} data-upload-slot="article-file" data-file-kind="authorInfo" data-error-key="authorInfo" style={errors.authorInfo ? { outline: '2px solid red' } : undefined} />
+            <input type="file" className={`file-input ${errors.authorInfo ? 'file-input--error' : ''}`} data-upload-slot="article-file" data-file-kind="authorInfo" data-error-key="authorInfo" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style={errors.authorInfo ? { outline: '2px solid red' } : undefined} />
             {errors.authorInfo ? (<p className="form-hint" style={{ color: 'red' }}>{errors.authorInfo}</p>) : null}
           </div>
           <div className="form-field">
@@ -1352,6 +1388,37 @@ export function AuthorsSubmissionPage() {
               </button>
               <button className="button button--primary" type="button" onClick={handleSaveKeywords}>
                 {t.common.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {manuscriptWarningOpen ? (
+        <div className="modal-backdrop" onClick={() => setManuscriptWarningOpen(false)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="manuscript-warning-title" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3 id="manuscript-warning-title">{t.files.manuscriptWarningTitle}</h3>
+              <button type="button" className="modal__close" onClick={() => setManuscriptWarningOpen(false)} aria-label={t.common.close}>
+                {'\u00d7'}
+              </button>
+            </div>
+            <div className="modal__body">
+              <p style={{ margin: 0 }}>{t.files.manuscriptWarningText}</p>
+            </div>
+            <div className="modal__footer">
+              <button type="button" className="button button--ghost" onClick={() => setManuscriptWarningOpen(false)}>
+                {t.common.cancel}
+              </button>
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={() => {
+                  setManuscriptWarningOpen(false)
+                  manuscriptFileRef.current?.click()
+                }}
+              >
+                {t.files.chooseManuscript}
               </button>
             </div>
           </div>
