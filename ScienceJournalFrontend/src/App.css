@@ -2385,6 +2385,25 @@
   line-height: 1.55;
 }
 
+.settings-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.settings-form label { display: grid; gap: 0.4rem; }
+.settings-form__wide { grid-column: 1 / -1; }
+.requirements-upload-grid { display: grid; gap: 0.75rem; }
+.requirements-upload { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem; border: 1px solid #e7e9f2; border-radius: 10px; }
+.requirements-upload strong { min-width: 2.5rem; }
+.requirements-pdf { width: 100%; height: min(75vh, 900px); border: 1px solid #dfe3eb; border-radius: 12px; margin-top: 1rem; background: #f5f6f8; }
+
+@media (max-width: 700px) {
+  .settings-form { grid-template-columns: 1fr; }
+  .requirements-upload { align-items: stretch; flex-direction: column; }
+}
+
 .issue-card {
   display: flex;
   flex-direction: column;

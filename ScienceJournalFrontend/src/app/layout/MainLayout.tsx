@@ -191,6 +191,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Администрирование',
           items: [
             { label: 'Пользователи', path: '/cabinet/admin/users' },
+            { label: 'Настройки журнала', path: '/cabinet/admin/journal-settings' },
             { label: 'Заявки на роли', path: '/cabinet/role-requests' },
           ],
         },
@@ -321,6 +322,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Administration',
           items: [
             { label: 'Users', path: '/cabinet/admin/users' },
+            { label: 'Journal settings', path: '/cabinet/admin/journal-settings' },
             { label: 'Role requests', path: '/cabinet/role-requests' },
           ],
         },
@@ -451,6 +453,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Әкімшілік',
           items: [
             { label: 'Пайдаланушылар', path: '/cabinet/admin/users' },
+            { label: 'Журнал баптаулары', path: '/cabinet/admin/journal-settings' },
             { label: 'Рөл өтінімдері', path: '/cabinet/role-requests' },
           ],
         },

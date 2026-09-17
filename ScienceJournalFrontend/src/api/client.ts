@@ -345,6 +345,21 @@ export const api = {
     }),
   deleteAdminUser: <T>(userId: number | string) =>
     request<T>(`/auth/admin/users/${userId}`, 'DELETE'),
+  getJournalSettings: <T>() => request<T>('/publication/journal-settings', 'GET'),
+  updateJournalSettings: <T>(body: {
+    editor_name: string
+    editor_email: string
+    phone: string
+    address: string
+    contact_email: string
+  }) => request<T>('/publication/journal-settings', 'PUT', { json: body }),
+  uploadRequirementsPdf: <T>(lang: 'ru' | 'kz' | 'en', file: File) => {
+    const form = new FormData()
+    form.append('document', file)
+    return request<T>(`/publication/journal-settings/requirements/${lang}`, 'PUT', { body: form })
+  },
+  getRequirementsPdfUrl: (lang: 'ru' | 'kz' | 'en') =>
+    buildUrl(`/publication/journal-settings/requirements/${lang}`),
   // Change article status (editor role required)
   changeArticleStatus: <T>(articleId: string | number, status: string, options?: { comment_for_author?: string }) =>
     request<T>(`/articles/${articleId}/status`, 'PATCH', { json: { status, ...(options?.comment_for_author ? { comment_for_author: options.comment_for_author } : {}) } }),

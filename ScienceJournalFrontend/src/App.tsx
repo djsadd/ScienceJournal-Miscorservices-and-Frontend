@@ -48,6 +48,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import QuickPublishPage from './pages/QuickPublishPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import RoleRequestsPage from './pages/RoleRequestsPage'
+import AdminJournalSettingsPage from './pages/AdminJournalSettingsPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -262,6 +263,16 @@ function App() {
           <RequireAuth>
             <MainLayout>
               <AdminUsersPage />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cabinet/admin/journal-settings"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <AdminJournalSettingsPage />
             </MainLayout>
           </RequireAuth>
         }
