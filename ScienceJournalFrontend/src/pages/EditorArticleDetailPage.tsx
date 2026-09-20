@@ -251,6 +251,8 @@ export default function EditorArticleDetailPage() {
   const [assignLoading, setAssignLoading] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
   const [assignSuccess, setAssignSuccess] = useState<string | null>(null)
+  const [cancelReviewer, setCancelReviewer] = useState<{ id: number; name: string } | null>(null)
+  const [cancelReviewerLoading, setCancelReviewerLoading] = useState(false)
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
   const [reviewLoading, setReviewLoading] = useState(false)
   const [reviewError, setReviewError] = useState<string | null>(null)
@@ -483,6 +485,25 @@ export default function EditorArticleDetailPage() {
     if (s === 'completed') return <span className="badge badge--success">Готово</span>
     if (s === 'resubmission') return <span className="badge">Повторная рецензия</span>
     return <span className="badge badge--ghost">{s}</span>
+  }
+
+  const handleCancelReviewer = async () => {
+    if (!id || !cancelReviewer || cancelReviewerLoading) return
+    setCancelReviewerLoading(true)
+    setReviewListError(null)
+    try {
+      await api.cancelReviewerAssignment(id, cancelReviewer.id)
+      await fetchArticleReviewers(id)
+      setCancelReviewer(null)
+      setToastMessage('Назначение рецензента отменено. Уведомление отправлено на почту.')
+      setToastOpen(true)
+    } catch (e: any) {
+      const message = e?.bodyJson?.detail || e?.message || 'Не удалось отменить назначение рецензента'
+      setReviewListError(String(message))
+      setCancelReviewer(null)
+    } finally {
+      setCancelReviewerLoading(false)
+    }
   }
 
   const getKeywordLabel = (keyword: KeywordOut, targetLang: 'ru' | 'en' | 'kz' = lang) => (
@@ -922,12 +943,13 @@ export default function EditorArticleDetailPage() {
             ) : reviewList.length === 0 ? (
               <div className="table__empty">Рецензенты пока не назначены.</div>
             ) : (
-              <div className="table">
+              <div className="table table--article-reviewers">
                 <div className="table__head">
                   <span>Рецензент</span>
                   <span>Email</span>
                   <span>Дедлайн</span>
                   <span>Статус</span>
+                  <span>Действия</span>
                 </div>
                 <div className="table__body">
                   {reviewList.map((r) => {
@@ -958,6 +980,17 @@ export default function EditorArticleDetailPage() {
                         <div className="table__cell">{email}</div>
                         <div className="table__cell">{deadline}</div>
                         <div className="table__cell">{renderStatusBadge(r.status)}</div>
+                        <div className="table__cell table__cell--actions">
+                          {r.status !== 'completed' ? (
+                            <button
+                              type="button"
+                              className="button button--danger button--compact"
+                              onClick={() => setCancelReviewer({ id: r.reviewer_id, name: fullName })}
+                            >
+                              Отменить назначение
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     )
                   })}
@@ -1331,6 +1364,15 @@ export default function EditorArticleDetailPage() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        open={cancelReviewer !== null}
+        title="Отмена рецензирования"
+        message={`Вы уверены, что хотите отменить назначение рецензента ${cancelReviewer?.name || ''}? Рецензент получит уведомление и письмо на почту.`}
+        confirmText={cancelReviewerLoading ? 'Отменяем...' : 'Отменить назначение'}
+        cancelText="Назад"
+        onConfirm={handleCancelReviewer}
+        onCancel={() => (!cancelReviewerLoading && setCancelReviewer(null))}
+      />
       <ConfirmModal
         open={showRejectConfirm}
         title="Отклонение статьи"

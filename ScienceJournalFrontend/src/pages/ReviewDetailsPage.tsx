@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { ReviewDetail } from '../shared/types'
 import Alert from '../shared/components/Alert'
@@ -10,6 +10,7 @@ import { formatArticleStatus, formatArticleType } from '../shared/labels'
 
 export default function ReviewDetailsPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [data, setData] = useState<ReviewDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -17,6 +18,10 @@ export default function ReviewDetailsPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [toastOpen, setToastOpen] = useState(false)
+  const [declineOpen, setDeclineOpen] = useState(false)
+  const [declineReason, setDeclineReason] = useState('')
+  const [declineError, setDeclineError] = useState<string | null>(null)
+  const [declining, setDeclining] = useState(false)
   const [lang, setLang] = useState<'ru' | 'en' | 'kz'>(() => {
     const params = new URLSearchParams(window.location.search)
     const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
@@ -178,6 +183,29 @@ export default function ReviewDetailsPage() {
     }
   }
 
+  const handleDecline = async () => {
+    if (!id || declining) return
+    const reason = declineReason.trim()
+    if (reason.length < 10) {
+      setDeclineError('Укажите мотивированную причину отказа — не менее 10 символов.')
+      return
+    }
+    setDeclining(true)
+    setDeclineError(null)
+    try {
+      await api.declineReview(id, reason)
+      setDeclineOpen(false)
+      setSuccess('Отказ отправлен редактору. Назначение снято.')
+      setToastOpen(true)
+      window.setTimeout(() => navigate('/cabinet/reviews', { replace: true }), 1200)
+    } catch (e: any) {
+      const message = e?.bodyJson?.detail || e?.message || 'Не удалось отказаться от рецензирования'
+      setDeclineError(String(message))
+    } finally {
+      setDeclining(false)
+    }
+  }
+
   return (
     <div className="app-container">
       <section className="section-header">
@@ -326,6 +354,19 @@ export default function ReviewDetailsPage() {
 
             <div className="auth-row">
               {!isReadOnly && (
+              <button
+                className="button button--danger"
+                type="button"
+                onClick={() => {
+                  setDeclineError(null)
+                  setDeclineOpen(true)
+                }}
+                disabled={saving || declining}
+              >
+                Отказаться от рецензирования
+              </button>
+              )}
+              {!isReadOnly && (
               <button className="button button--ghost" type="button" onClick={handleSave} disabled={saving}>
                 Сохранить
               </button>
@@ -346,6 +387,47 @@ export default function ReviewDetailsPage() {
             onConfirm={doSubmit}
             onCancel={() => setConfirmOpen(false)}
           />
+          {declineOpen && (
+            <div className="modal-backdrop" onClick={() => !declining && setDeclineOpen(false)}>
+              <div className="modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                <div className="modal__header">
+                  <p className="eyebrow">Мотивированный отказ</p>
+                  <h3 className="panel-title">Отказаться от рецензирования?</h3>
+                </div>
+                <div className="modal__body">
+                  <p className="subtitle">
+                    Опишите причину отказа. Она будет отправлена ответственному редактору вместе с уведомлением по электронной почте.
+                  </p>
+                  <label className="form-field">
+                    <span className="form-label">Причина отказа</span>
+                    <textarea
+                      className="text-input"
+                      rows={5}
+                      maxLength={2000}
+                      value={declineReason}
+                      onChange={(event) => {
+                        setDeclineReason(event.target.value)
+                        setDeclineError(null)
+                      }}
+                      placeholder="Например: тема статьи выходит за рамки моей научной специализации..."
+                      disabled={declining}
+                      autoFocus
+                    />
+                    <span className="form-hint">Не менее 10 символов. {declineReason.length}/2000</span>
+                  </label>
+                  {declineError ? <Alert variant="error" title="Не удалось отправить отказ">{declineError}</Alert> : null}
+                </div>
+                <div className="modal__footer">
+                  <button className="button button--ghost" type="button" disabled={declining} onClick={() => setDeclineOpen(false)}>
+                    Назад
+                  </button>
+                  <button className="button button--danger" type="button" disabled={declining || declineReason.trim().length < 10} onClick={handleDecline}>
+                    {declining ? 'Отправляем...' : 'Подтвердить отказ'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           </>
         )}
       </div>

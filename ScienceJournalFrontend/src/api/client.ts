@@ -310,6 +310,8 @@ export const api = {
   }) => request<T>('/articles/quick-publish', 'POST', { json: body }),
   assignReviewers: <T>(articleId: string | number, body: { reviewer_ids: number[]; deadline?: string }) =>
     request<T>(`/articles/${articleId}/assign_reviewers`, 'POST', { json: body }),
+  cancelReviewerAssignment: <T>(articleId: string | number, reviewerId: string | number) =>
+    request<T>(`/articles/${articleId}/reviewers/${reviewerId}`, 'DELETE'),
   getArticleReviewers: <T>(articleId: string | number) => request<T>(`/articles/${articleId}/reviewers`, 'GET'),
   getReviewers: <T>(language?: 'ru' | 'kz') => request<T>('/users/reviewers', 'GET', { params: { language } }),
   getAdminUsers: <T>() => request<T>('/auth/admin/users', 'GET'),
@@ -371,6 +373,8 @@ export const api = {
   getMyReviews: <T>(params?: { page?: number; page_size?: number }) => request<T>('/reviews/my-reviews', 'GET', { params }),
   getReviewDetail: <T>(reviewId: number | string) => request<T>(`/reviews/${reviewId}/detail`, 'GET'),
   updateReview: <T>(reviewId: number | string, body: unknown) => request<T>(`/reviews/${reviewId}`, 'PATCH', { json: body }),
+  declineReview: <T>(reviewId: number | string, reason: string) =>
+    request<T>(`/reviews/${reviewId}/decline`, 'POST', { json: { reason } }),
   // Request resubmission for a review (editor role required)
   requestReviewResubmission: <T>(reviewId: number | string, deadlineIso?: string) => {
     const path = `/reviews/${reviewId}/request-resubmission`

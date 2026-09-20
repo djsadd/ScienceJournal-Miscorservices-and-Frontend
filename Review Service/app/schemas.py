@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -70,6 +70,10 @@ class ReviewOut(ReviewBase):
     id: int
     reviewer_id: int
     deadline: Optional[datetime] = None
+
+
+class DeclineReviewRequest(BaseModel):
+    reason: str = Field(min_length=10, max_length=2000)
     created_at: datetime
     updated_at: Optional[datetime] = None
 

@@ -1455,6 +1455,28 @@ def get_assigned_editor_internal(
     return {"article_id": article.id, "assigned_editor_id": article.assigned_editor_id}
 
 
+@router.delete("/internal/{article_id}/reviewers/{reviewer_id}")
+def remove_reviewer_assignment_internal(
+    article_id: int,
+    reviewer_id: int,
+    db: Session = Depends(get_db),
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+):
+    """Remove the article-reviewer link after a reviewer declines the assignment."""
+    ensure_service_secret(x_service_secret)
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    result = db.execute(
+        models.article_reviewers.delete().where(
+            models.article_reviewers.c.article_id == article_id,
+            models.article_reviewers.c.user_id == reviewer_id,
+        )
+    )
+    db.commit()
+    return {"removed": bool(result.rowcount), "article_id": article_id, "reviewer_id": reviewer_id}
+
+
 @router.get("/internal/{article_id}/reviewer-detail")
 def get_article_reviewer_detail_internal(
     article_id: int,
@@ -1599,6 +1621,64 @@ async def assign_reviewers(
             # Продолжаем работу, даже если Review Service недоступен
     
     return {"message": "Reviewers assigned successfully", "article_id": article_id, "reviewer_ids": reviewer_ids}
+
+
+@router.delete("/{article_id}/reviewers/{reviewer_id}")
+async def cancel_reviewer_assignment(
+    article_id: int,
+    reviewer_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Cancel an unfinished reviewer assignment and trigger a cancellation email."""
+    ensure_editor(current_user)
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    assignment = db.execute(
+        models.article_reviewers.select().where(
+            models.article_reviewers.c.article_id == article_id,
+            models.article_reviewers.c.user_id == reviewer_id,
+        )
+    ).first()
+    if not assignment:
+        return {
+            "message": "Reviewer assignment is already cancelled",
+            "article_id": article_id,
+            "reviewer_id": reviewer_id,
+            "cancelled": False,
+        }
+
+    review_service_url = getattr(config, 'REVIEW_SERVICE_URL', 'http://reviews:8000')
+    shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.delete(
+                f"{review_service_url}/reviews/internal/assignments/{article_id}/{reviewer_id}",
+                headers={"X-Service-Secret": shared_secret},
+            )
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=503, detail="Review Service is unavailable") from exc
+
+    if response.status_code == 409:
+        raise HTTPException(status_code=409, detail="Completed review cannot be cancelled")
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail="Failed to cancel review assignment")
+
+    db.execute(
+        models.article_reviewers.delete().where(
+            models.article_reviewers.c.article_id == article_id,
+            models.article_reviewers.c.user_id == reviewer_id,
+        )
+    )
+    db.commit()
+    return {
+        "message": "Reviewer assignment cancelled successfully",
+        "article_id": article_id,
+        "reviewer_id": reviewer_id,
+        "cancelled": True,
+    }
 
 
 @router.get("/{article_id}/reviewers")

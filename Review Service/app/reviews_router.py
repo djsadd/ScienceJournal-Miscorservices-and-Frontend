@@ -70,6 +70,71 @@ def _notify_reviewer_assignment(article_id: int, reviewer_id: int, review_id: in
     except Exception as exc:
         print(f"Warning: failed to notify reviewer {reviewer_id}: {exc}")
 
+
+def _notify_reviewer_cancellation(article_id: int, reviewer_id: int) -> None:
+    """Notify a reviewer after an editor cancels the assignment."""
+    try:
+        api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+        api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
+        shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+        article_title = _fetch_article_titles([article_id]).get(article_id)
+        article_label = f"«{article_title}»" if article_title else f"#{article_id}"
+        payload = {
+            "user_id": reviewer_id,
+            "type": "review_assignment",
+            "related_entity": f"article:{article_id}",
+            "title": "Рецензирование отменено",
+            "message": f"Назначение на рецензирование статьи {article_label} отменено редактором.",
+            "article_id": article_id,
+        }
+        with httpx.Client(timeout=5.0) as client:
+            response = client.post(
+                f"{api_gateway}{api_prefix}/notifications/internal",
+                json=payload,
+                headers={"X-Service-Secret": shared_secret},
+            )
+            response.raise_for_status()
+    except Exception as exc:
+        print(f"Warning: failed to notify reviewer {reviewer_id} about cancellation: {exc}")
+
+
+def _notify_editor_about_decline(article_id: int, reviewer_id: int, reason: str) -> None:
+    """Send the responsible editor the reviewer's motivated refusal."""
+    try:
+        api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+        api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
+        shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+        article_title = _fetch_article_titles([article_id]).get(article_id)
+        article_label = f"«{article_title}»" if article_title else f"#{article_id}"
+        with httpx.Client(timeout=5.0) as client:
+            editor_response = client.get(
+                f"{api_gateway}{api_prefix}/articles/internal/{article_id}/assigned-editor",
+                headers={"X-Service-Secret": shared_secret},
+            )
+            editor_response.raise_for_status()
+            editor_id = (editor_response.json() or {}).get("assigned_editor_id")
+            if not editor_id:
+                print(f"Warning: article {article_id} has no assigned editor for decline notification")
+                return
+            notification_response = client.post(
+                f"{api_gateway}{api_prefix}/notifications/internal",
+                json={
+                    "user_id": editor_id,
+                    "type": "editorial",
+                    "related_entity": f"article:{article_id}",
+                    "title": "Рецензент отказался от рецензирования",
+                    "message": (
+                        f"Рецензент #{reviewer_id} отказался от рецензирования статьи "
+                        f"{article_label}. Причина: {reason}"
+                    ),
+                    "article_id": article_id,
+                },
+                headers={"X-Service-Secret": shared_secret},
+            )
+            notification_response.raise_for_status()
+    except Exception as exc:
+        print(f"Warning: failed to notify editor about reviewer decline: {exc}")
+
 # ----------------------------
 # JWT dependency
 # ----------------------------
@@ -178,6 +243,76 @@ def assign_reviewer(
         new_review.id,
     )
     return new_review
+
+
+@router.delete("/internal/assignments/{article_id}/{reviewer_id}")
+def cancel_reviewer_assignment(
+    article_id: int,
+    reviewer_id: int,
+    background_tasks: BackgroundTasks,
+    x_service_secret: Optional[str] = Header(default=None, alias="X-Service-Secret"),
+    db: Session = Depends(get_db),
+):
+    """Cancel an unfinished assignment. Called by Article Management Service."""
+    shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+    if not x_service_secret or x_service_secret != shared_secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    review = db.query(models.Review).filter(
+        models.Review.article_id == article_id,
+        models.Review.reviewer_id == reviewer_id,
+    ).first()
+    if not review:
+        return {"message": "Review assignment is already cancelled", "cancelled": False}
+    if review.status == models.ReviewStatus.completed:
+        raise HTTPException(status_code=409, detail="Completed review cannot be cancelled")
+
+    db.delete(review)
+    db.commit()
+    background_tasks.add_task(_notify_reviewer_cancellation, article_id, reviewer_id)
+    return {"message": "Review assignment cancelled", "cancelled": True}
+
+
+@router.post("/{review_id}/decline")
+async def decline_review_assignment(
+    review_id: int,
+    payload: schemas.DeclineReviewRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Allow the assigned reviewer to decline with a mandatory explanation."""
+    review = db.query(models.Review).filter(models.Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.reviewer_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="You can only decline your own assignment")
+    if review.status == models.ReviewStatus.completed:
+        raise HTTPException(status_code=409, detail="Completed review cannot be declined")
+
+    reason = payload.reason.strip()
+    if len(reason) < 10:
+        raise HTTPException(status_code=422, detail="Укажите мотивированную причину отказа (не менее 10 символов)")
+
+    article_service_url = getattr(config, 'ARTICLE_SERVICE_URL', 'http://articles:8000')
+    shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.delete(
+                f"{article_service_url}/articles/internal/{review.article_id}/reviewers/{review.reviewer_id}",
+                headers={"X-Service-Secret": shared_secret},
+            )
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=503, detail="Article Service is unavailable") from exc
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail="Failed to remove reviewer assignment")
+
+    article_id = review.article_id
+    reviewer_id = review.reviewer_id
+    db.delete(review)
+    db.commit()
+    background_tasks.add_task(_notify_editor_about_decline, article_id, reviewer_id, reason)
+    return {"message": "Review assignment declined", "declined": True}
 
 # ----------------------------
 # GET REVIEWS FOR ARTICLE (compact summary)

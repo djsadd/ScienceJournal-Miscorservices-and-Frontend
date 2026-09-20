@@ -4961,6 +4961,11 @@
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
 }
 
+.table--article-reviewers .table__head,
+.table--article-reviewers .table__row {
+  grid-template-columns: 1.4fr 1fr 0.7fr 0.7fr 1fr;
+}
+
 .table__cell {
   display: flex;
   flex-direction: column;
