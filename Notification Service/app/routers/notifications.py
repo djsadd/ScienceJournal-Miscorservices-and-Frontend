@@ -3,7 +3,7 @@ from typing import List, Optional
 import logging
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app import models, schemas, config
@@ -30,25 +30,43 @@ def _get_user_email(user_id: int) -> Optional[str]:
     return None
 
 
-def _maybe_send_email_for_notification(n: models.Notification) -> None:
+def _send_notification_email(user_id: int, subject: str, message: str, notification_id: int) -> None:
     # Resolve recipient email via Auth service
-    recipient = _get_user_email(n.user_id)
+    recipient = _get_user_email(user_id)
     if not recipient:
-        logger.info("No email found for user_id=%s; skip email", n.user_id)
+        logger.info("No email found for user_id=%s; skip email", user_id)
         return
-    subject = n.title
-    text = n.message
-    html = f"<p>{n.message}</p>"
+    text = message
+    html = f"<p>{message}</p>"
     try:
         send_email(recipient, subject, text, html)
-        logger.info("Email sent to %s for notification %s", recipient, n.id)
+        logger.info("Email sent to %s for notification %s", recipient, notification_id)
     except Exception as e:
-        logger.warning("Email send failed for notification %s: %s", n.id, e)
+        logger.warning("Email send failed for notification %s: %s", notification_id, e)
+
+
+def _queue_notification_email(background_tasks: BackgroundTasks, n: models.Notification) -> None:
+    # Copy values now; the request-scoped SQLAlchemy session may be closed later.
+    background_tasks.add_task(
+        _send_notification_email, n.user_id, n.title, n.message, n.id
+    )
+
+
+def _send_direct_email(user_id: int, subject: str, text: str, html: Optional[str]) -> None:
+    recipient = _get_user_email(user_id)
+    if not recipient:
+        logger.warning("Recipient email not found for user_id=%s", user_id)
+        return
+    try:
+        send_email(recipient, subject, text, html)
+    except Exception as exc:
+        logger.warning("Internal email send failed for user_id=%s: %s", user_id, exc)
 
 
 @router.post("/", response_model=schemas.NotificationOut)
 def create_notification(
     payload: schemas.NotificationCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -64,7 +82,7 @@ def create_notification(
     db.add(notification)
     db.commit()
     db.refresh(notification)
-    _maybe_send_email_for_notification(notification)
+    _queue_notification_email(background_tasks, notification)
     return notification
 
 
@@ -72,6 +90,7 @@ def create_notification(
 def create_notification_internal(
     payload: schemas.NotificationCreate,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
@@ -95,7 +114,7 @@ def create_notification_internal(
     db.add(notification)
     db.commit()
     db.refresh(notification)
-    _maybe_send_email_for_notification(notification)
+    _queue_notification_email(background_tasks, notification)
     return notification
 
 
@@ -103,27 +122,26 @@ def create_notification_internal(
 def send_internal_email(
     payload: schemas.InternalEmailCreate,
     request: Request,
+    background_tasks: BackgroundTasks,
 ):
     secret = request.headers.get("X-Service-Secret")
     if not secret or secret != config.SHARED_SERVICE_SECRET:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    recipient = _get_user_email(payload.user_id)
-    if not recipient:
-        raise HTTPException(status_code=404, detail="Recipient email not found")
-
-    try:
-        send_email(recipient, payload.subject, payload.text, payload.html)
-    except Exception as e:
-        logger.warning("Internal email send failed for user_id=%s: %s", payload.user_id, e)
-        raise HTTPException(status_code=502, detail="Email send failed")
-
-    return {"message": "Email sent"}
+    background_tasks.add_task(
+        _send_direct_email,
+        payload.user_id,
+        payload.subject,
+        payload.text,
+        payload.html,
+    )
+    return {"message": "Email queued"}
 
 
 @router.post("/article", response_model=schemas.NotificationOut)
 def create_article_notification(
     payload: schemas.NotificationArticleCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -151,7 +169,7 @@ def create_article_notification(
     db.add(notification)
     db.commit()
     db.refresh(notification)
-    _maybe_send_email_for_notification(notification)
+    _queue_notification_email(background_tasks, notification)
     return notification
 
 

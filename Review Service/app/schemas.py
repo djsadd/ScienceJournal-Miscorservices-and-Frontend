@@ -117,11 +117,7 @@ class ReviewDetail(ReviewOut):
         doi: Optional[str] = None
         status: Optional[str] = None
         article_type: Optional[str] = None
-        antiplagiarism_file_url: Optional[str] = None
         manuscript_file_url: Optional[str] = None
-        author_info_file_url: Optional[str] = None
-        cover_letter_file_url: Optional[str] = None
-        layout_file_url: Optional[str] = None
         created_at: Optional[datetime] = None
         updated_at: Optional[datetime] = None
         keywords: List["ReviewDetail.ArticleKeyword"] = []

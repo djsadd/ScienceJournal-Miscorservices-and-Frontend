@@ -1463,7 +1463,7 @@ def get_article_reviewer_detail_internal(
 ):
     """
     Internal: return sanitized article details for reviewer consumption.
-    Excludes authors and versions; includes basic metadata, abstracts, file URLs and keywords.
+    Excludes authors and versions; exposes only the manuscript among article files.
 
     Requires X-Service-Secret header.
     """
@@ -1493,14 +1493,11 @@ def get_article_reviewer_detail_internal(
         "status": article.status,
         "article_type": article.article_type,
         "responsible_user_id": article.responsible_user_id,
-        "antiplagiarism_file_url": article.antiplagiarism_file_url,
         "not_published_elsewhere": article.not_published_elsewhere,
         "plagiarism_free": article.plagiarism_free,
         "authors_agree": article.authors_agree,
         "generative_ai_info": article.generative_ai_info,
         "manuscript_file_url": article.manuscript_file_url,
-        "cover_letter_file_url": article.cover_letter_file_url,
-        "layout_file_url": getattr(article, "layout_file_url", None),
         "created_at": article.created_at,
         "updated_at": article.updated_at,
         "keywords": [

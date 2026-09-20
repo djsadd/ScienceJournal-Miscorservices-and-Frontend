@@ -237,19 +237,10 @@ export default function ReviewDetailsPage() {
           </div>
 
           <div className="panel">
-            <h3 className="panel-title" style={{ marginTop: 0 }}>Файлы</h3>
+            <h3 className="panel-title" style={{ marginTop: 0 }}>Манускрипт</h3>
             <div className="actions">
               {data.article.manuscript_file_url && (
                 <a className="button button--ghost button--compact" href={toApiFilesUrl(data.article.manuscript_file_url) || '#'} target="_blank" rel="noreferrer">Рукопись</a>
-              )}
-              {data.article.antiplagiarism_file_url && (
-                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.article.antiplagiarism_file_url)} target="_blank" rel="noreferrer">Антиплагиат</a>
-              )}
-              {data.article.cover_letter_file_url && (
-                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.article.cover_letter_file_url)} target="_blank" rel="noreferrer">Письмо</a>
-              )}
-              {data.article.layout_file_url && (
-                <a className="button button--ghost button--compact" href={toApiFilesUrl(data.article.layout_file_url)} target="_blank" rel="noreferrer">Вёрстка</a>
               )}
             </div>
           </div>

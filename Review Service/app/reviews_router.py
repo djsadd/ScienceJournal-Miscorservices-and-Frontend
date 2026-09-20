@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from jose import jwt, JWTError
@@ -42,6 +42,33 @@ def _fetch_article_titles(article_ids: list[int]) -> dict[int, str]:
         return {}
 
     return titles
+
+
+def _notify_reviewer_assignment(article_id: int, reviewer_id: int, review_id: int) -> None:
+    """Best-effort notification executed after the assignment response is sent."""
+    try:
+        api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+        api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
+        shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+        article_title = _fetch_article_titles([article_id]).get(article_id)
+        article_label = f"«{article_title}»" if article_title else f"#{article_id}"
+        payload = {
+            "user_id": reviewer_id,
+            "type": "review_assignment",
+            "related_entity": f"review:{review_id}",
+            "title": "Вам назначена рецензия",
+            "message": f"Вам назначена рецензия по статье {article_label}.",
+            "article_id": article_id,
+        }
+        with httpx.Client(timeout=5.0) as client:
+            response = client.post(
+                f"{api_gateway}{api_prefix}/notifications/internal",
+                json=payload,
+                headers={"X-Service-Secret": shared_secret},
+            )
+            response.raise_for_status()
+    except Exception as exc:
+        print(f"Warning: failed to notify reviewer {reviewer_id}: {exc}")
 
 # ----------------------------
 # JWT dependency
@@ -115,7 +142,11 @@ def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db), c
 # ASSIGN REVIEWER (вызывается Article Service)
 # ----------------------------
 @router.post("/assign", response_model=schemas.ReviewOut)
-def assign_reviewer(request: schemas.AssignReviewerRequest, db: Session = Depends(get_db)):
+def assign_reviewer(
+    request: schemas.AssignReviewerRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """
     Создание записи Review при назначении рецензента редактором.
     Этот эндпоинт вызывается из Article Management Service.
@@ -140,31 +171,12 @@ def assign_reviewer(request: schemas.AssignReviewerRequest, db: Session = Depend
     db.add(new_review)
     db.commit()
     db.refresh(new_review)
-    # Try to notify the reviewer via Notification Service (best effort)
-    try:
-        api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
-        api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
-        shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
-        article_title = _fetch_article_titles([request.article_id]).get(request.article_id)
-        article_label = f"«{article_title}»" if article_title else f"#{request.article_id}"
-        payload = {
-            "user_id": request.reviewer_id,
-            "type": "review_assignment",
-            "related_entity": f"review:{new_review.id}",
-            "title": "Вам назначена рецензия",
-            "message": f"Вам назначена рецензия по статье {article_label}.",
-            "article_id": request.article_id,
-        }
-        with httpx.Client(timeout=5.0) as client:
-            print(f"{api_gateway}{api_prefix}/notifications/internal")
-            client.post(
-                f"{api_gateway}{api_prefix}/notifications/internal",
-                json=payload,
-                headers={"X-Service-Secret": shared_secret},
-            )
-    except Exception:
-        # don't block assignment on notification failures
-        pass
+    background_tasks.add_task(
+        _notify_reviewer_assignment,
+        request.article_id,
+        request.reviewer_id,
+        new_review.id,
+    )
     return new_review
 
 # ----------------------------
