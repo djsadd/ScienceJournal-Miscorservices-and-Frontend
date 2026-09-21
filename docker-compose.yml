@@ -18,6 +18,23 @@ services:
     ports:
       - "5433:5432"
 
+  analytics-db-init:
+    image: postgres:16
+    restart: "no"
+    environment:
+      - PGHOST=db
+      - PGUSER=postgres
+      - PGPASSWORD=pass
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+      - ANALYTICS_DB_PASSWORD=${ANALYTICS_DB_PASSWORD:-pass}
+    volumes:
+      - ./docker/db/ensure-analytics-db.sh:/bootstrap/ensure-analytics-db.sh:ro
+    command: ["sh", "/bootstrap/ensure-analytics-db.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+
   auth:
     build: ./Auth - Identity Service
     environment:
@@ -140,13 +157,13 @@ services:
     build: ./Analytics - Metrics Service
     environment:
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
-      - DATABASE_URL=postgresql://analytics:pass@db/analytics
+      - DATABASE_URL=${ANALYTICS_DATABASE_URL:-postgresql://analytics:pass@db/analytics}
       - ANALYTICS_SALT=${ANALYTICS_SALT:-science-journal-analytics}
     ports:
       - "8009:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      analytics-db-init:
+        condition: service_completed_successfully
       auth:
         condition: service_started
 
