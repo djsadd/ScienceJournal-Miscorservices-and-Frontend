@@ -1202,6 +1202,16 @@ def update_article(
             status_code=403,
             detail="Only the responsible author can update this article"
         )
+
+    editable_statuses = {
+        models.ArticleStatus.sent_for_revision,
+        models.ArticleStatus.withdrawn,
+    }
+    if existing_article.status not in editable_statuses:
+        raise HTTPException(
+            status_code=409,
+            detail="Article can only be edited after it is withdrawn or sent for revision",
+        )
     
     # Обновляем только переданные поля
     update_data = article.dict(exclude_unset=True)
@@ -1242,6 +1252,7 @@ def update_article(
         db.execute(
             models.article_keywords.delete().where(models.article_keywords.c.article_id == article_id)
         )
+
         # Добавляем новые связи
         if keyword_ids:
             keywords = db.query(models.Keyword).filter(models.Keyword.id.in_(keyword_ids)).all()
@@ -1839,9 +1850,30 @@ def withdraw_article(
     article.status = models.ArticleStatus.withdrawn
     db.commit()
     db.refresh(article)
+
+    # Persist the event in the author's notification feed. The notification
+    # service also sends its email copy according to the user's preferences.
+    try:
+        notifications_url = getattr(config, "NOTIFICATION_SERVICE_URL", "http://notifications:8000")
+        with httpx.Client(timeout=5.0) as client:
+            client.post(
+                f"{notifications_url}/notifications/internal",
+                json={
+                    "user_id": int(article.responsible_user_id),
+                    "type": "article_status",
+                    "title": "Статья отозвана",
+                    "message": "Статья отозвана.",
+                    "related_entity": f"article:{article.id}",
+                    "article_id": int(article.id),
+                },
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            ).raise_for_status()
+    except Exception:
+        # Withdrawal must succeed even when the notification service is down.
+        pass
     
     return {
         "id": article.id,
         "status": article.status,
-        "message": "Article has been successfully withdrawn"
+        "message": "Статья отозвана."
     }

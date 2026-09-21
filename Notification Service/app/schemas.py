@@ -89,6 +89,10 @@ class EmailTemplateOut(EmailTemplateUpdate):
         orm_mode = True
 
 
+class EmailTemplateTestRequest(EmailTemplateUpdate):
+    recipient_email: str
+
+
 class NotificationUpdateStatus(BaseModel):
     status: NotificationStatus
 

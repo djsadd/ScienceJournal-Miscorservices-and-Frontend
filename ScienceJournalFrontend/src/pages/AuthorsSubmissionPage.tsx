@@ -107,9 +107,9 @@ const pageCopy: Record<LocaleKey, any> = {
       addRow: '+ Добавить еще ключевое слово',
     },
     files: {
-      manuscript: 'Загрузить рукопись статьи (Манускрипт)',
+      manuscript: 'Загрузить рукопись статьи (Manuscript)',
       antiplagiarism: 'Загрузить файл антиплагиата',
-      authorInfo: 'Файлы сведения об авторах (Title page)',
+      authorInfo: 'Сведения об авторах (Title Page)',
       coverLetter: 'Сопроводительное письмо (*.pdf)',
       manuscriptWarningTitle: 'Важно перед загрузкой',
       manuscriptWarningText: 'В файле рукописи не должна содержаться информация об авторах.',

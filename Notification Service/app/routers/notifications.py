@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 import logging
+import re
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
@@ -134,6 +135,14 @@ def _send_direct_email(user_id: int, subject: str, text: str, html: Optional[str
         send_email(recipient, subject, text, html)
     except Exception as exc:
         logger.warning("Internal email send failed for user_id=%s: %s", user_id, exc)
+
+
+def _send_email_to_address(recipient: str, subject: str, text: str, html: Optional[str]) -> None:
+    try:
+        send_email(recipient, subject, text, html)
+        logger.info("Test template email sent to %s", recipient)
+    except Exception as exc:
+        logger.warning("Test template email failed for %s: %s", recipient, exc)
 
 
 @router.post("/", response_model=schemas.NotificationOut)
@@ -350,6 +359,67 @@ def update_email_template(
     db.commit()
     db.refresh(template)
     return template
+
+
+@router.post("/admin/email-templates/{template_key}/test", response_model=schemas.MessageResponse)
+def test_email_template(
+    template_key: str,
+    payload: schemas.EmailTemplateTestRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+):
+    _ensure_admin(current_user)
+    recipient = payload.recipient_email.strip().lower()
+    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", recipient):
+        raise HTTPException(status_code=422, detail="Некорректный адрес электронной почты")
+
+    event_content = {
+        "notification_system": (
+            "Уведомление редакционной системы",
+            "В вашем личном кабинете появилось новое уведомление.",
+        ),
+        "notification_article_status": (
+            "Статус рукописи изменён",
+            "Статус рукописи «Искусственный интеллект в современной науке» был обновлён. Подробности доступны в личном кабинете.",
+        ),
+        "notification_review_assignment": (
+            "Назначена новая рецензия",
+            "Вам назначена рецензия рукописи «Искусственный интеллект в современной науке».",
+        ),
+        "notification_editorial": (
+            "Сообщение от редакции",
+            "Редакция оставила новое сообщение по вашей рукописи «Искусственный интеллект в современной науке».",
+        ),
+        "notification_custom": (
+            "Новое уведомление",
+            "В личном кабинете доступно новое сообщение редакции журнала.",
+        ),
+    }
+    title, message = event_content.get(
+        template_key,
+        ("Уведомление научного журнала", "В личном кабинете доступна новая информация по вашей рукописи."),
+    )
+    sample_values = {
+        "title": title,
+        "message": message,
+        "article_id": "123",
+        "display_name": "Алексей Иванов",
+        "verification_link": "https://journal.tau-edu.kz/auth/verify-email",
+        "reset_link": "https://journal.tau-edu.kz/auth/reset-password",
+        "expires_minutes": "30",
+        "article_label": "«Искусственный интеллект в современной науке»",
+        "reviewer_id": "42",
+        "reason": "Тема статьи выходит за рамки научной специализации рецензента.",
+    }
+    try:
+        subject = payload.subject_template.format_map(sample_values)
+        text = payload.text_template.format_map(sample_values)
+        html = (payload.html_template or "<p>{message}</p>").format_map(sample_values)
+    except (KeyError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=f"Ошибка в переменных шаблона: {exc}") from exc
+
+    background_tasks.add_task(_send_email_to_address, recipient, subject, text, html)
+    return {"message": f"Письмо поставлено в очередь для {recipient}"}
 
 
 @router.get("/", response_model=List[schemas.NotificationOut])

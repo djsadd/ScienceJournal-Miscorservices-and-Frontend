@@ -36,6 +36,7 @@ export function AuthorSubmissions() {
   const [apiArticles, setApiArticles] = useState<Article[]>([])
   const [revokeId, setRevokeId] = useState<number | null>(null)
   const [revokeMessage, setRevokeMessage] = useState<string | null>(null)
+  const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null)
   const [revokeLoading, setRevokeLoading] = useState(false)
 
   useEffect(() => {
@@ -113,10 +114,12 @@ export function AuthorSubmissions() {
                 <option value="all">Все</option>
                 <option value="in_review">На рецензии</option>
                 <option value="revisions">Правки</option>
+                <option value="sent_for_revision">Отправлено на доработку</option>
                 <option value="accepted">Принято</option>
                 <option value="submitted">Отправлено</option>
                 <option value="draft">Черновик</option>
                 <option value="rejected">Отклонено</option>
+                <option value="withdrawn">Отозвано</option>
               </select>
             </div>
 
@@ -171,12 +174,21 @@ export function AuthorSubmissions() {
                   </div>
                   <div className="table__cell">
                     <div className="pill-list">
-                      <Link
-                        className="button button--ghost button--compact"
-                        to={`/cabinet/my-articles/${article.id}`}
-                      >
-                        {getActionLabel(article.status)}
-                      </Link>
+                      {(['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'] as string[]).includes(article.status) ? (
+                        <Link
+                          className="button button--primary button--compact"
+                          to={`/cabinet/my-articles/${article.id}/edit`}
+                        >
+                          Редактировать
+                        </Link>
+                      ) : (
+                        <Link
+                          className="button button--ghost button--compact"
+                          to={`/cabinet/my-articles/${article.id}`}
+                        >
+                          {getActionLabel(article.status)}
+                        </Link>
+                      )}
                       {article.status === 'submitted' && (
                         <button
                           type="button"
@@ -185,14 +197,6 @@ export function AuthorSubmissions() {
                         >
                           Отозвать
                         </button>
-                      )}
-                      {(['withdrawn','revisions'].includes(article.status) || (article.status as any) === 'send_for_revision' || (article.status as any) === 'sent_for_revision') && (
-                        <Link
-                          className="button button--primary button--compact"
-                          to={`/cabinet/my-articles/${article.id}`}
-                        >
-                          Редактировать и отправить
-                        </Link>
                       )}
                     </div>
                   </div>
@@ -238,7 +242,7 @@ export function AuthorSubmissions() {
                     setRevokeLoading(true)
                     setRevokeMessage(null)
                     const res = await api.post<WithdrawResponse>(`/articles/${revokeId}/withdraw`)
-                    setRevokeMessage(res.message || 'Статья была успешно отозвана.')
+                    setWithdrawSuccess('Статья отозвана.')
                     // обновим статус в локальном списке apiArticles
                     setApiArticles((prev) =>
                       prev.map((a) =>
@@ -247,9 +251,7 @@ export function AuthorSubmissions() {
                           : a,
                       ),
                     )
-                    setTimeout(() => {
-                      setRevokeId(null)
-                    }, 1500)
+                    setRevokeId(null)
                   } catch (e) {
                     console.error('Ошибка при отзыве статьи', e)
                     setRevokeMessage('Не удалось отозвать статью. Попробуйте позже.')
@@ -259,6 +261,24 @@ export function AuthorSubmissions() {
                 }}
               >
                 {revokeLoading ? 'Отзываем…' : 'Отозвать статью'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {withdrawSuccess && (
+        <div className="modal-backdrop" onClick={() => setWithdrawSuccess(null)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="withdraw-success-title" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <p className="eyebrow">Уведомление</p>
+              <h3 className="panel-title" id="withdraw-success-title">Статья отозвана</h3>
+            </div>
+            <div className="modal__body">
+              <div className="alert alert--info">{withdrawSuccess}</div>
+            </div>
+            <div className="modal__footer">
+              <button type="button" className="button button--primary" onClick={() => setWithdrawSuccess(null)}>
+                Закрыть
               </button>
             </div>
           </div>

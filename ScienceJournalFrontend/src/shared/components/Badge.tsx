@@ -21,6 +21,8 @@ const statusMap: Record<
   sent_for_revision: { label: 'Отправлено на доработку', tone: 'warn' },
   accepted: { label: 'Принято', tone: 'success' },
   rejected: { label: 'Отклонено', tone: 'danger' },
+  published: { label: 'Опубликовано', tone: 'success' },
+  withdrawn: { label: 'Отозвано', tone: 'muted' },
   resubmission: { label: 'Повторная рецензия', tone: 'warn' },
 }
 

@@ -2352,6 +2352,32 @@
   outline-offset: 2px;
 }
 
+.author-detail-button {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.author-detail-button:hover {
+  border-color: #d4a8b8;
+  background: #fcf8fa;
+  box-shadow: 0 6px 16px rgba(122, 18, 55, 0.07);
+}
+
+.author-detail-button:focus-visible {
+  outline: 2px solid #7a1237;
+  outline-offset: 2px;
+}
+
+.author-file-download {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.2rem;
+  text-decoration: none;
+}
+
 .status-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -6658,6 +6684,31 @@
 /* Author manuscript edit: match the submission form template */
 .manuscript-edit-page {
   width: min(1100px, 100%);
+}
+
+.manuscript-edit-page.submission-page {
+  overflow: hidden;
+  padding: clamp(1.4rem, 3vw, 2.6rem);
+  border: 0;
+  background: #fff;
+}
+
+.manuscript-edit-page.submission-page .public-section,
+.app-shell .manuscript-edit-page.submission-page .public-section {
+  margin: 0;
+  padding: 2rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--submission-line);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.manuscript-edit-page.submission-page .manuscript-edit-hero {
+  padding-top: 0;
+}
+
+.manuscript-edit-page.submission-page .manuscript-edit-submit {
+  border-bottom: 0;
 }
 
 .manuscript-edit-page .public-section,

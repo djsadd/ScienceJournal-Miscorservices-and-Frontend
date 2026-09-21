@@ -8,6 +8,8 @@ export default function AdminEmailTemplatesPage() {
   const [selected, setSelected] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [testEmail, setTestEmail] = useState('')
+  const [testSending, setTestSending] = useState(false)
   const [message, setMessage] = useState('')
   const current = items.find(item => item.key === selected)
 
@@ -27,6 +29,17 @@ export default function AdminEmailTemplatesPage() {
     finally { setSaving(false) }
   }
 
+  const sendTest = async () => {
+    if (!current || !testEmail.trim()) return
+    setTestSending(true); setMessage('')
+    try {
+      const result = await api.testEmailTemplate<{ message: string }>(current.key, { ...current, recipient_email: testEmail.trim() })
+      setMessage(result.message)
+    } catch (error: any) {
+      setMessage(String(error?.bodyJson?.detail || error?.message || 'Не удалось отправить письмо'))
+    } finally { setTestSending(false) }
+  }
+
   return <div className="page">
     <section className="section-header"><div><p className="eyebrow">Администратор</p><h1 className="page-title">Шаблоны писем</h1><p className="subtitle">Настройка email для различных событий системы.</p></div></section>
     <section className="grid grid-2">
@@ -39,6 +52,11 @@ export default function AdminEmailTemplatesPage() {
         <label className="choice-chip"><input type="checkbox" checked={current.is_active} onChange={e => update('is_active', e.target.checked)} /><span className="choice-chip__label">Использовать шаблон</span></label>
         <div className="form-hint">Базовые переменные: {'{title}'}, {'{message}'}, {'{article_id}'}. Для специальных писем также доступны переменные из их текущего текста: {'{display_name}'}, {'{verification_link}'}, {'{reset_link}'}, {'{expires_minutes}'}, {'{article_label}'}, {'{reviewer_id}'}, {'{reason}'}.</div>
         {message && <div className="alert alert--info">{message}</div>}
+        <div className="panel panel--compact">
+          <label className="form-field"><span className="form-label">Адрес получателя</span><input className="text-input" type="email" placeholder="name@example.com" value={testEmail} onChange={e => setTestEmail(e.target.value)} /></label>
+          <button className="button button--ghost" type="button" disabled={testSending || !testEmail.trim() || !current.subject_template.trim() || !current.text_template.trim()} onClick={sendTest}>{testSending ? 'Отправляем...' : 'Отправить письмо'}</button>
+          <span className="form-hint">Будут использованы текущие значения формы, даже если шаблон ещё не сохранён.</span>
+        </div>
         <button className="button button--primary" disabled={saving || !current.subject_template.trim() || !current.text_template.trim()} onClick={save}>{saving ? 'Сохраняем...' : 'Сохранить шаблон'}</button>
       </div> : <div className="table__empty">Выберите шаблон.</div>}</div>
     </section>

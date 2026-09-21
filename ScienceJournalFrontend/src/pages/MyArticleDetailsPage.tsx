@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { getArticleLanguageLabel, getArticleLanguageOptions } from '../shared/articleLanguages'
 import { getCountryLabel, type CountryValue } from '../shared/countries'
 import { toApiFilesUrl } from '../shared/url'
+import { formatArticleStatus, formatArticleType } from '../shared/labels'
 
 interface ApiKeyword {
   id: number
@@ -115,7 +116,7 @@ interface ArticleUpdatePayload {
 }
 
 const RequiredMark = () => <span className="required-star" aria-hidden="true">{'\u2060'}*</span>
-const editableArticleStatuses = ['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision', 'draft']
+const editableArticleStatuses = ['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision']
 const articleTypeOptions: ArticleType[] = ['original', 'review']
 const articleLanguageOptions = getArticleLanguageOptions('ru').map((option) => ({
   value: option.code,
@@ -207,7 +208,13 @@ const updateErrorText = {
   consent: 'Подтвердите согласие всех авторов',
 }
 
-export function MyArticleDetailsPage() {
+const viewCopy = {
+  ru: { myArticle: 'Моя статья', withdraw: 'Отозвать статью', heading: 'Заголовок', main: 'Основная информация', status: 'Статус', type: 'Тип статьи', created: 'Дата создания', language: 'Язык статьи', abstract: 'Аннотация', keywords: 'Ключевые слова', authors: 'Авторы', files: 'Файлы', checks: 'Согласия и проверки', unpublished: 'Не публиковалась ранее', plagiarism: 'Без плагиата', consent: 'Все авторы согласны', ai: 'Использование генеративного ИИ', notSet: 'Не указано', yes: 'Да', no: 'Нет', close: 'Закрыть', keyword: 'Ключевое слово', author: 'Информация об авторе', corresponding: 'Ответственный автор' },
+  en: { myArticle: 'My article', withdraw: 'Withdraw article', heading: 'Title', main: 'General information', status: 'Status', type: 'Article type', created: 'Created', language: 'Article language', abstract: 'Abstract', keywords: 'Keywords', authors: 'Authors', files: 'Files', checks: 'Declarations and checks', unpublished: 'Not published elsewhere', plagiarism: 'Plagiarism free', consent: 'All authors agree', ai: 'Generative AI usage', notSet: 'Not specified', yes: 'Yes', no: 'No', close: 'Close', keyword: 'Keyword', author: 'Author information', corresponding: 'Corresponding author' },
+  kz: { myArticle: 'Менің мақалам', withdraw: 'Мақаланы қайтарып алу', heading: 'Тақырып', main: 'Негізгі ақпарат', status: 'Мәртебе', type: 'Мақала түрі', created: 'Құрылған күні', language: 'Мақала тілі', abstract: 'Аңдатпа', keywords: 'Түйін сөздер', authors: 'Авторлар', files: 'Файлдар', checks: 'Келісімдер мен тексерулер', unpublished: 'Бұрын жарияланбаған', plagiarism: 'Плагиатсыз', consent: 'Барлық авторлар келіседі', ai: 'Генеративті ЖИ қолдану', notSet: 'Көрсетілмеген', yes: 'Иә', no: 'Жоқ', close: 'Жабу', keyword: 'Түйін сөз', author: 'Автор туралы ақпарат', corresponding: 'Жауапты автор' },
+} as const
+
+export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean }) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [article, setArticle] = useState<ApiArticle | null>(null)
@@ -232,17 +239,21 @@ export function MyArticleDetailsPage() {
   const [countries, setCountries] = useState<CountryOption[]>([])
   const [authorModalError, setAuthorModalError] = useState<string | null>(null)
   const [authorSaving, setAuthorSaving] = useState(false)
+  const [viewKeyword, setViewKeyword] = useState<ApiKeyword | null>(null)
+  const [viewAuthor, setViewAuthor] = useState<ApiAuthor | null>(null)
   // file replacement state
   const [fileManuscript, setFileManuscript] = useState<File | null>(null)
   const [fileAntiplagiarism, setFileAntiplagiarism] = useState<File | null>(null)
   const [fileAuthorInfo, setFileAuthorInfo] = useState<File | null>(null)
   const [fileCoverLetter, setFileCoverLetter] = useState<File | null>(null)
-  const [lang] = useState<'ru' | 'en' | 'kz'>(() => {
+  const [lang, setLang] = useState<'ru' | 'en' | 'kz'>(() => {
     const params = new URLSearchParams(window.location.search)
     const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
     return fromQuery && ['ru', 'en', 'kz'].includes(fromQuery) ? fromQuery : 'ru'
   })
-  const canEdit = Boolean(article && editableArticleStatuses.includes(article.status))
+  const canEdit = Boolean(editMode && article && editableArticleStatuses.includes(article.status))
+  const canWithdraw = Boolean(article && !['published', 'withdrawn', 'draft'].includes(article.status))
+  const t = viewCopy[lang]
 
   useEffect(() => {
     if (!id) return
@@ -321,7 +332,7 @@ export function MyArticleDetailsPage() {
     try {
       setRevokeLoading(true)
       setRevokeMessage(null)
-      const res = await api.post<WithdrawResponse>(`/articles/${article.id}/withdrawn`)
+      const res = await api.post<WithdrawResponse>(`/articles/${article.id}/withdraw`)
       setArticle({ ...article, status: res.status })
       setRevokeMessage(res.message || 'Статья была успешно отозвана.')
       setTimeout(() => {
@@ -333,6 +344,21 @@ export function MyArticleDetailsPage() {
     } finally {
       setRevokeLoading(false)
     }
+  }
+
+  if (editMode && !editableArticleStatuses.includes(article.status)) {
+    return (
+      <div className="public-container submission-page">
+        <div className="section public-section submission-sheet">
+          <p className="submission-sheet__eyebrow">Редактирование статьи</p>
+          <h1 className="hero__title">Редактирование сейчас недоступно</h1>
+          <p className="subtitle">Автор может изменить рукопись, только если она отозвана или отправлена редакцией на доработку.</p>
+          <button className="button button--ghost" type="button" onClick={() => navigate(`/cabinet/my-articles/${article.id}`)}>
+            Вернуться к статье
+          </button>
+        </div>
+      </div>
+    )
   }
 
   const hasStoredFile = (kind: ApiMyFile['kind'], fileUrl: string | null) =>
@@ -569,23 +595,30 @@ export function MyArticleDetailsPage() {
   }
 
   return (
-    <div className="public-container manuscript-edit-page">
+    <div className={`public-container manuscript-edit-page ${editMode ? 'submission-page' : ''}`}>
       <section className="section public-section manuscript-edit-hero">
         <div>
-          <p className="eyebrow">Моя статья</p>
+          <p className="eyebrow">{editMode ? 'Редактирование статьи' : t.myArticle}</p>
           <h1 className="hero__title">
             {lang === 'ru' ? article.title_ru : lang === 'en' ? article.title_en : article.title_kz}
           </h1>
         </div>
         <div className="manuscript-edit-hero__actions">
-          {article.status === 'submitted' && (
+          <div className="lang-switch editor-form-lang-switch" aria-label="Язык формы статьи">
+            {(['ru', 'en', 'kz'] as const).map((language) => (
+              <button key={language} type="button" className={`lang-chip ${lang === language ? 'lang-chip--active' : ''}`} onClick={() => setLang(language)}>
+                {language.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          {canWithdraw && (
             <button
               type="button"
               className="button button--danger"
               style={{ fontWeight: 600 }}
               onClick={() => setShowRevokeConfirm(true)}
             >
-              Отозвать статью
+              {t.withdraw}
             </button>
           )}
         </div>
@@ -598,7 +631,7 @@ export function MyArticleDetailsPage() {
       ) : null}
 
       <div className="section public-section manuscript-edit-section">
-        <p className="eyebrow">Заголовок</p>
+        <p className="eyebrow">{t.heading}</p>
         {canEdit ? (
           <>
             <div className="form-field">
@@ -648,10 +681,10 @@ export function MyArticleDetailsPage() {
       </div>
 
       <div className="section public-section manuscript-edit-section">
-        <p className="eyebrow">Основная информация</p>
+        <p className="eyebrow">{t.main}</p>
         <div className="grid grid-2">
           <div className="form-field">
-            <div className="form-label">Статус</div>
+            <div className="form-label">{t.status}</div>
             <div
               className={
                 ['withdrawn', 'revisions', 'send_for_revision', 'sent_for_revision'].includes(article.status)
@@ -659,13 +692,11 @@ export function MyArticleDetailsPage() {
                   : 'form-hint'
               }
             >
-              {article.status === 'withdrawn' ? 'Отозвано' :
-               article.status === 'revisions' ? 'Правки' :
-               (article.status === 'send_for_revision' || article.status === 'sent_for_revision') ? 'Отправлено на доработку' : article.status}
+              {formatArticleStatus(article.status, lang)}
             </div>
           </div>
           <div className="form-field">
-            <div className="form-label">Тип статьи{canEdit ? <RequiredMark /> : null}</div>
+            <div className="form-label">{t.type}{canEdit ? <RequiredMark /> : null}</div>
             {canEdit ? (
               <>
                 <select
@@ -685,16 +716,16 @@ export function MyArticleDetailsPage() {
               </>
             ) : (
               <div className="form-hint">
-                {article.article_type === 'original' ? 'Оригинальная статья' : article.article_type}
+                {formatArticleType(article.article_type, lang)}
               </div>
             )}
           </div>
           <div className="form-field">
-            <div className="form-label">Дата создания</div>
-            <div className="form-hint">{new Date(article.created_at).toLocaleDateString('ru-RU')}</div>
+            <div className="form-label">{t.created}</div>
+            <div className="form-hint">{new Date(article.created_at).toLocaleDateString(lang === 'kz' ? 'kk-KZ' : lang)}</div>
           </div>
           <div className="form-field">
-            <div className="form-label">Язык статьи{canEdit ? <RequiredMark /> : null}</div>
+            <div className="form-label">{t.language}{canEdit ? <RequiredMark /> : null}</div>
             {canEdit ? (
               <>
                 <select
@@ -714,7 +745,7 @@ export function MyArticleDetailsPage() {
               </>
             ) : (
               <div className="form-hint">
-                {getArticleLanguageLabel(article.article_language, 'ru') || 'Не указан'}
+                {getArticleLanguageLabel(article.article_language, lang) || t.notSet}
               </div>
             )}
           </div>
@@ -736,7 +767,7 @@ export function MyArticleDetailsPage() {
       </div>
 
       <div className="section public-section manuscript-edit-section">
-        <p className="eyebrow">Аннотация</p>
+        <p className="eyebrow">{t.abstract}</p>
         {canEdit ? (
           <>
             <div className="form-field">
@@ -791,7 +822,7 @@ export function MyArticleDetailsPage() {
       </div>
 
       <div className="section public-section manuscript-edit-section">
-        <p className="eyebrow" data-error-key="keywords">Ключевые слова{canEdit ? <RequiredMark /> : null}</p>
+        <p className="eyebrow" data-error-key="keywords">{t.keywords}{canEdit ? <RequiredMark /> : null}</p>
         {canEdit ? (
           <>
             {selectedKeywords.length > 0 ? (
@@ -829,15 +860,15 @@ export function MyArticleDetailsPage() {
         ) : (
           <>
             {article.keywords.length === 0 ? (
-              <div className="table__empty">Ключевые слова не указаны.</div>
+              <div className="table__empty">{t.notSet}</div>
             ) : (
               <div className="pill-list">
                 {article.keywords.map((kw) => (
-                  <span key={kw.id} className="pill pill--ghost">
+                  <button key={kw.id} type="button" className="pill pill--ghost keyword-pill-button" onClick={() => setViewKeyword(kw)}>
                     {lang === 'ru' && kw.title_ru}
                     {lang === 'en' && kw.title_en}
                     {lang === 'kz' && kw.title_kz}
-                  </span>
+                  </button>
                 ))}
               </div>
             )}
@@ -846,7 +877,7 @@ export function MyArticleDetailsPage() {
       </div>
 
       <div className="section public-section manuscript-edit-section">
-        <p className="eyebrow">Согласия и проверки</p>
+        <p className="eyebrow">{t.checks}</p>
         <div className="grid grid-3">
           <div className="form-field">
             {canEdit ? (
@@ -864,8 +895,8 @@ export function MyArticleDetailsPage() {
               </>
             ) : (
               <>
-                <div className="form-label">Не публиковалась ранее</div>
-                <div className="form-hint">{article.not_published_elsewhere ? 'Да' : 'Нет'}</div>
+                <div className="form-label">{t.unpublished}</div>
+                <div className="form-hint">{article.not_published_elsewhere ? t.yes : t.no}</div>
               </>
             )}
           </div>
@@ -885,8 +916,8 @@ export function MyArticleDetailsPage() {
               </>
             ) : (
               <>
-                <div className="form-label">Без плагиата</div>
-                <div className="form-hint">{article.plagiarism_free ? 'Да' : 'Нет'}</div>
+                <div className="form-label">{t.plagiarism}</div>
+                <div className="form-hint">{article.plagiarism_free ? t.yes : t.no}</div>
               </>
             )}
           </div>
@@ -906,13 +937,13 @@ export function MyArticleDetailsPage() {
               </>
             ) : (
               <>
-                <div className="form-label">Все авторы согласны</div>
-                <div className="form-hint">{article.authors_agree ? 'Да' : 'Нет'}</div>
+                <div className="form-label">{t.consent}</div>
+                <div className="form-hint">{article.authors_agree ? t.yes : t.no}</div>
               </>
             )}
           </div>
           <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-            <div className="form-label">Использование генеративного ИИ</div>
+            <div className="form-label">{t.ai}</div>
             {canEdit ? (
               <textarea
                 className="text-input"
@@ -922,14 +953,14 @@ export function MyArticleDetailsPage() {
                 placeholder="Опишите, где и как использовался генеративный ИИ, если он применялся."
               />
             ) : (
-              <div className="form-hint">{article.generative_ai_info || 'Не указано'}</div>
+              <div className="form-hint">{article.generative_ai_info || t.notSet}</div>
             )}
           </div>
         </div>
       </div>
 
       <div className="section public-section manuscript-edit-section">
-        <p className="eyebrow" data-error-key="authorList">Авторы{canEdit ? <RequiredMark /> : null}</p>
+        <p className="eyebrow" data-error-key="authorList">{t.authors}{canEdit ? <RequiredMark /> : null}</p>
         {!canEdit ? (
           <>
             {article.authors.length === 0 ? (
@@ -937,7 +968,7 @@ export function MyArticleDetailsPage() {
             ) : (
               <div className="assignment-list">
                 {article.authors.map((a) => (
-                  <div className="assignment-row" key={a.id}>
+                  <button className="assignment-row author-detail-button" type="button" key={a.id} onClick={() => setViewAuthor(a)}>
                     <div>
                       <div className="assignment-title">
                         {a.last_name} {a.first_name} {a.patronymic ?? ''}
@@ -954,8 +985,8 @@ export function MyArticleDetailsPage() {
                         ) : null}
                       </div>
                     </div>
-                    {a.is_corresponding ? <span className="pill">Ответственный автор</span> : null}
-                  </div>
+                    {a.is_corresponding ? <span className="pill">{t.corresponding}</span> : null}
+                  </button>
                 ))}
               </div>
             )}
@@ -1007,7 +1038,7 @@ export function MyArticleDetailsPage() {
       </div>
 
       <div className="section public-section manuscript-edit-section">
-        <p className="eyebrow">Файлы</p>
+        <p className="eyebrow">{t.files}</p>
         <div className="grid grid-3">
           <div className="form-field">
             <div className="form-label" data-error-key="manuscript">Рукопись{canEdit ? <RequiredMark /> : null}</div>
@@ -1017,7 +1048,7 @@ export function MyArticleDetailsPage() {
                 const url = toApiFilesUrl(f.download_url)
                 return (
                   <div className="form-hint">
-                    <a className="link" href={url} target="_blank" rel="noreferrer">
+                    <a className="button button--ghost button--compact author-file-download" href={url} target="_blank" rel="noreferrer">
                       {f.filename || 'Скачать рукопись'}
                     </a>
                   </div>
@@ -1025,7 +1056,7 @@ export function MyArticleDetailsPage() {
               })()
             ) : article.manuscript_file_url ? (
               <a
-                className="link"
+                className="button button--ghost button--compact author-file-download"
                 href={toApiFilesUrl(article.manuscript_file_url)}
                 target="_blank"
                 rel="noreferrer"
@@ -1055,7 +1086,7 @@ export function MyArticleDetailsPage() {
                 const url = toApiFilesUrl(f.download_url)
                 return (
                   <div className="form-hint">
-                    <a className="link" href={url} target="_blank" rel="noreferrer">
+                    <a className="button button--ghost button--compact author-file-download" href={url} target="_blank" rel="noreferrer">
                       {f.filename || 'Скачать файл'}
                     </a>
                   </div>
@@ -1063,7 +1094,7 @@ export function MyArticleDetailsPage() {
               })()
             ) : article.antiplagiarism_file_url ? (
               <a
-                className="link"
+                className="button button--ghost button--compact author-file-download"
                 href={toApiFilesUrl(article.antiplagiarism_file_url)}
                 target="_blank"
                 rel="noreferrer"
@@ -1088,7 +1119,7 @@ export function MyArticleDetailsPage() {
                 const url = toApiFilesUrl(f.download_url)
                 return (
                   <div className="form-hint">
-                    <a className="link" href={url} target="_blank" rel="noreferrer">
+                    <a className="button button--ghost button--compact author-file-download" href={url} target="_blank" rel="noreferrer">
                       {f.filename || 'Скачать файл'}
                     </a>
                   </div>
@@ -1096,7 +1127,7 @@ export function MyArticleDetailsPage() {
               })()
             ) : article.author_info_file_url ? (
               <a
-                className="link"
+                className="button button--ghost button--compact author-file-download"
                 href={toApiFilesUrl(article.author_info_file_url)}
                 target="_blank"
                 rel="noreferrer"
@@ -1126,7 +1157,7 @@ export function MyArticleDetailsPage() {
                 const url = toApiFilesUrl(f.download_url)
                 return (
                   <div className="form-hint">
-                    <a className="link" href={url} target="_blank" rel="noreferrer">
+                    <a className="button button--ghost button--compact author-file-download" href={url} target="_blank" rel="noreferrer">
                       {f.filename || 'Скачать файл'}
                     </a>
                   </div>
@@ -1134,7 +1165,7 @@ export function MyArticleDetailsPage() {
               })()
             ) : article.cover_letter_file_url ? (
               <a
-                className="link"
+                className="button button--ghost button--compact author-file-download"
                 href={toApiFilesUrl(article.cover_letter_file_url)}
                 target="_blank"
                 rel="noreferrer"
@@ -1209,6 +1240,43 @@ export function MyArticleDetailsPage() {
           </div>
         </div>
       )}
+
+      {viewKeyword ? (
+        <div className="modal-backdrop" onClick={() => setViewKeyword(null)}>
+          <div className="modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="modal__header"><h3>{t.keyword}</h3><button className="modal__close" onClick={() => setViewKeyword(null)} aria-label={t.close}>×</button></div>
+            <div className="modal__body details-grid">
+              <div><strong>Русский:</strong> {viewKeyword.title_ru || '—'}</div>
+              <div><strong>Қазақша:</strong> {viewKeyword.title_kz || '—'}</div>
+              <div><strong>English:</strong> {viewKeyword.title_en || '—'}</div>
+            </div>
+            <div className="modal__footer"><button className="button button--primary" onClick={() => setViewKeyword(null)}>{t.close}</button></div>
+          </div>
+        </div>
+      ) : null}
+
+      {viewAuthor ? (
+        <div className="modal-backdrop" onClick={() => setViewAuthor(null)}>
+          <div className="modal modal--wide" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="modal__header"><h3>{t.author}</h3><button className="modal__close" onClick={() => setViewAuthor(null)} aria-label={t.close}>×</button></div>
+            <div className="modal__body details-grid">
+              <div><strong>ФИО:</strong> {[viewAuthor.prefix, viewAuthor.last_name, viewAuthor.first_name, viewAuthor.patronymic].filter(Boolean).join(' ')}</div>
+              <div><strong>Email:</strong> {viewAuthor.email || '—'}</div>
+              <div><strong>Телефон:</strong> {viewAuthor.phone || '—'}</div>
+              <div><strong>Страна:</strong> {getCountryLabel(viewAuthor.country) || '—'}</div>
+              <div><strong>Адрес:</strong> {viewAuthor.address || '—'}</div>
+              <div><strong>Статус:</strong> {viewAuthor.is_corresponding ? t.corresponding : '—'}</div>
+              <div><strong>Аффилиация 1:</strong> {viewAuthor.affiliation1 || '—'}</div>
+              <div><strong>Аффилиация 2:</strong> {viewAuthor.affiliation2 || '—'}</div>
+              <div><strong>Аффилиация 3:</strong> {viewAuthor.affiliation3 || '—'}</div>
+              <div><strong>ORCID:</strong> {viewAuthor.orcid || '—'}</div>
+              <div><strong>Scopus Author ID:</strong> {viewAuthor.scopus_author_id || '—'}</div>
+              <div><strong>Researcher ID:</strong> {viewAuthor.researcher_id || '—'}</div>
+            </div>
+            <div className="modal__footer"><button className="button button--primary" onClick={() => setViewAuthor(null)}>{t.close}</button></div>
+          </div>
+        </div>
+      ) : null}
 
       {kwModalOpen ? (
         <div className="modal-backdrop" onClick={() => setKwModalOpen(false)}>

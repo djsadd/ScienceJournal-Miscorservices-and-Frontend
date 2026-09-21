@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import Alert from '../shared/components/Alert'
 import { api } from '../api/client'
 
@@ -10,7 +9,6 @@ type Notification = {
   type: UiVariant
   title: string
   message?: string
-  targetPath?: string
   createdAt: string
   read: boolean
 }
@@ -49,22 +47,11 @@ const mapTypeToVariant = (t: NotificationDto['type']): UiVariant => {
   }
 }
 
-const getNotificationTargetPath = (relatedEntity?: string | null): string | undefined => {
-  if (!relatedEntity) return undefined
-  const [type, rawId] = relatedEntity.split(':')
-  const id = Number(rawId)
-  if (!Number.isInteger(id) || id <= 0) return undefined
-  if (type === 'review') return `/cabinet/reviews/${id}`
-  if (type === 'article') return `/cabinet/my-articles/${id}`
-  return undefined
-}
-
 const toUi = (n: NotificationDto): Notification => ({
   id: String(n.id),
   type: mapTypeToVariant(n.type),
   title: n.title,
   message: stripLinks(n.message),
-  targetPath: getNotificationTargetPath(n.related_entity),
   createdAt: n.created_at,
   read: n.status === 'read',
 })
@@ -198,21 +185,6 @@ export default function NotificationsPage() {
                     {new Date(n.createdAt).toLocaleString()}
                   </time>
                   <span style={{ flex: 1 }} />
-                  {n.targetPath ? (
-                    <Link
-                      className="button button--primary"
-                      to={n.targetPath}
-                      onClick={() => {
-                        if (!n.read) {
-                          api.markNotificationRead(n.id).finally(() => {
-                            notifyNotificationsUpdated()
-                          })
-                        }
-                      }}
-                    >
-                      Перейти к рецензии
-                    </Link>
-                  ) : null}
                   {!n.read ? (
                     <button className="button button--ghost" onClick={() => markOne(n.id)}>
                       Пометить как прочитано

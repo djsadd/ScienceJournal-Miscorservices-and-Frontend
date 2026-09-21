@@ -374,6 +374,7 @@ export const api = {
   updateNotificationPreferences: <T>(items: unknown[]) => request<T>('/notifications/preferences', 'PUT', { json: { items } }),
   getEmailTemplates: <T>() => request<T>('/notifications/admin/email-templates', 'GET'),
   updateEmailTemplate: <T>(type: string, body: unknown) => request<T>(`/notifications/admin/email-templates/${type}`, 'PUT', { json: body }),
+  testEmailTemplate: <T>(key: string, body: unknown) => request<T>(`/notifications/admin/email-templates/${key}/test`, 'POST', { json: body }),
   getMyReviews: <T>(params?: { page?: number; page_size?: number }) => request<T>('/reviews/my-reviews', 'GET', { params }),
   getReviewDetail: <T>(reviewId: number | string) => request<T>(`/reviews/${reviewId}/detail`, 'GET'),
   updateReview: <T>(reviewId: number | string, body: unknown) => request<T>(`/reviews/${reviewId}`, 'PATCH', { json: body }),

@@ -180,6 +180,16 @@ function App() {
         }
       />
       <Route
+        path="/cabinet/my-articles/:id/edit"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <MyArticleDetailsPage editMode />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/cabinet/editorial2/:id/edit"
         element={
           <RequireAuth>
