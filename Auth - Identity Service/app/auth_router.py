@@ -130,6 +130,22 @@ def get_profiles_map() -> dict[int, dict]:
         return {}
 
 
+def update_profile_contact(user_id: int, full_name: str, phone: str | None, organization: str | None) -> None:
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            response = client.patch(
+                f"{config.USER_SERVICE_URL}/users/internal/{user_id}/contact",
+                json={"full_name": full_name, "phone": phone, "organization": organization},
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+        if response.status_code not in {200, 404}:
+            raise HTTPException(status_code=502, detail="Could not update user profile")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Could not update user profile") from exc
+
+
 def get_effective_roles(user_id: int, primary_role: str) -> list[str]:
     roles: list[str] = [primary_role]
     try:
@@ -841,6 +857,56 @@ def get_admin_user_detail(
         "is_council_member": profile.get("is_council_member"),
         "is_collegium_member": profile.get("is_collegium_member"),
     }
+
+
+@router.patch("/admin/users/{user_id}", response_model=schemas.AdminUserDetail)
+def update_admin_user(
+    user_id: int,
+    payload: schemas.AdminUserUpdate,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(models.User).filter(models.User.id == user_id, models.User.is_hidden == False).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    username = payload.username.strip()
+    email = str(payload.email).strip().lower()
+    if not username:
+        raise HTTPException(status_code=400, detail={"fields": {"username": "Username is required"}})
+
+    username_owner = db.query(models.User).filter(models.User.id != user_id, func.lower(models.User.username) == username.lower()).first()
+    email_owner = db.query(models.User).filter(models.User.id != user_id, func.lower(models.User.email) == email).first()
+    field_errors: dict[str, str] = {}
+    if username_owner:
+        field_errors["username"] = "A user with this username already exists"
+    if email_owner:
+        field_errors["email"] = "A user with this email already exists"
+    if field_errors:
+        raise HTTPException(status_code=400, detail={"message": "User data is not unique", "fields": field_errors})
+
+    first_name = (payload.first_name or "").strip() or None
+    last_name = (payload.last_name or "").strip() or None
+    organization = (payload.organization or "").strip() or None
+    institution = (payload.institution or "").strip() or None
+    phone = (payload.phone or "").strip() or None
+    full_name = " ".join(part for part in [first_name, last_name] if part) or username
+
+    update_profile_contact(user_id, full_name, phone, organization)
+    user.username = username
+    user.email = email
+    user.first_name = first_name
+    user.last_name = last_name
+    user.full_name = full_name
+    user.organization = organization
+    user.institution = institution
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Username or email already exists")
+
+    return get_admin_user_detail(user_id, admin, db)
 
 
 @router.patch("/admin/users/{user_id}/activate", response_model=schemas.UserOut)

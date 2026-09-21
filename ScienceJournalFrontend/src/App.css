@@ -6053,6 +6053,12 @@
   gap: 0.75rem;
 }
 
+.admin-user-modal__edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .admin-user-modal__section-title {
   font-weight: 700;
   color: #243046;
@@ -6112,6 +6118,10 @@
   }
 
   .admin-user-modal__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-user-modal__edit-grid {
     grid-template-columns: 1fr;
   }
 }

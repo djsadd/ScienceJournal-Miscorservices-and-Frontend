@@ -120,6 +120,16 @@ class AdminUserDetail(AdminUserListItem):
     pass
 
 
+class AdminUserUpdate(BaseModel):
+    username: str = Field(min_length=3, max_length=100)
+    email: EmailStr
+    first_name: str | None = Field(default=None, max_length=150)
+    last_name: str | None = Field(default=None, max_length=150)
+    organization: str | None = Field(default=None, max_length=255)
+    institution: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=50)
+
+
 class AdminUserStats(BaseModel):
     total: int
     active: int

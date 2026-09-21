@@ -316,6 +316,15 @@ export const api = {
   getReviewers: <T>(language?: 'ru' | 'kz') => request<T>('/users/reviewers', 'GET', { params: { language } }),
   getAdminUsers: <T>() => request<T>('/auth/admin/users', 'GET'),
   getAdminUserDetail: <T>(userId: number | string) => request<T>(`/auth/admin/users/${userId}`, 'GET'),
+  updateAdminUser: <T>(userId: number | string, body: {
+    username: string
+    email: string
+    first_name?: string | null
+    last_name?: string | null
+    organization?: string | null
+    institution?: string | null
+    phone?: string | null
+  }) => request<T>(`/auth/admin/users/${userId}`, 'PATCH', { json: body }),
   updateMyContactProfile: <T>(body: { full_name?: string | null; phone?: string | null; organization?: string | null }) =>
     request<T>('/users/me/contact', 'PATCH', { json: body }),
   updateMyLanguage: <T>(preferredLanguage: 'ru' | 'en' | 'kz' | Array<'ru' | 'en' | 'kz'>) =>

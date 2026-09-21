@@ -58,6 +58,16 @@ type PasswordResetResult = {
   generated: boolean
 }
 
+type UserEditDraft = {
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  organization: string
+  institution: string
+  phone: string
+}
+
 type LangKey = 'ru' | 'en' | 'kz'
 
 const roleOptions: AdminRole[] = ['author', 'reviewer', 'editor', 'layout', 'admin']
@@ -187,6 +197,12 @@ const copy: Record<
     invalidOrcid: string
     scienceRequired: string
     otherRequired: string
+    editProfile: string
+    saveProfile: string
+    cancelEdit: string
+    profileSaved: string
+    profileSaveError: string
+    requiredFields: string
   }
 > = {
   ru: {
@@ -264,6 +280,12 @@ const copy: Record<
     invalidOrcid: 'Введите ORCID в формате 0000-0000-0000-0000',
     scienceRequired: 'Выберите хотя бы одну область науки',
     otherRequired: 'Укажите другую область науки',
+    editProfile: 'Редактировать данные',
+    saveProfile: 'Сохранить данные',
+    cancelEdit: 'Отмена',
+    profileSaved: 'Данные пользователя сохранены',
+    profileSaveError: 'Не удалось сохранить данные пользователя',
+    requiredFields: 'Логин и email обязательны',
   },
   en: {
     title: 'Users',
@@ -340,6 +362,12 @@ const copy: Record<
     invalidOrcid: 'Enter ORCID in the format 0000-0000-0000-0000',
     scienceRequired: 'Select at least one science field',
     otherRequired: 'Specify another science field',
+    editProfile: 'Edit details',
+    saveProfile: 'Save details',
+    cancelEdit: 'Cancel',
+    profileSaved: 'User details saved',
+    profileSaveError: 'Failed to save user details',
+    requiredFields: 'Username and email are required',
   },
   kz: {
     title: 'Пайдаланушылар',
@@ -416,6 +444,12 @@ const copy: Record<
     invalidOrcid: 'ORCID мәнін 0000-0000-0000-0000 форматында енгізіңіз',
     scienceRequired: 'Кемінде бір ғылым саласын таңдаңыз',
     otherRequired: 'Басқа ғылым саласын көрсетіңіз',
+    editProfile: 'Деректерді өзгерту',
+    saveProfile: 'Деректерді сақтау',
+    cancelEdit: 'Бас тарту',
+    profileSaved: 'Пайдаланушы деректері сақталды',
+    profileSaveError: 'Пайдаланушы деректерін сақтау мүмкін болмады',
+    requiredFields: 'Логин мен email міндетті',
   },
 }
 
@@ -427,6 +461,16 @@ const getDisplayName = (user: Pick<AdminUser, 'full_name' | 'first_name' | 'last
 
 const getUserRoles = (user: Pick<AdminUser, 'role' | 'roles'>): string[] =>
   user.roles?.length ? Array.from(new Set(user.roles)) : [user.role]
+
+const getUserEditDraft = (user: AdminUser): UserEditDraft => ({
+  username: user.username || '',
+  email: user.email || '',
+  first_name: user.first_name || '',
+  last_name: user.last_name || '',
+  organization: user.organization || '',
+  institution: user.institution || '',
+  phone: user.phone || '',
+})
 
 export default function AdminUsersPage() {
   const { lang } = useLanguage()
@@ -458,6 +502,10 @@ export default function AdminUsersPage() {
   const [reviewerScienceOther, setReviewerScienceOther] = useState('')
   const [reviewerProfileMessage, setReviewerProfileMessage] = useState<string | null>(null)
   const [reviewerProfileError, setReviewerProfileError] = useState<string | null>(null)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [userEditDraft, setUserEditDraft] = useState<UserEditDraft | null>(null)
+  const [profileMessage, setProfileMessage] = useState<string | null>(null)
+  const [profileError, setProfileError] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -489,6 +537,7 @@ export default function AdminUsersPage() {
       setReviewerOrcid(data.orcid || '')
       setReviewerScienceFields(data.reviewer_science_fields || [])
       setReviewerScienceOther(data.reviewer_science_other || '')
+      setUserEditDraft(getUserEditDraft(data))
     } catch (err) {
       console.error(err)
       setDetailError(err instanceof ApiError ? `${t.detailError}: ${err.status}` : t.detailError)
@@ -544,6 +593,10 @@ export default function AdminUsersPage() {
     setConfirmDeleteOpen(false)
     setReviewerProfileMessage(null)
     setReviewerProfileError(null)
+    setIsEditingProfile(false)
+    setUserEditDraft(null)
+    setProfileMessage(null)
+    setProfileError(null)
   }
 
   const openModal = (userId: number) => {
@@ -552,6 +605,11 @@ export default function AdminUsersPage() {
     setDetailError(null)
     setReviewerProfileMessage(null)
     setReviewerProfileError(null)
+    setIsEditingProfile(false)
+    setProfileMessage(null)
+    setProfileError(null)
+    const user = users.find((item) => item.id === userId)
+    setUserEditDraft(user ? getUserEditDraft(user) : null)
   }
 
   const handleRoleUpdate = async (userId: number) => {
@@ -629,6 +687,36 @@ export default function AdminUsersPage() {
     } catch (err) {
       console.error(err)
       setReviewerProfileError(err instanceof ApiError ? `${t.reviewerProfileError}: ${err.status}` : t.reviewerProfileError)
+    } finally {
+      setSavingKey(null)
+    }
+  }
+
+  const handleProfileSave = async (userId: number) => {
+    if (!userEditDraft) return
+    setProfileMessage(null)
+    setProfileError(null)
+    if (!userEditDraft.username.trim() || !userEditDraft.email.trim()) {
+      setProfileError(t.requiredFields)
+      return
+    }
+    setSavingKey(`profile-${userId}`)
+    try {
+      await api.updateAdminUser<AdminUser>(userId, {
+        username: userEditDraft.username.trim(),
+        email: userEditDraft.email.trim(),
+        first_name: userEditDraft.first_name.trim() || null,
+        last_name: userEditDraft.last_name.trim() || null,
+        organization: userEditDraft.organization.trim() || null,
+        institution: userEditDraft.institution.trim() || null,
+        phone: userEditDraft.phone.trim() || null,
+      })
+      await Promise.all([load(), loadUserDetails(userId)])
+      setIsEditingProfile(false)
+      setProfileMessage(t.profileSaved)
+    } catch (err) {
+      console.error(err)
+      setProfileError(err instanceof ApiError ? `${t.profileSaveError}: ${err.status}` : t.profileSaveError)
     } finally {
       setSavingKey(null)
     }
@@ -875,6 +963,71 @@ export default function AdminUsersPage() {
                       <div className="table__meta">{t.extraRoles}</div>
                       <div>{modalUser.roles?.length ? modalUser.roles.map((role) => roleText[role as AdminRole] ?? role).join(', ') : t.notSpecified}</div>
                     </div>
+                  </section>
+
+                  <section className="panel admin-user-modal__controls">
+                    <div className="admin-user-modal__toolbar">
+                      <div className="admin-user-modal__section-title">{t.editProfile}</div>
+                      {!isEditingProfile ? (
+                        <button type="button" className="button button--ghost button--compact" onClick={() => setIsEditingProfile(true)}>
+                          {t.editProfile}
+                        </button>
+                      ) : null}
+                    </div>
+                    {profileError ? <div className="form-error-text">{profileError}</div> : null}
+                    {profileMessage ? <div className="alert alert--success">{profileMessage}</div> : null}
+                    {isEditingProfile && userEditDraft ? (
+                      <>
+                        <div className="admin-user-modal__edit-grid">
+                          {([
+                            ['username', t.username, 'text'],
+                            ['email', t.email, 'email'],
+                            ['first_name', t.firstName, 'text'],
+                            ['last_name', t.lastName, 'text'],
+                            ['phone', t.phone, 'tel'],
+                            ['organization', t.organization, 'text'],
+                            ['institution', t.institution, 'text'],
+                          ] as const).map(([field, label, type]) => (
+                            <label className="form-field" key={field}>
+                              <span className="form-label">{label}{field === 'username' || field === 'email' ? ' *' : ''}</span>
+                              <input
+                                className="text-input"
+                                type={type}
+                                value={userEditDraft[field]}
+                                disabled={savingKey === `profile-${modalUser.id}`}
+                                onChange={(event) => {
+                                  setUserEditDraft((current) => current ? { ...current, [field]: event.target.value } : current)
+                                  setProfileError(null)
+                                  setProfileMessage(null)
+                                }}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                        <div className="actions">
+                          <button
+                            type="button"
+                            className="button button--primary button--compact"
+                            disabled={savingKey === `profile-${modalUser.id}`}
+                            onClick={() => handleProfileSave(modalUser.id)}
+                          >
+                            {t.saveProfile}
+                          </button>
+                          <button
+                            type="button"
+                            className="button button--ghost button--compact"
+                            disabled={savingKey === `profile-${modalUser.id}`}
+                            onClick={() => {
+                              setUserEditDraft(getUserEditDraft(modalUser))
+                              setIsEditingProfile(false)
+                              setProfileError(null)
+                            }}
+                          >
+                            {t.cancelEdit}
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
                   </section>
 
                   {(modalUser.role === 'reviewer' || modalUser.roles?.includes('reviewer')) ? (

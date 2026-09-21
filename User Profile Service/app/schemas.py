@@ -49,6 +49,10 @@ class UserContactProfileUpdate(BaseModel):
     organization: str | None = None
 
 
+class AdminUserContactProfileUpdate(UserContactProfileUpdate):
+    pass
+
+
 class UserLanguageUpdate(BaseModel):
     preferred_language: str | List[str]
 
