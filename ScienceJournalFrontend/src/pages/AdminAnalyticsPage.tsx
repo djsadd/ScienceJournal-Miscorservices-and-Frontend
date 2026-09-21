@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { api } from '../api/client'
 import { useLanguage } from '../shared/LanguageContext'
 
 type Section='audience'|'articles'|'volumes'|'users'|'reviewers'|'authors'|'editors'|'workflow'
 type Dashboard={period_days:number;date_from:string;date_to:string;summary:{page_views:number;views:number;unique_visitors:number;reads:number;downloads:number;read_rate:number};trend:{date:string;views:number;page_views:number;downloads:number}[];top_articles:{article_id:number;title:string;views:number;reads:number;downloads:number;unique_visitors:number;read_rate:number}[];top_volumes:{volume_id:number;views:number;reads:number;downloads:number;unique_visitors:number}[];top_pages:{path:string;views:number;unique_visitors:number}[]}
-type User={id:number;full_name?:string;first_name?:string;last_name?:string;email:string;role:string;roles?:string[];is_active:boolean;organization?:string;institution?:string;preferred_language?:string;orcid?:string;reviewer_science_fields?:string[];is_council_member?:boolean;is_collegium_member?:boolean;notify_status?:boolean;accept_terms?:boolean}
+type User={id:number;full_name?:string;first_name?:string;last_name?:string;email:string;role:string;roles?:string[];is_active:boolean;organization?:string;institution?:string;preferred_language?:string;academic_degrees?:string[];orcid?:string;reviewer_science_fields?:string[];is_council_member?:boolean;is_collegium_member?:boolean;notify_status?:boolean;accept_terms?:boolean}
 type Author={id:number;first_name:string;last_name:string;is_corresponding?:boolean;orcid?:string;scopus_author_id?:string;researcher_id?:string;country?:{name?:string}}
 const keys:Section[]=['audience','articles','volumes','users','reviewers','authors','editors','workflow']
 const today=()=>new Date().toISOString().slice(0,10), ago=(n:number)=>{const d=new Date();d.setDate(d.getDate()-n+1);return d.toISOString().slice(0,10)}
 const empty:Dashboard={period_days:30,date_from:ago(30),date_to:today(),summary:{page_views:0,views:0,unique_visitors:0,reads:0,downloads:0,read_rate:0},trend:[],top_articles:[],top_volumes:[],top_pages:[]}
 const has=(u:User,r:string)=>u.role===r||u.roles?.includes(r), name=(u:User)=>u.full_name||[u.first_name,u.last_name].filter(Boolean).join(' ')||u.email
+const degreeLabels:Record<string,string>={candidate:'Кандидат наук',doctor:'Доктор наук',phd:'PhD',master:'Магистр',bachelor:'Бакалавр'}
+const languageLabels:Record<string,string>={ru:'Русский',en:'Английский',kz:'Казахский',kk:'Казахский'}
 const counts=<T,>(a:T[],fn:(x:T)=>string)=>a.reduce<Record<string,number>>((o,x)=>{const k=fn(x)||'Не указано';o[k]=(o[k]||0)+1;return o},{})
 const sorted=(o:Record<string,number>)=>Object.entries(o).sort((a,b)=>b[1]-a[1]) as [string,number][]
 const text={
@@ -34,9 +36,44 @@ function Detail({section,d,users,authors}:{section:Section;d:Dashboard;users:Use
  if(section==='volumes')return <><Stats a={[['Просмотры',d.summary.views],['Посетители',d.summary.unique_visitors],['PDF',d.summary.downloads]]}/><Trend d={d} metric="downloads"/><Table title="Популярные выпуски" heads={['Выпуск','Просмотры','Посетители','PDF']} rows={d.top_volumes.map(x=>['№ '+x.volume_id,x.views,x.unique_visitors,x.downloads])}/></>
  if(section==='users')return <><Stats a={[['Всего',users.length],['Активные',users.filter(x=>x.is_active).length],['Неактивные',users.filter(x=>!x.is_active).length],['С организацией',users.filter(x=>x.organization||x.institution).length]]}/><Dist title="Распределение по ролям" rows={sorted(counts(users,x=>roles[x.role]||x.role))} total={users.length}/><Attention users={users}/></>
  if(section==='reviewers')return <><Stats a={[['Всего рецензентов',rev.length],['Активные',rev.filter(x=>x.is_active).length],['Со специализацией',rev.filter(x=>x.reviewer_science_fields?.length).length],['С ORCID',rev.filter(x=>x.orcid).length]]}/><div className="analytics-split"><Dist title="Научные направления" rows={sorted(counts(rev.flatMap(x=>x.reviewer_science_fields||[]),x=>x))} total={rev.length}/><Dist title="Языки" rows={sorted(counts(rev,x=>x.preferred_language||'Не указан'))} total={rev.length}/></div><Attention users={rev}/></>
- if(section==='authors')return <><Stats a={[['Всего авторов',authors.length],['Для переписки',authors.filter(x=>x.is_corresponding).length],['С ORCID',authors.filter(x=>x.orcid).length],['С Scopus ID',authors.filter(x=>x.scopus_author_id).length]]}/><Dist title="География авторов" rows={sorted(counts(authors,x=>x.country?.name||'Не указана'))} total={authors.length}/><Table title="Научные профили" heads={['Автор','Страна','ORCID','Scopus ID']} rows={authors.map(x=>[`${x.first_name} ${x.last_name}`,x.country?.name||'—',x.orcid||'—',x.scopus_author_id||'—'])}/></>
+ if(section==='authors')return <AuthorDashboard users={users} authors={authors}/>
  if(section==='editors')return <><Stats a={[['Всего редакторов',ed.length],['Активные',ed.filter(x=>x.is_active).length],['Члены совета',ed.filter(x=>x.is_council_member).length],['Редколлегия',ed.filter(x=>x.is_collegium_member).length]]}/><Dist title="Организации" rows={sorted(counts(ed,x=>x.organization||x.institution||'Не указана'))} total={ed.length}/><Table title="Состав редакции" heads={['Редактор','Организация','Статус']} rows={ed.map(x=>[name(x),x.organization||x.institution||'—',x.is_active?'Активен':'Неактивен'])}/></>
  const ready=users.filter(x=>x.is_active&&(x.organization||x.institution)).length;return <><Stats a={[['Готовность профилей',users.length?Math.round(ready*100/users.length)+'%':'0%'],['Ожидают активации',users.filter(x=>!x.is_active).length],['Получают уведомления',users.filter(x=>x.notify_status).length],['Приняли условия',users.filter(x=>x.accept_terms).length]]}/><section className="panel analytics-insight"><Icon n="workflow"/><div><h3>Контроль качества данных</h3><p>В приоритете — активация команды, заполнение организаций и научных профилей.</p></div></section><Attention users={users}/></>}
+
+function AuthorDashboard({users,authors}:{users:User[];authors:Author[]}){
+ const profiles=users.filter(x=>has(x,'author'))
+ const withDegree=profiles.filter(x=>x.academic_degrees?.length)
+ const degreeRows=sorted(counts(profiles.flatMap(x=>x.academic_degrees||[]),x=>degreeLabels[x]||x))
+ const organizationRows=sorted(counts(profiles,x=>x.organization||x.institution||'Не указана'))
+ const languageRows=sorted(counts(profiles,x=>languageLabels[x.preferred_language||'']||x.preferred_language||'Не указан'))
+ const percent=(value:number,total:number)=>total?Math.round(value*100/total):0
+ const profileRows=profiles.map(x=>[
+  name(x),
+  (x.academic_degrees||[]).map(degree=>degreeLabels[degree]||degree).join(', ')||'—',
+  x.organization||x.institution||'—',
+  languageLabels[x.preferred_language||'']||x.preferred_language||'—',
+  x.orcid||'—',
+ ])
+ return <>
+  <Stats a={[['Авторов публикаций',authors.length],['Профилей авторов',profiles.length],['С учёной степенью',`${percent(withDegree.length,profiles.length)}%`],['С ORCID',`${percent(profiles.filter(x=>x.orcid).length,profiles.length)}%`],['Активные',profiles.filter(x=>x.is_active).length]]}/>
+  <section className="analytics-author-overview">
+   <div className="panel analytics-profile-score">
+    <div className="analytics-profile-score__ring" style={{'--score':`${percent(withDegree.length,profiles.length)*3.6}deg`} as CSSProperties}><strong>{percent(withDegree.length,profiles.length)}%</strong></div>
+    <div><span className="eyebrow">ПОЛНОТА ДАННЫХ</span><h2>Академический профиль</h2><p>{withDegree.length} из {profiles.length} авторов указали учёную степень</p></div>
+   </div>
+   <div className="panel analytics-author-identifiers">
+    <h2>Научные идентификаторы</h2>
+    <div><span>ORCID</span><strong>{profiles.filter(x=>x.orcid).length}</strong><small>{percent(profiles.filter(x=>x.orcid).length,profiles.length)}% профилей</small></div>
+    <div><span>Scopus ID</span><strong>{authors.filter(x=>x.scopus_author_id).length}</strong><small>в авторах публикаций</small></div>
+    <div><span>Researcher ID</span><strong>{authors.filter(x=>x.researcher_id).length}</strong><small>в авторах публикаций</small></div>
+   </div>
+  </section>
+  <div className="analytics-split"><Dist title="Учёные степени" rows={degreeRows} total={profiles.length}/><Dist title="Организации" rows={organizationRows.slice(0,10)} total={profiles.length}/></div>
+  <div className="analytics-split"><Dist title="Предпочитаемый язык" rows={languageRows} total={profiles.length}/><Dist title="География авторов публикаций" rows={sorted(counts(authors,x=>x.country?.name||'Не указана')).slice(0,10)} total={authors.length}/></div>
+  <Table title="Профили авторов" heads={['Автор','Учёная степень','Организация','Язык','ORCID']} rows={profileRows}/>
+  <Table title="Авторы публикаций" heads={['Автор','Страна','ORCID','Scopus ID']} rows={authors.map(x=>[`${x.first_name} ${x.last_name}`,x.country?.name||'—',x.orcid||'—',x.scopus_author_id||'—'])}/>
+ </>
+}
 
 function Filter({range,setRange,apply}:{range:{from:string;to:string};setRange:(x:{from:string;to:string})=>void;apply:()=>void}){return <section className="analytics-filter panel"><div className="analytics-quick-periods">{[7,30,90,365].map(n=><button key={n} onClick={()=>{const x={from:ago(n),to:today()};setRange(x)}}>{n===365?'1 год':n+' дней'}</button>)}</div><label>С<input type="date" value={range.from} onChange={e=>setRange({...range,from:e.target.value})}/></label><label>По<input type="date" value={range.to} onChange={e=>setRange({...range,to:e.target.value})}/></label><button className="button button--primary" onClick={apply}>Применить</button></section>}
 const Stats=({a}:{a:[string,string|number][]})=><section className="analytics-cards">{a.map(x=><div className="analytics-card" key={x[0]}><span>{x[0]}</span><strong>{x[1]}</strong></div>)}</section>
