@@ -203,6 +203,12 @@ def send_password_reset_notification(user: models.User, reset_link: str) -> None
                     "subject": title,
                     "text": text,
                     "html": html_body,
+                    "template_key": "password_reset",
+                    "template_variables": {
+                        "display_name": display_name,
+                        "reset_link": reset_link,
+                        "expires_minutes": str(config.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES),
+                    },
                 },
                 headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
             )
@@ -405,6 +411,10 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
                         "Вы можете войти и начать работу."
                     ),
                     "related_entity": f"auth:register:{new_user.id}",
+                    "template_key": "registration_welcome",
+                    "template_variables": {
+                        "display_name": new_user.full_name or new_user.first_name or new_user.username,
+                    },
                 }
                 client.post(
                     f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
@@ -426,6 +436,11 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
                         "После подтверждения администратор активирует ваш аккаунт."
                     ),
                     "related_entity": f"auth:register:{new_user.id}",
+                    "template_key": "email_verification",
+                    "template_variables": {
+                        "display_name": new_user.full_name or new_user.first_name or new_user.username,
+                        "verification_link": verify_link,
+                    },
                 }
                 client.post(
                     f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",

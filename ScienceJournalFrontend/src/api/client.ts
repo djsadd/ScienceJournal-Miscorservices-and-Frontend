@@ -370,6 +370,10 @@ export const api = {
     request<T>(`/articles/${articleId}/antiplagiarism`, 'POST', { json: body }),
   // Reviews
   getReviewById: <T>(reviewId: number | string) => request<T>(`/reviews/${reviewId}`, 'GET'),
+  getNotificationPreferences: <T>() => request<T>('/notifications/preferences', 'GET'),
+  updateNotificationPreferences: <T>(items: unknown[]) => request<T>('/notifications/preferences', 'PUT', { json: { items } }),
+  getEmailTemplates: <T>() => request<T>('/notifications/admin/email-templates', 'GET'),
+  updateEmailTemplate: <T>(type: string, body: unknown) => request<T>(`/notifications/admin/email-templates/${type}`, 'PUT', { json: body }),
   getMyReviews: <T>(params?: { page?: number; page_size?: number }) => request<T>('/reviews/my-reviews', 'GET', { params }),
   getReviewDetail: <T>(reviewId: number | string) => request<T>(`/reviews/${reviewId}/detail`, 'GET'),
   updateReview: <T>(reviewId: number | string, body: unknown) => request<T>(`/reviews/${reviewId}`, 'PATCH', { json: body }),

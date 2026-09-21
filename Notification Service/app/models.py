@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, Enum, Text, UniqueConstraint
 from sqlalchemy.sql import func
 from app.database import Base
 import enum
@@ -33,4 +33,29 @@ class Notification(Base):
     status = Column(Enum(NotificationStatus), default=NotificationStatus.unread, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     read_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class NotificationPreference(Base):
+    __tablename__ = "notification_preferences"
+    __table_args__ = (UniqueConstraint("user_id", "type", name="uq_notification_preference_user_type"),)
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    type = Column(Enum(NotificationType), nullable=False)
+    in_app_enabled = Column(Boolean, nullable=False, default=True)
+    email_enabled = Column(Boolean, nullable=False, default=True)
+
+
+class EmailTemplate(Base):
+    __tablename__ = "email_templates"
+
+    id = Column(Integer, primary_key=True)
+    key = Column(String, nullable=True, unique=True, index=True)
+    type = Column(Enum(NotificationType), nullable=True, unique=True, index=True)
+    name = Column(String, nullable=False)
+    subject_template = Column(String, nullable=False)
+    text_template = Column(Text, nullable=False)
+    html_template = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

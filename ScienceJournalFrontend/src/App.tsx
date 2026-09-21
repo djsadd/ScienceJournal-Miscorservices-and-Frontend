@@ -49,6 +49,8 @@ import QuickPublishPage from './pages/QuickPublishPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import RoleRequestsPage from './pages/RoleRequestsPage'
 import AdminJournalSettingsPage from './pages/AdminJournalSettingsPage'
+import NotificationPreferencesPage from './pages/NotificationPreferencesPage'
+import AdminEmailTemplatesPage from './pages/AdminEmailTemplatesPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -257,6 +259,8 @@ function App() {
           </RequireAuth>
         }
       />
+      <Route path="/cabinet/notification-settings" element={<RequireAuth><MainLayout><NotificationPreferencesPage /></MainLayout></RequireAuth>} />
+      <Route path="/cabinet/admin/email-templates" element={<RequireAuth><MainLayout><AdminEmailTemplatesPage /></MainLayout></RequireAuth>} />
       <Route
         path="/cabinet/admin/users"
         element={

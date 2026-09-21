@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Dict, List, Optional
 from datetime import datetime
 from enum import Enum
 
@@ -26,6 +26,8 @@ class NotificationBase(BaseModel):
     # Optional links to a specific manuscript (article) or version
     article_id: Optional[int] = None
     article_version_id: Optional[int] = None
+    template_key: Optional[str] = None
+    template_variables: Dict[str, str] = Field(default_factory=dict)
 
 
 class NotificationCreate(NotificationBase):
@@ -52,10 +54,39 @@ class InternalEmailCreate(BaseModel):
     subject: str
     text: str
     html: Optional[str] = None
+    template_key: Optional[str] = None
+    template_variables: Dict[str, str] = Field(default_factory=dict)
 
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class NotificationPreferenceItem(BaseModel):
+    type: NotificationType
+    in_app_enabled: bool = True
+    email_enabled: bool = True
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    items: List[NotificationPreferenceItem]
+
+
+class EmailTemplateUpdate(BaseModel):
+    name: str
+    subject_template: str
+    text_template: str
+    html_template: Optional[str] = None
+    is_active: bool = True
+
+
+class EmailTemplateOut(EmailTemplateUpdate):
+    key: str
+    type: Optional[NotificationType] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
 
 
 class NotificationUpdateStatus(BaseModel):

@@ -132,6 +132,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
             { label: 'Главная', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
+            { label: 'Настройки уведомлений', path: '/cabinet/notification-settings' },
           ],
         },
         {
@@ -192,6 +193,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Пользователи', path: '/cabinet/admin/users' },
             { label: 'Настройки журнала', path: '/cabinet/admin/journal-settings' },
+            { label: 'Шаблоны писем', path: '/cabinet/admin/email-templates' },
             { label: 'Заявки на роли', path: '/cabinet/role-requests' },
           ],
         },
@@ -263,6 +265,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
             { label: 'Home', path: '/cabinet' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
+            { label: 'Notification settings', path: '/cabinet/notification-settings' },
           ],
         },
         {
@@ -323,6 +326,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Users', path: '/cabinet/admin/users' },
             { label: 'Journal settings', path: '/cabinet/admin/journal-settings' },
+            { label: 'Email templates', path: '/cabinet/admin/email-templates' },
             { label: 'Role requests', path: '/cabinet/role-requests' },
           ],
         },
@@ -394,6 +398,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
             { label: 'Басты бет', path: '/cabinet' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
+            { label: 'Хабарлама баптаулары', path: '/cabinet/notification-settings' },
           ],
         },
         {
@@ -454,6 +459,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Пайдаланушылар', path: '/cabinet/admin/users' },
             { label: 'Журнал баптаулары', path: '/cabinet/admin/journal-settings' },
+            { label: 'Хат үлгілері', path: '/cabinet/admin/email-templates' },
             { label: 'Рөл өтінімдері', path: '/cabinet/role-requests' },
           ],
         },

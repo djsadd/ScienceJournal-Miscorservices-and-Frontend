@@ -59,6 +59,8 @@ def _notify_reviewer_assignment(article_id: int, reviewer_id: int, review_id: in
             "title": "Вам назначена рецензия",
             "message": f"Вам назначена рецензия по статье {article_label}.",
             "article_id": article_id,
+            "template_key": "review_assigned",
+            "template_variables": {"article_label": article_label},
         }
         with httpx.Client(timeout=5.0) as client:
             response = client.post(
@@ -86,6 +88,8 @@ def _notify_reviewer_cancellation(article_id: int, reviewer_id: int) -> None:
             "title": "Рецензирование отменено",
             "message": f"Назначение на рецензирование статьи {article_label} отменено редактором.",
             "article_id": article_id,
+            "template_key": "review_cancelled",
+            "template_variables": {"article_label": article_label},
         }
         with httpx.Client(timeout=5.0) as client:
             response = client.post(
@@ -128,6 +132,12 @@ def _notify_editor_about_decline(article_id: int, reviewer_id: int, reason: str)
                         f"{article_label}. Причина: {reason}"
                     ),
                     "article_id": article_id,
+                    "template_key": "reviewer_declined",
+                    "template_variables": {
+                        "reviewer_id": str(reviewer_id),
+                        "article_label": article_label,
+                        "reason": reason,
+                    },
                 },
                 headers={"X-Service-Secret": shared_secret},
             )
