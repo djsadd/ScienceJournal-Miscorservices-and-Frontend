@@ -396,6 +396,12 @@ export const api = {
   getPublicVolumes: <T>(params?: { year?: number; number?: string; month?: number }) =>
     request<T>('/volumes/public', 'GET', { params }),
   getPublicVolumeById: <T>(id: number | string) => request<T>(`/volumes/public/${id}`, 'GET'),
+  trackAnalyticsEvent: <T>(body: {
+    event_type: 'page_view' | 'article_view' | 'read_complete' | 'download'; article_id?: number; volume_id?: number
+    article_title?: string; path: string; visitor_id: string; language?: string; referrer?: string; seconds_on_page?: number
+  }) => request<T>('/analytics/events', 'POST', { json: body }),
+  getAnalyticsDashboard: <T>(params: { days?: number; limit?: number; date_from?: string; date_to?: string } = {}) =>
+    request<T>('/analytics/admin/dashboard', 'GET', { params }),
   createVolume: <T>(body: {
     year: number
     number: string

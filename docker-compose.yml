@@ -140,10 +140,15 @@ services:
     build: ./Analytics - Metrics Service
     environment:
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - DATABASE_URL=postgresql://analytics:pass@db/analytics
+      - ANALYTICS_SALT=${ANALYTICS_SALT:-science-journal-analytics}
     ports:
       - "8009:8000"
     depends_on:
-      - auth
+      db:
+        condition: service_healthy
+      auth:
+        condition: service_started
 
   fileprocessing:
     build: ./FileStorageService

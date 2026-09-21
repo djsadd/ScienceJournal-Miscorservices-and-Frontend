@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Article, Volume } from '../shared/types'
@@ -111,6 +111,8 @@ export default function PublicArticleDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [layoutRecords, setLayoutRecords] = useState<LayoutRecordOut[] | null>(null)
   const [layoutLoading, setLayoutLoading] = useState(false)
+  const readTracked = useRef(false)
+  const openedAt = useRef(Date.now())
 
   useEffect(() => {
     let cancelled = false
@@ -166,6 +168,47 @@ export default function PublicArticleDetailPage() {
   const localizedAbstract =
     pickLocalized(lang, (article as any)?.abstract_ru, (article as any)?.abstract_en, (article as any)?.abstract_kz) ||
     compact((article as any)?.abstract)
+
+  useEffect(() => {
+    const id = Number((article as any)?.id)
+    if (!Number.isFinite(id)) return
+    let visitorId = localStorage.getItem('sj_analytics_visitor')
+    if (!visitorId) {
+      visitorId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      localStorage.setItem('sj_analytics_visitor', visitorId)
+    }
+    openedAt.current = Date.now()
+    readTracked.current = false
+    const eventBase = {
+      article_id: id, volume_id: Number(volumeId) || undefined, article_title: localizedTitle,
+      path: window.location.pathname, visitor_id: visitorId, language: lang,
+      referrer: document.referrer || undefined,
+    }
+    api.trackAnalyticsEvent({ ...eventBase, event_type: 'article_view' }).catch(() => undefined)
+    const checkRead = () => {
+      const elapsed = Math.round((Date.now() - openedAt.current) / 1000)
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight
+      const progress = scrollable <= 0 ? 1 : window.scrollY / scrollable
+      if (!readTracked.current && elapsed >= 15 && progress >= 0.7) {
+        readTracked.current = true
+        api.trackAnalyticsEvent({ ...eventBase, event_type: 'read_complete', seconds_on_page: elapsed }).catch(() => undefined)
+      }
+    }
+    window.addEventListener('scroll', checkRead, { passive: true })
+    const timer = window.setInterval(checkRead, 3000)
+    return () => { window.removeEventListener('scroll', checkRead); window.clearInterval(timer) }
+  }, [(article as any)?.id, volumeId, localizedTitle, lang])
+
+  const trackDownload = () => {
+    const id = Number((article as any)?.id)
+    const visitorId = localStorage.getItem('sj_analytics_visitor')
+    if (!Number.isFinite(id) || !visitorId) return
+    api.trackAnalyticsEvent({
+      event_type: 'download', article_id: id, volume_id: Number(volumeId) || undefined,
+      article_title: localizedTitle, path: window.location.pathname, visitor_id: visitorId,
+      language: lang, seconds_on_page: Math.round((Date.now() - openedAt.current) / 1000),
+    }).catch(() => undefined)
+  }
 
   const localizedKeywords = useMemo(() => {
     const items = (article as any)?.keywords
@@ -270,7 +313,7 @@ export default function PublicArticleDetailPage() {
                 {layoutLoading ? (
                   <span className="meta-label">{t.loading}</span>
                 ) : layoutHref ? (
-                  <a className="button button--primary public-article__download" href={layoutHref} target="_blank" rel="noreferrer">
+                  <a className="button button--primary public-article__download" href={layoutHref} target="_blank" rel="noreferrer" onClick={trackDownload}>
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
                         fill="currentColor"

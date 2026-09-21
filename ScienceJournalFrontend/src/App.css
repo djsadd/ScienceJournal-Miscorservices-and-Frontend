@@ -6443,6 +6443,28 @@
   flex-wrap: wrap;
 }
 
+.analytics-page { display: grid; gap: 22px; }
+.analytics-header { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+.analytics-header h1 { margin: 4px 0 6px; }
+.analytics-header p { margin: 0; color: #6f6265; }
+.analytics-period { width: 150px; }
+.analytics-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.analytics-card { padding: 18px; border: 1px solid #eadfe2; border-radius: 14px; background: #fff; }
+.analytics-card span { display: block; min-height: 36px; color: #75686b; font-size: 13px; }
+.analytics-card strong { display: block; margin-top: 8px; font-size: 28px; color: #7c1730; }
+.analytics-panel { padding: 22px; overflow: hidden; }
+.analytics-panel h2 { margin: 0 0 20px; }
+.analytics-chart { height: 230px; display: flex; align-items: end; gap: 5px; border-bottom: 1px solid #ddd; overflow-x: auto; }
+.analytics-bar-wrap { height: 100%; min-width: 20px; flex: 1; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 6px; }
+.analytics-bar { width: min(18px, 80%); min-height: 2px; border-radius: 5px 5px 0 0; background: #8c1d3b; }
+.analytics-bar-wrap small { font-size: 9px; color: #817477; writing-mode: vertical-rl; height: 34px; }
+.analytics-table-wrap { overflow-x: auto; }
+.analytics-table { width: 100%; border-collapse: collapse; }
+.analytics-table th, .analytics-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee5e7; }
+.analytics-table th { color: #716568; font-size: 12px; }
+.analytics-table td small { display: block; color: #998d90; margin-top: 3px; }
+@media (max-width: 1000px) { .analytics-cards { grid-template-columns: repeat(2, 1fr); } }
+
 @media (max-width: 960px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -7613,6 +7635,9 @@
 }
 
 @media (max-width: 640px) {
+  .analytics-header { align-items: stretch; flex-direction: column; }
+  .analytics-period { width: 100%; }
+  .analytics-cards { grid-template-columns: 1fr; }
   .dashboard-home__stats {
     grid-template-columns: 1fr;
   }

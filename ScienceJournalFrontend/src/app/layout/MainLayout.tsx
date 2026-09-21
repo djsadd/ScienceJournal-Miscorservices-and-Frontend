@@ -192,6 +192,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Администрирование',
           items: [
             { label: 'Пользователи', path: '/cabinet/admin/users' },
+            { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Настройки журнала', path: '/cabinet/admin/journal-settings' },
             { label: 'Шаблоны писем', path: '/cabinet/admin/email-templates' },
             { label: 'Заявки на роли', path: '/cabinet/role-requests' },
@@ -325,6 +326,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Administration',
           items: [
             { label: 'Users', path: '/cabinet/admin/users' },
+            { label: 'Analytics', path: '/cabinet/admin/analytics' },
             { label: 'Journal settings', path: '/cabinet/admin/journal-settings' },
             { label: 'Email templates', path: '/cabinet/admin/email-templates' },
             { label: 'Role requests', path: '/cabinet/role-requests' },
@@ -458,6 +460,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Әкімшілік',
           items: [
             { label: 'Пайдаланушылар', path: '/cabinet/admin/users' },
+            { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Журнал баптаулары', path: '/cabinet/admin/journal-settings' },
             { label: 'Хат үлгілері', path: '/cabinet/admin/email-templates' },
             { label: 'Рөл өтінімдері', path: '/cabinet/role-requests' },
@@ -510,6 +513,15 @@ const NavIcon = ({ path }: { path?: string }) => {
     fill: 'none',
     xmlns: 'http://www.w3.org/2000/svg',
     'aria-hidden': true,
+  }
+
+  if (path === '/cabinet/admin/analytics') {
+    return (
+      <svg {...common}>
+        <path d="M5 19V13M12 19V5M19 19V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M4 19.25H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    )
   }
 
   if (path === '/cabinet') {

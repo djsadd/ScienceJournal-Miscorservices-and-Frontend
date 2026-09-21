@@ -75,6 +75,20 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   const isLoginLikePage = isLoginPage || isForgotPasswordPage
   const isRegisterPage = currentPublicPath === '/register'
 
+  useEffect(() => {
+    if (currentPublicPath.startsWith('/auth/')) return
+    let visitorId = localStorage.getItem('sj_analytics_visitor')
+    if (!visitorId) {
+      visitorId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      localStorage.setItem('sj_analytics_visitor', visitorId)
+    }
+    const volumeMatch = currentPublicPath.match(/^\/archive\/volumes\/(\d+)/)
+    api.trackAnalyticsEvent({
+      event_type: 'page_view', path: currentPublicPath, visitor_id: visitorId, language: lang,
+      volume_id: volumeMatch ? Number(volumeMatch[1]) : undefined, referrer: document.referrer || undefined,
+    }).catch(() => undefined)
+  }, [currentPublicPath, lang])
+
   const localizedHref = (href: string, targetLang = lang) => {
     const normalizedHref = href.startsWith('/') ? href : `/${href}`
     return normalizedHref === '/' ? `/${targetLang}` : `/${targetLang}${normalizedHref}`

@@ -7,6 +7,7 @@ CREATE USER editorial WITH PASSWORD 'pass';
 CREATE USER notifications WITH PASSWORD 'pass';
 CREATE USER fileprocessing WITH PASSWORD 'pass';
 CREATE USER layout WITH PASSWORD 'pass';
+CREATE USER analytics WITH PASSWORD 'pass';
 
 CREATE DATABASE auth OWNER auth;
 CREATE DATABASE users OWNER users;
@@ -16,6 +17,7 @@ CREATE DATABASE editorial OWNER editorial;
 CREATE DATABASE notifications OWNER notifications;
 CREATE DATABASE fileprocessing OWNER fileprocessing;
 CREATE DATABASE layout OWNER layout;
+CREATE DATABASE analytics OWNER analytics;
 
 GRANT ALL PRIVILEGES ON DATABASE auth TO auth;
 GRANT ALL PRIVILEGES ON DATABASE users TO users;
@@ -25,3 +27,4 @@ GRANT ALL PRIVILEGES ON DATABASE editorial TO editorial;
 GRANT ALL PRIVILEGES ON DATABASE notifications TO notifications;
 GRANT ALL PRIVILEGES ON DATABASE fileprocessing TO fileprocessing;
 GRANT ALL PRIVILEGES ON DATABASE layout TO layout;
+GRANT ALL PRIVILEGES ON DATABASE analytics TO analytics;

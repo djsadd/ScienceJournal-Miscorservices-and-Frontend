@@ -51,6 +51,7 @@ import RoleRequestsPage from './pages/RoleRequestsPage'
 import AdminJournalSettingsPage from './pages/AdminJournalSettingsPage'
 import NotificationPreferencesPage from './pages/NotificationPreferencesPage'
 import AdminEmailTemplatesPage from './pages/AdminEmailTemplatesPage'
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -271,6 +272,7 @@ function App() {
       />
       <Route path="/cabinet/notification-settings" element={<RequireAuth><MainLayout><NotificationPreferencesPage /></MainLayout></RequireAuth>} />
       <Route path="/cabinet/admin/email-templates" element={<RequireAuth><MainLayout><AdminEmailTemplatesPage /></MainLayout></RequireAuth>} />
+      <Route path="/cabinet/admin/analytics" element={<RequireAuth><MainLayout><AdminAnalyticsPage /></MainLayout></RequireAuth>} />
       <Route
         path="/cabinet/admin/users"
         element={
