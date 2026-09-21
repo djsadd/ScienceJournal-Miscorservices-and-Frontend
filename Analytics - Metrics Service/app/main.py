@@ -164,6 +164,7 @@ def dashboard(
         db.query(
             cast(AnalyticsEvent.created_at, Date).label("date"),
             func.count(AnalyticsEvent.id).filter(AnalyticsEvent.event_type == "article_view").label("views"),
+            func.count(AnalyticsEvent.id).filter(AnalyticsEvent.event_type == "page_view").label("page_views"),
             func.count(AnalyticsEvent.id).filter(AnalyticsEvent.event_type == "read_complete").label("reads"),
             func.count(AnalyticsEvent.id).filter(AnalyticsEvent.event_type == "download").label("downloads"),
         )
@@ -177,7 +178,7 @@ def dashboard(
     for offset in range(actual_days):
         key = str(since.date() + timedelta(days=offset))
         row = by_date.get(key)
-        trend.append({"date": key, "views": row.views if row else 0, "reads": row.reads if row else 0, "downloads": row.downloads if row else 0})
+        trend.append({"date": key, "views": row.views if row else 0, "page_views": row.page_views if row else 0, "reads": row.reads if row else 0, "downloads": row.downloads if row else 0})
 
     return {
         "period_days": actual_days,
