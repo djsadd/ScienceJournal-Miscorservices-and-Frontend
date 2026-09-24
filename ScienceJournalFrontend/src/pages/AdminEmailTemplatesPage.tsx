@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 
-type Template = { key: string; type?: string | null; name: string; subject_template: string; text_template: string; html_template?: string | null; is_active: boolean }
+type TemplateVariable = { name: string; description: string; sample: string }
+type Template = { key: string; type?: string | null; name: string; description: string; variables: TemplateVariable[]; subject_template: string; text_template: string; html_template?: string | null; is_active: boolean }
 
 export default function AdminEmailTemplatesPage() {
   const [items, setItems] = useState<Template[]>([])
@@ -18,6 +19,7 @@ export default function AdminEmailTemplatesPage() {
   }, [])
 
   const update = (field: keyof Template, value: string | boolean) => setItems(list => list.map(item => item.key === selected ? { ...item, [field]: value } : item))
+  const insertVariable = (name: string) => update('text_template', `${current?.text_template || ''}{${name}}`)
   const save = async () => {
     if (!current) return
     setSaving(true); setMessage('')
@@ -25,7 +27,7 @@ export default function AdminEmailTemplatesPage() {
       const saved = await api.updateEmailTemplate<Template>(current.key, current)
       setItems(list => list.map(item => item.key === saved.key ? saved : item))
       setMessage('Шаблон сохранён')
-    } catch { setMessage('Не удалось сохранить шаблон') }
+    } catch (error: any) { setMessage(String(error?.bodyJson?.detail || error?.message || 'Не удалось сохранить шаблон')) }
     finally { setSaving(false) }
   }
 
@@ -45,12 +47,20 @@ export default function AdminEmailTemplatesPage() {
     <section className="grid grid-2">
       <aside className="panel"><h3 className="panel-title">Тип письма</h3>{loading ? <div className="loading">Загрузка...</div> : <div className="auth-form">{items.map(item => <button key={item.key} type="button" className={`button ${selected === item.key ? 'button--primary' : 'button--ghost'}`} onClick={() => { setSelected(item.key); setMessage('') }}>{item.name}</button>)}</div>}</aside>
       <div className="panel">{current ? <div className="auth-form">
+        <div><div className="form-label">Событие</div><div>{current.description}</div><div className="form-hint">Ключ: {current.key}</div></div>
         <label className="form-field"><span className="form-label">Название шаблона</span><input className="text-input" value={current.name} onChange={e => update('name', e.target.value)} /></label>
         <label className="form-field"><span className="form-label">Тема письма</span><input className="text-input" value={current.subject_template} onChange={e => update('subject_template', e.target.value)} /></label>
         <label className="form-field"><span className="form-label">Текст письма</span><textarea className="text-input" rows={6} value={current.text_template} onChange={e => update('text_template', e.target.value)} /></label>
         <label className="form-field"><span className="form-label">HTML письма</span><textarea className="text-input" rows={8} value={current.html_template || ''} onChange={e => update('html_template', e.target.value)} /></label>
-        <label className="choice-chip"><input type="checkbox" checked={current.is_active} onChange={e => update('is_active', e.target.checked)} /><span className="choice-chip__label">Использовать шаблон</span></label>
-        <div className="form-hint">Базовые переменные: {'{title}'}, {'{message}'}, {'{article_id}'}. Для специальных писем также доступны переменные из их текущего текста: {'{display_name}'}, {'{verification_link}'}, {'{reset_link}'}, {'{expires_minutes}'}, {'{article_label}'}, {'{reviewer_id}'}, {'{reason}'}.</div>
+        <label className="choice-chip"><input type="checkbox" checked={current.is_active} onChange={e => update('is_active', e.target.checked)} /><span className="choice-chip__label">Отправлять email для этого события</span></label>
+        <div className="panel panel--compact">
+          <div className="form-label">Переменные этого события</div>
+          {current.variables.length ? current.variables.map(variable => <div key={variable.name} style={{ marginBottom: 8 }}>
+            <button type="button" className="button button--ghost" onClick={() => insertVariable(variable.name)}>{`{${variable.name}}`}</button>
+            <span className="form-hint" style={{ marginLeft: 8 }}>{variable.description}. Пример: {variable.sample || '—'}</span>
+          </div>) : <span className="form-hint">У этого события нет переменных.</span>}
+          <span className="form-hint">Кнопка добавляет переменную в конец текстовой версии письма. Её также можно вставить вручную в тему или HTML.</span>
+        </div>
         {message && <div className="alert alert--info">{message}</div>}
         <div className="panel panel--compact">
           <label className="form-field"><span className="form-label">Адрес получателя</span><input className="text-input" type="email" placeholder="name@example.com" value={testEmail} onChange={e => setTestEmail(e.target.value)} /></label>

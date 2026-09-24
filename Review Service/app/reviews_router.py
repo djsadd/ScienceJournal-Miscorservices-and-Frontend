@@ -369,6 +369,19 @@ def update_review(review_id: int, review: schemas.ReviewUpdate, db: Session = De
     # Prevent edits if already submitted (completed)
     if db_review.status == models.ReviewStatus.completed:
         raise HTTPException(status_code=400, detail="Submitted reviews cannot be edited")
+
+    if review.action == schemas.ReviewAction.submit:
+        submitted_recommendation = review.recommendation or db_review.recommendation
+        allowed_recommendations = {
+            models.Recommendation.accept,
+            models.Recommendation.major_revision,
+            models.Recommendation.reject,
+        }
+        if submitted_recommendation not in allowed_recommendations:
+            raise HTTPException(
+                status_code=422,
+                detail="Перед отправкой рецензии выберите рекомендацию из списка.",
+            )
     
     # Apply partial updates only for provided fields
     if review.comments is not None:
@@ -425,6 +438,12 @@ def update_review(review_id: int, review: schemas.ReviewUpdate, db: Session = De
             "title": "Рецензия завершена",
             "message": f"Рецензия по по статье завершена #{db_review.article_id}.",
             "related_entity": f"review:{db_review.id}",
+            "article_id": db_review.article_id,
+            "template_key": "review_completed",
+            "template_variables": {
+                "review_id": str(db_review.id),
+                "article_id": str(db_review.article_id),
+            },
         }
         with httpx.Client(timeout=5.0) as client:
             print(f"{api_gateway}{api_prefix}/notifications/internal")

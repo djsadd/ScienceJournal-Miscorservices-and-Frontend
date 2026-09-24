@@ -51,7 +51,9 @@ class EmailTemplate(Base):
 
     id = Column(Integer, primary_key=True)
     key = Column(String, nullable=True, unique=True, index=True)
-    type = Column(Enum(NotificationType), nullable=True, unique=True, index=True)
+    # Several distinct email events can belong to the same notification
+    # category. Only `key` identifies a template uniquely.
+    type = Column(Enum(NotificationType), nullable=True, index=True)
     name = Column(String, nullable=False)
     subject_template = Column(String, nullable=False)
     text_template = Column(Text, nullable=False)

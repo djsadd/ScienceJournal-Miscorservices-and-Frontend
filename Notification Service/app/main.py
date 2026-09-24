@@ -43,6 +43,10 @@ with engine.begin() as conn:
                 SELECT 1 FROM information_schema.tables WHERE table_name='email_templates'
             ) THEN
                 ALTER TABLE email_templates ALTER COLUMN type DROP NOT NULL;
+                -- Older versions declared `type` unique. Multiple event
+                -- templates now intentionally share one notification type.
+                DROP INDEX IF EXISTS ix_email_templates_type;
+                CREATE INDEX IF NOT EXISTS ix_email_templates_type ON email_templates (type);
             END IF;
         END$$;
         """

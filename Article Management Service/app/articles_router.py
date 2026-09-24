@@ -1725,7 +1725,7 @@ def get_article_reviewers(
 
     # Пытаемся обогатить данные информацией о дедлайне из Review Service
     review_service_url = config.REVIEW_SERVICE_URL if hasattr(config, 'REVIEW_SERVICE_URL') else "http://reviews:8000"
-    deadlines_by_reviewer: dict[int, str | None] = {}
+    reviews_by_reviewer: dict[int, dict] = {}
     try:
         import httpx
         resp = httpx.get(f"{review_service_url}/reviews/article/{article_id}", timeout=5.0)
@@ -1734,7 +1734,7 @@ def get_article_reviewers(
             for item in data:
                 rid = item.get("reviewer_id")
                 if rid in reviewer_ids and rid is not None:
-                    deadlines_by_reviewer[int(rid)] = item.get("deadline")
+                    reviews_by_reviewer[int(rid)] = item
     except Exception:
         pass
 
@@ -1760,7 +1760,8 @@ def get_article_reviewers(
                 except Exception:
                     auth_info = None
 
-                item = {
+                review_summary = reviews_by_reviewer.get(rid, {})
+                reviewer = {
                     # From User Profile Service
                     "id": (profile or {}).get("id"),
                     "user_id": rid,
@@ -1776,33 +1777,48 @@ def get_article_reviewers(
                     "first_name": (auth_info or {}).get("first_name"),
                     "last_name": (auth_info or {}).get("last_name"),
                     "institution": (auth_info or {}).get("institution"),
-                    # Aggregated
-                    "deadline": deadlines_by_reviewer.get(rid)
                 }
 
                 # prefer is_active from auth if present
                 if auth_info and auth_info.get("is_active") is not None:
-                    item["is_active"] = auth_info.get("is_active")
+                    reviewer["is_active"] = auth_info.get("is_active")
 
-                reviewers_out.append(item)
+                reviewers_out.append({
+                    "id": review_summary.get("id"),
+                    "reviewer_id": rid,
+                    "deadline": review_summary.get("deadline"),
+                    "status": review_summary.get("status", "pending"),
+                    "recommendation": review_summary.get("recommendation"),
+                    "updated_at": review_summary.get("updated_at"),
+                    "has_content": review_summary.get("has_content", False),
+                    "reviewer": reviewer,
+                })
     except Exception:
         # Фоллбек: только идентификаторы и дедлайны
         reviewers_out = [
             {
-                "id": None,
-                "user_id": rid,
-                "full_name": None,
-                "phone": None,
-                "organization": None,
-                "roles": [],
-                "preferred_language": None,
-                "is_active": None,
-                "username": None,
-                "email": None,
-                "first_name": None,
-                "last_name": None,
-                "institution": None,
-                "deadline": deadlines_by_reviewer.get(rid),
+                "id": reviews_by_reviewer.get(rid, {}).get("id"),
+                "reviewer_id": rid,
+                "deadline": reviews_by_reviewer.get(rid, {}).get("deadline"),
+                "status": reviews_by_reviewer.get(rid, {}).get("status", "pending"),
+                "recommendation": reviews_by_reviewer.get(rid, {}).get("recommendation"),
+                "updated_at": reviews_by_reviewer.get(rid, {}).get("updated_at"),
+                "has_content": reviews_by_reviewer.get(rid, {}).get("has_content", False),
+                "reviewer": {
+                    "id": None,
+                    "user_id": rid,
+                    "full_name": None,
+                    "phone": None,
+                    "organization": None,
+                    "roles": [],
+                    "preferred_language": None,
+                    "is_active": None,
+                    "username": None,
+                    "email": None,
+                    "first_name": None,
+                    "last_name": None,
+                    "institution": None,
+                },
             }
             for rid in reviewer_ids
         ]
@@ -1865,6 +1881,8 @@ def withdraw_article(
                     "message": "Статья отозвана.",
                     "related_entity": f"article:{article.id}",
                     "article_id": int(article.id),
+                    "template_key": "article_withdrawn",
+                    "template_variables": {"article_id": str(article.id)},
                 },
                 headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
             ).raise_for_status()

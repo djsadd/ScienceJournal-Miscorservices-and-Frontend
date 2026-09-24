@@ -80,9 +80,17 @@ class EmailTemplateUpdate(BaseModel):
     is_active: bool = True
 
 
+class EmailTemplateVariable(BaseModel):
+    name: str
+    description: str
+    sample: str
+
+
 class EmailTemplateOut(EmailTemplateUpdate):
     key: str
     type: Optional[NotificationType] = None
+    description: str = ""
+    variables: List[EmailTemplateVariable] = Field(default_factory=list)
     updated_at: Optional[datetime] = None
 
     class Config:

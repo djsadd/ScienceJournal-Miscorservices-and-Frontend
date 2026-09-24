@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import type { ReviewDetail } from '../shared/types'
 import Alert from '../shared/components/Alert'
-import ConfirmModal from '../shared/components/ConfirmModal'
 import Toast from '../shared/components/Toast'
 import { toApiFilesUrl } from '../shared/url'
 import { formatArticleStatus, formatArticleType } from '../shared/labels'
@@ -87,7 +86,7 @@ export default function ReviewDetailsPage() {
 
   const form = useMemo(() => ({
     comments: data?.comments ?? '',
-    recommendation: data?.recommendation ?? '',
+    recommendation: data?.recommendation === 'minor_revision' ? 'major_revision' : data?.recommendation ?? '',
     status: data?.status ?? 'pending',
     deadline: data?.deadline ?? '',
     importance_applicability: data?.importance_applicability ?? '',
@@ -109,6 +108,9 @@ export default function ReviewDetailsPage() {
   const onChange = (key: keyof typeof form, value: string) => {
     setDraft((d) => ({ ...d, [key]: value }))
   }
+
+  const validRecommendations = ['accept', 'major_revision', 'reject'] as const
+  const hasValidRecommendation = validRecommendations.includes(draft.recommendation as typeof validRecommendations[number])
 
   const isReadOnly = useMemo(() => {
     const st = (data?.status || '').toString()
@@ -164,6 +166,11 @@ export default function ReviewDetailsPage() {
 
   const doSubmit = async () => {
     if (!id) return
+    if (!hasValidRecommendation) {
+      setError('Перед отправкой выберите итоговую рекомендацию.')
+      setConfirmOpen(false)
+      return
+    }
     setSaving(true)
     setError(null)
     setSuccess(null)
@@ -287,8 +294,12 @@ export default function ReviewDetailsPage() {
           <>
           <form className="auth-form">
             <div className="grid grid-2">
-
-              
+              {isReadOnly && (
+                <div className="review-result" style={{ gridColumn: '1 / -1' }}>
+                  <span className="form-label">Итоговая рекомендация</span>
+                  <strong>{draft.recommendation === 'accept' ? 'Рекомендуется к публикации' : draft.recommendation === 'major_revision' ? 'Возвратить с замечаниями на доработку' : draft.recommendation === 'reject' ? 'Отклонить' : '—'}</strong>
+                </div>
+              )}
 
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">Комментарии</label>
@@ -352,10 +363,10 @@ export default function ReviewDetailsPage() {
               ))}
             </div>
 
-            <div className="auth-row">
+            <div className="review-actions">
               {!isReadOnly && (
               <button
-                className="button button--danger"
+                className="button review-actions__button review-actions__button--decline"
                 type="button"
                 onClick={() => {
                   setDeclineError(null)
@@ -367,26 +378,61 @@ export default function ReviewDetailsPage() {
               </button>
               )}
               {!isReadOnly && (
-              <button className="button button--ghost" type="button" onClick={handleSave} disabled={saving}>
-                Сохранить
+              <button className="button review-actions__button review-actions__button--save" type="button" onClick={handleSave} disabled={saving}>
+                Сохранить черновик
               </button>
               )}
               {!isReadOnly && (
-              <button className="button button--primary" type="button" onClick={() => setConfirmOpen(true)} disabled={saving}>
-                Отправить
+              <button className="button review-actions__button review-actions__button--submit" type="button" onClick={() => {
+                setError(null)
+                setConfirmOpen(true)
+              }} disabled={saving}>
+                Отправить рецензию
               </button>
               )}
             </div>
           </form>
-          <ConfirmModal
-            open={confirmOpen}
-            title="Отправить рецензию?"
-            message="После отправки рецензия будет передана редактору. Продолжить?"
-            confirmText="Отправить"
-            cancelText="Отмена"
-            onConfirm={doSubmit}
-            onCancel={() => setConfirmOpen(false)}
-          />
+          {confirmOpen && (
+            <div className="modal-backdrop" onClick={() => !saving && setConfirmOpen(false)}>
+              <div className="modal review-submit-modal" role="dialog" aria-modal="true" aria-labelledby="review-submit-title" onClick={(event) => event.stopPropagation()}>
+                <div className="modal__header">
+                  <div>
+                    <p className="eyebrow">Завершение рецензии</p>
+                    <h3 className="panel-title" id="review-submit-title">Отправить ответ редактору</h3>
+                  </div>
+                </div>
+                <div className="modal__body">
+                  <p className="subtitle">Выберите итоговую рекомендацию. После отправки изменить рецензию будет нельзя.</p>
+                  <label className="form-field">
+                    <span className="form-label">Итоговая рекомендация *</span>
+                    <select
+                      className="text-input review-submit-modal__select"
+                      value={hasValidRecommendation ? draft.recommendation : ''}
+                      onChange={(event) => {
+                        onChange('recommendation', event.target.value)
+                        setError(null)
+                      }}
+                      disabled={saving}
+                      required
+                      autoFocus
+                    >
+                      <option value="" disabled>Выберите рекомендацию</option>
+                      <option value="accept">Рекомендуется к публикации</option>
+                      <option value="major_revision">Возвратить с замечаниями на доработку</option>
+                      <option value="reject">Отклонить</option>
+                    </select>
+                    {!hasValidRecommendation && <span className="form-error-text">Выберите один из трёх вариантов.</span>}
+                  </label>
+                </div>
+                <div className="modal__footer review-submit-modal__footer">
+                  <button className="button button--ghost" type="button" disabled={saving} onClick={() => setConfirmOpen(false)}>Вернуться</button>
+                  <button className="button button--primary" type="button" disabled={saving || !hasValidRecommendation} onClick={doSubmit}>
+                    {saving ? 'Отправляем…' : 'Отправить ответ'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {declineOpen && (
             <div className="modal-backdrop" onClick={() => !declining && setDeclineOpen(false)}>
               <div className="modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>

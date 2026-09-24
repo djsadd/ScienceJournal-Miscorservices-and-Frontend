@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 
 from app.deps import get_db, get_current_user
 from app.services.notification_service import notify_editor_task
+from app.routers.notifications import _queue_notification_email
 from app import config
 import httpx
 from pydantic import BaseModel
@@ -16,6 +17,7 @@ def editor_task(
     task_key: str,
     title: str,
     message: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -27,6 +29,7 @@ def editor_task(
         title=title,
         message=message,
     )
+    _queue_notification_email(background_tasks, n, db)
     return n
 
 
@@ -39,6 +42,7 @@ class BroadcastNewArticleRequest(BaseModel):
 @router.post("/broadcast-new-article")
 def broadcast_new_article(
     payload: BroadcastNewArticleRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -73,6 +77,13 @@ def broadcast_new_article(
             message=body,
         )
         if n and n.id:
+            _queue_notification_email(
+                background_tasks,
+                n,
+                db,
+                "new_article_submitted",
+                {"article_title": payload.title, "article_id": str(payload.article_id)},
+            )
             created += 1
 
     return {"notified": created, "editor_ids": editor_ids, "article_id": payload.article_id}

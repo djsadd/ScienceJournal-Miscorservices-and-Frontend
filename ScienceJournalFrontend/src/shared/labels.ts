@@ -63,6 +63,27 @@ const statusMap = {
   },
 } as const
 
+const reviewRecommendationMap = {
+  ru: {
+    accept: 'Рекомендуется к публикации',
+    minor_revision: 'Возвратить с замечаниями на доработку',
+    major_revision: 'Возвратить с замечаниями на доработку',
+    reject: 'Отклонить',
+  },
+  en: {
+    accept: 'Recommend for publication',
+    minor_revision: 'Return for revision with comments',
+    major_revision: 'Return for revision with comments',
+    reject: 'Reject',
+  },
+  kz: {
+    accept: 'Жариялауға ұсыну',
+    minor_revision: 'Ескертулермен пысықтауға қайтару',
+    major_revision: 'Ескертулермен пысықтауға қайтару',
+    reject: 'Қабылдамау',
+  },
+} as const
+
 export function formatArticleType(code: string, lang: Lang = 'ru'): string {
   const l = (['ru', 'en', 'kz'] as const).includes(lang) ? lang : 'ru'
   const map = typeMap[l] as Record<string, string>
@@ -72,5 +93,12 @@ export function formatArticleType(code: string, lang: Lang = 'ru'): string {
 export function formatArticleStatus(code: string, lang: Lang = 'ru'): string {
   const l = (['ru', 'en', 'kz'] as const).includes(lang) ? lang : 'ru'
   const map = statusMap[l] as Record<string, string>
+  return map[code] ?? code
+}
+
+export function formatReviewRecommendation(code: string | null | undefined, lang: Lang = 'ru'): string {
+  if (!code) return '—'
+  const l = (['ru', 'en', 'kz'] as const).includes(lang) ? lang : 'ru'
+  const map = reviewRecommendationMap[l] as Record<string, string>
   return map[code] ?? code
 }

@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 import logging
 import re
+import string
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
@@ -10,6 +11,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas, config
 from app.deps import get_db, get_current_user
 from app.services.email_service import send_email
+from app.email_templates import EMAIL_EVENTS, SAMPLE_VALUES
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -18,17 +20,13 @@ logger = logging.getLogger(__name__)
 
 NOTIFICATION_TYPES = list(models.NotificationType)
 DEFAULT_TEMPLATES = {
-    "notification_system": ("Системные уведомления", models.NotificationType.system, "{title}", "{message}"),
-    "notification_article_status": ("Статусы статей", models.NotificationType.article_status, "{title}", "{message}"),
-    "notification_review_assignment": ("Рецензирование", models.NotificationType.review_assignment, "{title}", "{message}"),
-    "notification_editorial": ("Редакционные события", models.NotificationType.editorial, "{title}", "{message}"),
-    "notification_custom": ("Прочие уведомления", models.NotificationType.custom, "{title}", "{message}"),
-    "registration_welcome": ("Регистрация автора", None, "Регистрация завершена", "Здравствуйте, {display_name}. Ваш аккаунт автора активирован."),
-    "email_verification": ("Подтверждение электронной почты", None, "Подтверждение электронной почты", "Здравствуйте, {display_name}. Подтвердите почту: {verification_link}"),
-    "password_reset": ("Восстановление пароля", None, "Восстановление пароля", "Здравствуйте, {display_name}. Для смены пароля перейдите по ссылке: {reset_link}. Ссылка действует {expires_minutes} минут."),
-    "review_assigned": ("Назначение рецензии", None, "Вам назначена рецензия", "Вам назначена рецензия по статье {article_label}."),
-    "review_cancelled": ("Отмена рецензирования редактором", None, "Рецензирование отменено", "Назначение на рецензирование статьи {article_label} отменено редактором."),
-    "reviewer_declined": ("Отказ рецензента", None, "Рецензент отказался от рецензирования", "Рецензент #{reviewer_id} отказался от статьи {article_label}. Причина: {reason}"),
+    key: (
+        event["name"],
+        models.NotificationType(event["type"]) if event["type"] else None,
+        event["subject"],
+        event["text"],
+    )
+    for key, event in EMAIL_EVENTS.items()
 }
 
 
@@ -60,7 +58,7 @@ def _send_notification_email(user_id: int, subject: str, message: str, html: str
         logger.warning("Email send failed for notification %s: %s", notification_id, e)
 
 
-def _render_email_template(db: Session, key: str, values: dict, fallback: tuple[str, str, str]) -> tuple[str, str, str]:
+def _render_email_template(db: Session, key: str, values: dict, fallback: tuple[str, str, str]) -> Optional[tuple[str, str, str]]:
     template = db.query(models.EmailTemplate).filter(models.EmailTemplate.key == key).first()
     if not template and key in DEFAULT_TEMPLATES:
         name, notification_type, subject, text = DEFAULT_TEMPLATES[key]
@@ -70,13 +68,15 @@ def _render_email_template(db: Session, key: str, values: dict, fallback: tuple[
             name=name,
             subject_template=subject,
             text_template=text,
-            html_template="<p>{message}</p>",
+            html_template=EMAIL_EVENTS[key]["html"],
             is_active=True,
         )
         db.add(template)
         db.commit()
         db.refresh(template)
-    if not template or not template.is_active:
+    if template and not template.is_active:
+        return None
+    if not template:
         return fallback
     try:
         return (
@@ -109,9 +109,12 @@ def _queue_notification_email(
         **(template_variables or {}),
     }
     key = template_key or f"notification_{n.type.value}"
-    subject, text, html = _render_email_template(
+    rendered = _render_email_template(
         db, key, values, (n.title, n.message, f"<p>{n.message}</p>")
     )
+    if rendered is None:
+        return
+    subject, text, html = rendered
     # Copy values now; the request-scoped SQLAlchemy session may be closed later.
     background_tasks.add_task(
         _send_notification_email, n.user_id, subject, text, html, n.id
@@ -216,12 +219,15 @@ def send_internal_email(
         "message": payload.text,
         **payload.template_variables,
     }
-    subject, text, html = _render_email_template(
+    rendered = _render_email_template(
         db,
         payload.template_key or "notification_system",
         values,
         (payload.subject, payload.text, payload.html or f"<p>{payload.text}</p>"),
     )
+    if rendered is None:
+        return {"message": "Email disabled for this event"}
+    subject, text, html = rendered
     background_tasks.add_task(
         _send_direct_email,
         payload.user_id,
@@ -263,7 +269,13 @@ def create_article_notification(
     db.add(notification)
     db.commit()
     db.refresh(notification)
-    _queue_notification_email(background_tasks, notification, db)
+    _queue_notification_email(
+        background_tasks,
+        notification,
+        db,
+        "editor_comments",
+        {"comments": payload.comments, "article_id": str(payload.article_id)},
+    )
     return notification
 
 
@@ -326,7 +338,7 @@ def _ensure_default_templates(db: Session) -> None:
                 name=name,
                 subject_template=subject,
                 text_template=text,
-                html_template="<p>{message}</p>",
+                html_template=EMAIL_EVENTS[key]["html"],
                 is_active=True,
             ))
     db.commit()
@@ -339,7 +351,27 @@ def list_email_templates(
 ):
     _ensure_admin(current_user)
     _ensure_default_templates(db)
-    return db.query(models.EmailTemplate).order_by(models.EmailTemplate.id).all()
+    templates = db.query(models.EmailTemplate).order_by(models.EmailTemplate.id).all()
+    return [_template_out(item) for item in templates]
+
+
+def _template_out(template: models.EmailTemplate) -> dict:
+    event = EMAIL_EVENTS.get(template.key, {})
+    return {
+        "key": template.key,
+        "type": template.type,
+        "name": template.name,
+        "subject_template": template.subject_template,
+        "text_template": template.text_template,
+        "html_template": template.html_template,
+        "is_active": template.is_active,
+        "updated_at": template.updated_at,
+        "description": event.get("description", ""),
+        "variables": [
+            {"name": name, "description": description, "sample": str(SAMPLE_VALUES.get(name, ""))}
+            for name, description in event.get("variables", {}).items()
+        ],
+    }
 
 
 @router.put("/admin/email-templates/{template_key}", response_model=schemas.EmailTemplateOut)
@@ -354,11 +386,29 @@ def update_email_template(
     template = db.query(models.EmailTemplate).filter(models.EmailTemplate.key == template_key).first()
     if not template:
         raise HTTPException(status_code=404, detail="Email template not found")
+    event = EMAIL_EVENTS.get(template_key, {})
+    allowed_variables = set(event.get("variables", {}))
+    formatter = string.Formatter()
+    try:
+        used_variables = {
+            field_name.split(".", 1)[0].split("[", 1)[0]
+            for value in (payload.subject_template, payload.text_template, payload.html_template or "")
+            for _, field_name, _, _ in formatter.parse(value)
+            if field_name
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Ошибка синтаксиса шаблона: {exc}") from exc
+    unknown_variables = sorted(used_variables - allowed_variables)
+    if unknown_variables:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Недоступные переменные для этого события: {', '.join(unknown_variables)}",
+        )
     for field, value in payload.dict().items():
         setattr(template, field, value)
     db.commit()
     db.refresh(template)
-    return template
+    return _template_out(template)
 
 
 @router.post("/admin/email-templates/{template_key}/test", response_model=schemas.MessageResponse)
@@ -399,18 +449,7 @@ def test_email_template(
         template_key,
         ("Уведомление научного журнала", "В личном кабинете доступна новая информация по вашей рукописи."),
     )
-    sample_values = {
-        "title": title,
-        "message": message,
-        "article_id": "123",
-        "display_name": "Алексей Иванов",
-        "verification_link": "https://journal.tau-edu.kz/auth/verify-email",
-        "reset_link": "https://journal.tau-edu.kz/auth/reset-password",
-        "expires_minutes": "30",
-        "article_label": "«Искусственный интеллект в современной науке»",
-        "reviewer_id": "42",
-        "reason": "Тема статьи выходит за рамки научной специализации рецензента.",
-    }
+    sample_values = {**SAMPLE_VALUES, "title": title, "message": message}
     try:
         subject = payload.subject_template.format_map(sample_values)
         text = payload.text_template.format_map(sample_values)

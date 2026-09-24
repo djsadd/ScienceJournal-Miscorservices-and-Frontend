@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import type { Article, ReviewAssignment, User } from '../shared/types'
 import { Badge } from '../shared/components/Badge'
+import { formatReviewRecommendation } from '../shared/labels'
 
 interface ArticleDetailsPageProps {
   articles: Article[]
@@ -140,7 +141,7 @@ export function ArticleDetailsPage({ articles, users, assignments }: ArticleDeta
             <div className="assignment-card__body">
               <div>
                 <div className="meta-label">Рекомендация</div>
-                <div>{latestReview.recommendation}</div>
+                <div>{formatReviewRecommendation(latestReview.recommendation)}</div>
               </div>
               <div>
                 <div className="meta-label">Получено</div>
@@ -176,7 +177,7 @@ export function ArticleDetailsPage({ articles, users, assignments }: ArticleDeta
                     </div>
                     <p className="article-abstract">{rev.comments}</p>
                   </div>
-                  <div className="pill">{rev.recommendation}</div>
+                  <div className="pill">{formatReviewRecommendation(rev.recommendation)}</div>
                 </div>
               )
             })}

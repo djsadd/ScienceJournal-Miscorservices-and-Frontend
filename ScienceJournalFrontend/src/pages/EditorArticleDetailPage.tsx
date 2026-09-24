@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { toApiFilesUrl } from '../shared/url'
-import { formatArticleStatus, formatArticleType } from '../shared/labels'
+import { formatArticleStatus, formatArticleType, formatReviewRecommendation } from '../shared/labels'
 import { getCountryLabel, type CountryValue } from '../shared/countries'
 import { useLanguage } from '../shared/LanguageContext'
 import ConfirmModal from '../shared/components/ConfirmModal'
@@ -487,6 +487,62 @@ export default function EditorArticleDetailPage() {
     return <span className="badge badge--ghost">{s}</span>
   }
 
+  const renderRecommendationBadge = (recommendation?: string | null, status?: ReviewStatus) => {
+    if (status !== 'completed' || !recommendation) {
+      return <span className="badge badge--muted">—</span>
+    }
+    const badgeClass = recommendation === 'accept'
+      ? 'badge--success'
+      : recommendation === 'reject'
+        ? 'badge--danger'
+        : 'badge--warn'
+    return (
+      <span className={`badge review-recommendation ${badgeClass}`}>
+        {formatReviewRecommendation(recommendation, lang)}
+      </span>
+    )
+  }
+
+  const downloadReviewAsWord = () => {
+    if (!reviewDetails || reviewDetails.status !== 'completed') return
+    const escapeHtml = (value: unknown) => String(value ?? '—')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+    const reviewerName = reviewList.find((item) => item.reviewer_id === reviewDetails.reviewer_id)?.reviewer?.full_name
+      || `ID: ${reviewDetails.reviewer_id}`
+    const fields = [
+      ['Рекомендация', formatReviewRecommendation(reviewDetails.recommendation, lang)],
+      ['Комментарии', reviewDetails.comments],
+      ['Практическая значимость', reviewDetails.importance_applicability],
+      ['Новизна применения', reviewDetails.novelty_application],
+      ['Оригинальность', reviewDetails.originality],
+      ['Инновационный продукт', reviewDetails.innovation_product],
+      ['Значимость результатов', reviewDetails.results_significance],
+      ['Логичность', reviewDetails.coherence],
+      ['Качество стиля', reviewDetails.style_quality],
+      ['Соответствие требованиям', reviewDetails.editorial_compliance],
+    ]
+    const rows = fields.map(([label, value]) => `
+      <tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')
+    const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+      body{font-family:Arial,sans-serif;font-size:11pt;color:#222}h1{font-size:18pt;color:#7a1237}
+      .meta{margin:0 0 18pt}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:8pt;text-align:left;vertical-align:top;white-space:pre-wrap}th{width:30%;background:#f5eef1}
+    </style></head><body><h1>Рецензия на статью</h1>
+      <div class="meta"><p><strong>Статья:</strong> ${escapeHtml(title)}</p><p><strong>Рецензент:</strong> ${escapeHtml(reviewerName)}</p></div>
+      <table>${rows}</table></body></html>`
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `review-${reviewDetails.id}.doc`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
   const handleCancelReviewer = async () => {
     if (!id || !cancelReviewer || cancelReviewerLoading) return
     setCancelReviewerLoading(true)
@@ -949,7 +1005,7 @@ export default function EditorArticleDetailPage() {
                   <span>Email</span>
                   <span>Дедлайн</span>
                   <span>Статус</span>
-                  <span>Действия</span>
+                  <span>Рекомендация рецензента</span>
                 </div>
                 <div className="table__body">
                   {reviewList.map((r) => {
@@ -979,18 +1035,19 @@ export default function EditorArticleDetailPage() {
                         </div>
                         <div className="table__cell">{email}</div>
                         <div className="table__cell">{deadline}</div>
-                        <div className="table__cell">{renderStatusBadge(r.status)}</div>
-                        <div className="table__cell table__cell--actions">
+                        <div className="table__cell">
+                          {renderStatusBadge(r.status)}
                           {r.status !== 'completed' ? (
                             <button
                               type="button"
-                              className="button button--danger button--compact"
+                              className="button button--danger button--compact reviewer-cancel-button"
                               onClick={() => setCancelReviewer({ id: r.reviewer_id, name: fullName })}
                             >
                               Отменить назначение
                             </button>
                           ) : null}
                         </div>
+                        <div className="table__cell">{renderRecommendationBadge(r.recommendation, r.status)}</div>
                       </div>
                     )
                   })}
@@ -1286,7 +1343,7 @@ export default function EditorArticleDetailPage() {
 
       {isReviewModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsReviewModalOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal--review-detail" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ margin: 0 }}>Рецензия</h3>
               <button className="modal__close" onClick={() => setIsReviewModalOpen(false)}>×</button>
@@ -1300,7 +1357,10 @@ export default function EditorArticleDetailPage() {
                   <div><strong>Статья:</strong> {reviewDetails.article_id}</div>
                   <div><strong>Рецензент:</strong> {reviewDetails.reviewer_id}</div>
                   <div><strong>Статус:</strong> {renderStatusBadge(reviewDetails.status)}</div>
-                  <div><strong>Рекомендация:</strong> {reviewDetails.recommendation || '—'}</div>
+                  <div className="review-detail__recommendation">
+                    <strong>Рекомендация:</strong>
+                    {renderRecommendationBadge(reviewDetails.recommendation, reviewDetails.status)}
+                  </div>
                   <div><strong>Дедлайн:</strong> {reviewDetails.deadline ? new Date(reviewDetails.deadline).toLocaleString() : '—'}</div>
                   <div style={{ gridColumn: '1 / -1' }}><strong>Комментарии:</strong><br/>{reviewDetails.comments || '—'}</div>
                   <div style={{ gridColumn: '1 / -1' }}><strong>Практическая значимость:</strong><br/>{reviewDetails.importance_applicability || '—'}</div>
@@ -1334,6 +1394,11 @@ export default function EditorArticleDetailPage() {
               )}
             </div>
             <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              {reviewDetails?.status === 'completed' && (
+                <button className="button button--ghost" type="button" onClick={downloadReviewAsWord}>
+                  Скачать рецензию в Word
+                </button>
+              )}
               {reviewDetails && isEditor && (
                 <button
                   className="button button--warn"

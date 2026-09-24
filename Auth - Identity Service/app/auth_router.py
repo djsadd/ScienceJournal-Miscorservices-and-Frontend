@@ -104,6 +104,13 @@ def send_account_status_notification(user: models.User, is_active: bool) -> None
                     "title": title,
                     "message": message,
                     "related_entity": f"auth:activation:{user.id}",
+                    "template_key": "account_status_changed",
+                    "template_variables": {
+                        "display_name": display_name,
+                        "role": role_title,
+                        "status": "active" if is_active else "inactive",
+                        "cabinet_url": cabinet_url,
+                    },
                 },
                 headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
             )

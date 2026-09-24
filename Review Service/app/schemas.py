@@ -15,6 +15,13 @@ class Recommendation(str, Enum):
     major_revision = "major_revision"
     reject = "reject"
 
+
+class ReviewSubmissionRecommendation(str, Enum):
+    """Closed list available to a reviewer when filling in the form."""
+    accept = "accept"
+    major_revision = "major_revision"
+    reject = "reject"
+
 class ReviewBase(BaseModel):
     article_id: int
     comments: Optional[str] = None
@@ -47,7 +54,7 @@ class ReviewUpdate(BaseModel):
     показывает, что пользователь нажал: "Сохранить" или "Отправить".
     """
     comments: Optional[str] = None
-    recommendation: Optional[Recommendation] = None
+    recommendation: Optional[ReviewSubmissionRecommendation] = None
     status: Optional[ReviewStatus] = None
     importance_applicability: Optional[str] = None
     novelty_application: Optional[str] = None
