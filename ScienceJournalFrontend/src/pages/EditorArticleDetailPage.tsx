@@ -111,6 +111,63 @@ export default function EditorArticleDetailPage() {
   const [volumesLoading, setVolumesLoading] = useState(false)
   const [volumesError, setVolumesError] = useState<string | null>(null)
   const [addingToVolumeId, setAddingToVolumeId] = useState<number | null>(null)
+  const [aiReviewText, setAiReviewText] = useState('')
+  const [aiReviewLoading, setAiReviewLoading] = useState(false)
+  const [aiReviewError, setAiReviewError] = useState<string | null>(null)
+  const [aiRecommendation, setAiRecommendation] = useState<'accept' | 'major_revision' | 'reject' | null>(null)
+  const [aiModel, setAiModel] = useState<string | null>(null)
+  const [isAIReviewModalOpen, setIsAIReviewModalOpen] = useState(false)
+
+  const requestAIReview = async () => {
+    if (!data || aiReviewLoading) return
+    setIsAIReviewModalOpen(true)
+    setAiReviewText('')
+    setAiRecommendation(null)
+    setAiReviewError(null)
+    setAiReviewLoading(true)
+    try {
+      await api.streamAIReview(
+        { article_id: data.id, language: articleFormLang === 'kz' ? 'kk' : articleFormLang },
+        (event) => {
+          if (event.type === 'started') setAiModel(event.model)
+          if (event.type === 'delta') setAiReviewText((current) => current + event.text)
+          if (event.type === 'completed') setAiRecommendation(event.recommendation)
+          if (event.type === 'error') setAiReviewError(event.message)
+        },
+      )
+    } catch (e: any) {
+      setAiReviewError(e?.message || 'Не удалось сформировать ИИ-рецензию')
+    } finally {
+      setAiReviewLoading(false)
+    }
+  }
+
+  const aiRecommendationLabel = aiRecommendation === 'accept'
+    ? 'Рекомендовать к публикации'
+    : aiRecommendation === 'major_revision'
+      ? 'Рекомендовать после доработки'
+      : aiRecommendation === 'reject'
+        ? 'Не рекомендовать к публикации'
+        : null
+  const hasAIReviewer = aiReviewLoading || Boolean(aiReviewText) || Boolean(aiReviewError)
+
+  useEffect(() => {
+    if (!id) return
+    api.get<Array<{
+      status: string
+      review_text?: string | null
+      recommendation?: 'accept' | 'major_revision' | 'reject' | null
+      model?: string | null
+    }>>('/ai-reviews', { params: { article_id: id, limit: 1 } })
+      .then((items) => {
+        const latest = items[0]
+        if (!latest || latest.status !== 'completed' || !latest.review_text) return
+        setAiReviewText(latest.review_text)
+        setAiRecommendation(latest.recommendation || null)
+        setAiModel(latest.model || null)
+      })
+      .catch(() => {})
+  }, [id])
 
   useEffect(() => {
     if (!isAcceptOpen) return
@@ -619,6 +676,39 @@ export default function EditorArticleDetailPage() {
     URL.revokeObjectURL(url)
   }
 
+  const downloadAIReviewAsWord = () => {
+    if (!data || !aiReviewText || aiReviewLoading) return
+    const escapeHtml = (value: unknown) => String(value ?? '—')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+    const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+      body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.55;color:#222;margin:32pt}
+      h1{font-size:18pt;color:#7a1237;margin-bottom:18pt}.meta{padding:12pt;background:#f5f6fa;margin-bottom:18pt}
+      .review{white-space:pre-wrap}.notice{margin-top:20pt;font-size:9pt;color:#666;border-top:1px solid #ccc;padding-top:8pt}
+    </style></head><body>
+      <h1>ИИ-рецензия на научную статью</h1>
+      <div class="meta">
+        <p><strong>Статья:</strong> ${escapeHtml(title)}</p>
+        <p><strong>ИИ-рецензент:</strong> ${escapeHtml(aiModel || 'OpenAI')}</p>
+        <p><strong>Рекомендация:</strong> ${escapeHtml(aiRecommendationLabel || '—')}</p>
+        <p><strong>Сформировано:</strong> ${escapeHtml(new Date().toLocaleString('ru-RU'))}</p>
+      </div>
+      <div class="review">${escapeHtml(aiReviewText)}</div>
+      <div class="notice">ИИ-рецензия носит рекомендательный характер и не заменяет независимое рецензирование и решение редактора.</div>
+    </body></html>`
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `ai-review-article-${data.id}.doc`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
   const handleCancelReviewer = async () => {
     if (!id || !cancelReviewer || cancelReviewerLoading) return
     setCancelReviewerLoading(true)
@@ -1114,7 +1204,10 @@ export default function EditorArticleDetailPage() {
           </CollapsibleSection>
 
           <CollapsibleSection title="Рецензенты" defaultOpen>
-            <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1rem' }}>
+            <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
+              <button className="button button--primary" disabled={aiReviewLoading} onClick={requestAIReview}>
+                {aiReviewLoading ? 'ИИ формирует рецензию…' : 'Запросить ИИ-рецензию'}
+              </button>
               {data.status !== 'rejected' && (
                 <button className="button button--primary" onClick={() => setIsAddReviewerOpen(true)}>Добавить рецензента</button>
               )}
@@ -1122,7 +1215,7 @@ export default function EditorArticleDetailPage() {
             {reviewListError && <div className="alert error">Ошибка: {reviewListError}</div>}
             {reviewListLoading ? (
               <div className="loading">Загрузка рецензентов...</div>
-            ) : reviewList.length === 0 ? (
+            ) : reviewList.length === 0 && !hasAIReviewer ? (
               <div className="table__empty">Рецензенты пока не назначены.</div>
             ) : (
               <div className="table table--article-reviewers">
@@ -1134,6 +1227,30 @@ export default function EditorArticleDetailPage() {
                   <span>Рекомендация рецензента</span>
                 </div>
                 <div className="table__body">
+                  {hasAIReviewer && (
+                    <div className="table__row table__row--align ai-reviewer-row">
+                      <div className="table__cell">
+                        <div className="table__title">
+                          <button type="button" className="ai-reviewer-link" onClick={() => setIsAIReviewModalOpen(true)}>
+                            ИИ-рецензент
+                          </button>
+                        </div>
+                        <div className="table__meta">{aiModel || 'OpenAI'} · дополнительная рецензия</div>
+                      </div>
+                      <div className="table__cell">—</div>
+                      <div className="table__cell">—</div>
+                      <div className="table__cell">
+                        {renderStatusBadge(aiReviewLoading ? 'in_progress' : aiReviewError ? 'failed' : 'completed')}
+                      </div>
+                      <div className="table__cell">
+                        {aiRecommendationLabel ? (
+                          <button type="button" className="ai-reviewer-link" onClick={() => setIsAIReviewModalOpen(true)}>
+                            <span className={`badge ai-recommendation ai-recommendation--${aiRecommendation}`}>{aiRecommendationLabel}</span>
+                          </button>
+                        ) : '—'}
+                      </div>
+                    </div>
+                  )}
                   {reviewList.map((r) => {
                     const rid = getReviewIdFromAssignment(r)
                     const fullName = r.reviewer?.full_name || `ID: ${r.reviewer_id}`
@@ -1462,6 +1579,42 @@ export default function EditorArticleDetailPage() {
             <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button className="button button--ghost" onClick={() => setIsAddReviewerOpen(false)}>Отмена</button>
               <button className="button button--primary" onClick={() => setIsAddReviewerOpen(false)}>Готово</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAIReviewModalOpen && (
+        <div className="modal-backdrop" onClick={() => !aiReviewLoading && setIsAIReviewModalOpen(false)}>
+          <div className="modal modal--review-detail" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Рецензия ИИ-рецензента</h3>
+                <div className="form-hint">{aiModel || 'OpenAI'} · дополнительная рецензия</div>
+              </div>
+              <button className="modal__close" disabled={aiReviewLoading} onClick={() => setIsAIReviewModalOpen(false)}>×</button>
+            </div>
+            <div className="modal__body" aria-live="polite">
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <div><strong>Статус:</strong> {renderStatusBadge(aiReviewLoading ? 'in_progress' : aiReviewError ? 'failed' : 'completed')}</div>
+                {aiRecommendationLabel && (
+                  <span className={`badge ai-recommendation ai-recommendation--${aiRecommendation}`}>{aiRecommendationLabel}</span>
+                )}
+              </div>
+              {aiReviewError && <div className="alert error">Ошибка: {aiReviewError}</div>}
+              {aiReviewText ? <div className="ai-review-text">{aiReviewText}</div> : !aiReviewError && <div className="loading">Подготовка рецензии…</div>}
+              {aiReviewLoading && <div className="ai-stream-cursor" aria-hidden="true" />}
+              <div className="form-hint" style={{ marginTop: '1rem' }}>
+                ИИ-рецензия носит рекомендательный характер и не заменяет независимых рецензентов и решение редактора.
+              </div>
+            </div>
+            <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button className="button button--ghost" type="button" disabled={aiReviewLoading || !aiReviewText} onClick={downloadAIReviewAsWord}>
+                Скачать рецензию в Word
+              </button>
+              <button className="button button--primary" disabled={aiReviewLoading} onClick={() => setIsAIReviewModalOpen(false)}>
+                {aiReviewLoading ? 'Формируется…' : 'Закрыть'}
+              </button>
             </div>
           </div>
         </div>

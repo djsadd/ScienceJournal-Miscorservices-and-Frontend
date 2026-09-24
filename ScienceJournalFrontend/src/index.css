@@ -37,6 +37,51 @@ button {
   font-family: inherit;
 }
 
+.ai-review-panel {
+  border: 1px solid #cfd8ff;
+  background: linear-gradient(180deg, #f8faff 0%, #fff 100%);
+}
+
+.ai-review-text {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #fff;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.ai-recommendation--accept { background: #dcfce7; color: #166534; }
+.ai-recommendation--major_revision { background: #fef3c7; color: #92400e; }
+.ai-recommendation--reject { background: #fee2e2; color: #991b1b; }
+
+.ai-reviewer-row {
+  background: #f8faff;
+}
+
+.ai-reviewer-link {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+}
+
+.ai-stream-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 18px;
+  margin: 0.5rem 0 0 1rem;
+  background: #3457d5;
+  animation: ai-cursor-blink 0.8s steps(2, start) infinite;
+}
+
+@keyframes ai-cursor-blink { 50% { opacity: 0; } }
+
 /* Low-vision accessibility mode */
 .low-vision {
   font-size: 20px;

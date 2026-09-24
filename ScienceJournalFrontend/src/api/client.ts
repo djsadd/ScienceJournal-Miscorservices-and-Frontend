@@ -65,6 +65,12 @@ export interface AuthTokens {
   tokenType?: string
 }
 
+export type AIReviewStreamEvent =
+  | { type: 'started'; review_id: number; model: string }
+  | { type: 'delta'; text: string }
+  | { type: 'completed'; review_id: number; recommendation: 'accept' | 'major_revision' | 'reject' }
+  | { type: 'error'; message: string }
+
 export class ApiError extends Error {
   status: number
   bodyText: string
@@ -220,6 +226,40 @@ export const api = {
   },
   getTokens: () => currentTokens,
   refreshTokens: () => doRefresh(),
+  streamAIReview: async (
+    body: { article_id: number; language: 'ru' | 'kk' | 'en' },
+    onEvent: (event: AIReviewStreamEvent) => void,
+    signal?: AbortSignal,
+  ) => {
+    const send = () => fetch(buildUrl('/ai-reviews/stream'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/x-ndjson',
+        ...(currentTokens?.accessToken ? { Authorization: `Bearer ${currentTokens.accessToken}` } : {}),
+      },
+      body: JSON.stringify(body),
+      signal,
+    })
+    let response = await send()
+    if (response.status === 401 && await doRefresh()) response = await send()
+    if (!response.ok) throw new Error((await response.text()) || `API error ${response.status}`)
+    if (!response.body) throw new Error('Браузер не поддерживает потоковый ответ')
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    while (true) {
+      const { value, done } = await reader.read()
+      buffer += decoder.decode(value, { stream: !done })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+      for (const line of lines) {
+        if (line.trim()) onEvent(JSON.parse(line) as AIReviewStreamEvent)
+      }
+      if (done) break
+    }
+    if (buffer.trim()) onEvent(JSON.parse(buffer) as AIReviewStreamEvent)
+  },
   logout: () => {
     currentTokens = null
     persistTokens(null)

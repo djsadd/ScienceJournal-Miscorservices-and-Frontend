@@ -16,6 +16,7 @@ SERVICE_URLS = {
     "publication": "http://publication:8000",
     "notifications": "http://notifications:8000",
     "analytics": "http://analytics:8000",
+    "ai_reviews": "http://ai-reviews:8000",
     "files": "http://fileprocessing:7000",
 }
 

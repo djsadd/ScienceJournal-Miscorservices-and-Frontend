@@ -1,5 +1,7 @@
 import httpx
 from fastapi import Request, Response
+from starlette.background import BackgroundTask
+from starlette.responses import StreamingResponse
 from app.config import API_PREFIX
 
 # Remove hop-by-hop headers so we do not forward connection-specific metadata
@@ -62,6 +64,25 @@ async def proxy_request(service_url: str, request: Request) -> Response:
     if upstream_path.startswith("/files"):
         # File uploads/downloads may take longer than typical JSON API calls.
         upstream_timeout = httpx.Timeout(connect=10.0, read=120.0, write=120.0, pool=10.0)
+    elif upstream_path.startswith("/ai-reviews"):
+        upstream_timeout = httpx.Timeout(connect=10.0, read=130.0, write=30.0, pool=10.0)
+
+    if upstream_path == "/ai-reviews/stream":
+        client = httpx.AsyncClient(timeout=upstream_timeout)
+        upstream_request = client.build_request(
+            method=request.method,
+            url=service_url + upstream_path,
+            params=request.query_params,
+            content=await request.body(),
+            headers=headers,
+        )
+        resp = await client.send(upstream_request, stream=True)
+        return StreamingResponse(
+            resp.aiter_raw(),
+            status_code=resp.status_code,
+            headers=_filter_headers(resp.headers),
+            background=BackgroundTask(client.aclose),
+        )
 
     async with httpx.AsyncClient(timeout=upstream_timeout) as client:
         resp = await client.request(

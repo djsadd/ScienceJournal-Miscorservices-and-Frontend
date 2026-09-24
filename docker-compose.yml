@@ -167,6 +167,29 @@ services:
       auth:
         condition: service_started
 
+  ai-reviews:
+    build: ./AI Review Service
+    environment:
+      - DATABASE_URL=postgresql://reviews:pass@db/reviews
+      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - ARTICLE_SERVICE_URL=http://articles:8000
+      - FILE_SERVICE_URL=http://fileprocessing:7000
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - AI_API_URL=${AI_API_URL:-https://api.openai.com/v1}
+      - OPEN_AI_KEY=${OPEN_AI_KEY:-}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-gpt-5.5}
+      - AI_TIMEOUT_SECONDS=${AI_TIMEOUT_SECONDS:-120}
+    ports:
+      - "8010:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      articles:
+        condition: service_started
+      fileprocessing:
+        condition: service_started
+
   fileprocessing:
     build: ./FileStorageService
     environment:
@@ -199,6 +222,7 @@ services:
       - publication
       - notifications
       - analytics
+      - ai-reviews
       - fileprocessing
 
   frontend:

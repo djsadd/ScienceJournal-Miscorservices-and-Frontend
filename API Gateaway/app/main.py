@@ -14,6 +14,7 @@ from app.routers import (
     analytics,
     fileprocessing,
     volumes,
+    ai_reviews,
 )
 
 app = FastAPI(
@@ -43,3 +44,4 @@ app.include_router(notifications.router, prefix=API_PREFIX)
 app.include_router(analytics.router, prefix=API_PREFIX)
 app.include_router(fileprocessing.router, prefix=API_PREFIX)
 app.include_router(volumes.router, prefix=API_PREFIX)
+app.include_router(ai_reviews.router, prefix=API_PREFIX)
