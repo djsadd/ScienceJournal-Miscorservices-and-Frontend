@@ -72,12 +72,26 @@ interface ArticleOut {
   authors: AuthorOut[]
 }
 
+interface CorrespondenceItem {
+  id: number
+  user_id: number
+  type: string
+  title: string
+  message: string
+  article_version_id?: number | null
+  status: string
+  created_at: string
+}
+
 export default function EditorArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { lang: pageLang } = useLanguage()
   const [data, setData] = useState<ArticleOut | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [correspondence, setCorrespondence] = useState<CorrespondenceItem[]>([])
+  const [correspondenceLoading, setCorrespondenceLoading] = useState(false)
+  const [correspondenceError, setCorrespondenceError] = useState<string | null>(null)
   const [articleFormLang, setArticleFormLang] = useState<'ru' | 'en' | 'kz'>(() => {
     const params = new URLSearchParams(window.location.search)
     const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
@@ -257,6 +271,7 @@ export default function EditorArticleDetailPage() {
   const [reviewLoading, setReviewLoading] = useState(false)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [reviewDetails, setReviewDetails] = useState<ReviewOut | null>(null)
+  const [articleReviewComments, setArticleReviewComments] = useState<ReviewOut[]>([])
   const [resubDeadlineLocal, setResubDeadlineLocal] = useState('')
   const [resubmitting, setResubmitting] = useState(false)
   const [resubError, setResubError] = useState<string | null>(null)
@@ -440,6 +455,15 @@ export default function EditorArticleDetailPage() {
       .finally(() => setLoading(false))
     // Fetch article reviewers
     fetchArticleReviewers(id)
+    setCorrespondenceLoading(true)
+    setCorrespondenceError(null)
+    api.getArticleCorrespondenceHistory<CorrespondenceItem[]>(id)
+      .then((history) => setCorrespondence(Array.isArray(history) ? history : []))
+      .catch((error: unknown) => {
+        const e = error as { bodyJson?: { detail?: unknown }; message?: unknown }
+        setCorrespondenceError(String(e.bodyJson?.detail || e.message || 'Не удалось загрузить историю переписки'))
+      })
+      .finally(() => setCorrespondenceLoading(false))
   }, [id])
 
   // Auto-open review modal if URL has ?review_id=123
@@ -476,6 +500,58 @@ export default function EditorArticleDetailPage() {
     const candidates = [anyR.id, anyR.review_id, anyR.reviewId, anyR.assignment_id]
     const found = candidates.find((v) => typeof v === 'number' && Number.isFinite(v))
     return (found as number) ?? null
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    const reviewIds = reviewList
+      .map((review) => {
+        const assignment = review as ArticleReviewerAssignment & {
+          review_id?: number
+          reviewId?: number
+          assignment_id?: number
+        }
+        return [assignment.id, assignment.review_id, assignment.reviewId, assignment.assignment_id]
+          .find((value) => typeof value === 'number' && Number.isFinite(value)) ?? null
+      })
+      .filter((reviewId): reviewId is number => reviewId !== null)
+    if (reviewIds.length === 0) {
+      setArticleReviewComments([])
+      return () => { cancelled = true }
+    }
+    Promise.all(reviewIds.map((reviewId) => api.getReviewById<ReviewOut>(reviewId).catch(() => null)))
+      .then((reviews) => {
+        if (!cancelled) {
+          setArticleReviewComments(reviews.filter((review): review is ReviewOut => Boolean(review?.comments?.trim())))
+        }
+      })
+    return () => { cancelled = true }
+  }, [reviewList])
+
+  const downloadCorrespondence = () => {
+    if (!data || correspondence.length === 0) return
+    const lines = [
+      `История переписки по статье №${data.id}`,
+      `Название: ${title}`,
+      `Сформировано: ${new Date().toLocaleString('ru-RU')}`,
+      '',
+      ...correspondence.flatMap((item) => [
+        `[${new Date(item.created_at).toLocaleString('ru-RU')}] Редакция → автор`,
+        item.title,
+        item.message,
+        item.article_version_id ? `Версия статьи: ${item.article_version_id}` : '',
+        '',
+      ].filter(Boolean)),
+    ]
+    const blob = new Blob([`\uFEFF${lines.join('\n')}`], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `article-${data.id}-correspondence.txt`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
   }
 
   const renderStatusBadge = (status?: ReviewStatus) => {
@@ -986,6 +1062,56 @@ export default function EditorArticleDetailPage() {
           </CollapsibleSection>
 
 
+
+          <CollapsibleSection title="Комментарии и переписка" defaultOpen>
+            <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <strong>История общения по статье</strong>
+                <div className="form-hint">Сообщения редакции автору и комментарии рецензентов собраны в одном месте.</div>
+              </div>
+              <button type="button" className="button button--ghost button--compact" disabled={correspondence.length === 0} onClick={downloadCorrespondence}>
+                Скачать историю переписки
+              </button>
+            </div>
+            {correspondenceError && <div className="alert error" style={{ marginTop: '0.75rem' }}>Ошибка: {correspondenceError}</div>}
+            {correspondenceLoading ? (
+              <div className="loading">Загрузка переписки...</div>
+            ) : correspondence.length === 0 ? (
+              <div className="table__empty">Переписки с автором пока нет.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
+                {correspondence.map((item) => (
+                  <article key={item.id} style={{ border: '1px solid #e3e3e3', borderRadius: 8, padding: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                      <strong>{item.title}</strong>
+                      <span className="table__meta">{new Date(item.created_at).toLocaleString('ru-RU')}</span>
+                    </div>
+                    <div className="table__meta" style={{ marginTop: '0.25rem' }}>Редакция → автор</div>
+                    <p style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>{item.message}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+            <h4 style={{ marginTop: '1.5rem', marginBottom: '0.75rem' }}>Комментарии рецензентов</h4>
+            {articleReviewComments.length === 0 ? (
+              <div className="table__empty">Комментариев рецензентов пока нет.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {articleReviewComments.map((review) => {
+                  const reviewer = reviewList.find((item) => item.reviewer_id === review.reviewer_id)?.reviewer
+                  return (
+                    <article key={review.id} style={{ border: '1px solid #e3e3e3', borderRadius: 8, padding: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                        <strong>{reviewer?.full_name || `Рецензент ID: ${review.reviewer_id}`}</strong>
+                        {review.updated_at && <span className="table__meta">{new Date(review.updated_at).toLocaleString('ru-RU')}</span>}
+                      </div>
+                      <p style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>{review.comments}</p>
+                    </article>
+                  )
+                })}
+              </div>
+            )}
+          </CollapsibleSection>
 
           <CollapsibleSection title="Рецензенты" defaultOpen>
             <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1rem' }}>

@@ -6,6 +6,7 @@ import string
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import models, schemas, config
@@ -201,6 +202,36 @@ def create_notification_internal(
     db.refresh(notification)
     _queue_notification_email(background_tasks, notification, db, payload.template_key, payload.template_variables)
     return notification
+
+
+@router.get("/article/{article_id}/history", response_model=List[schemas.NotificationOut])
+def get_article_correspondence_history(
+    article_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Return all author-facing notifications associated with an article."""
+    roles = current_user.get("roles") or []
+    if isinstance(roles, str):
+        roles = [roles]
+    if "editor" not in roles and "admin" not in roles:
+        raise HTTPException(status_code=403, detail="Editor role required")
+
+    return (
+        db.query(models.Notification)
+        .filter(
+            or_(
+                models.Notification.article_id == article_id,
+                models.Notification.related_entity == f"article:{article_id}",
+            ),
+            models.Notification.type.in_([
+                models.NotificationType.article_status,
+                models.NotificationType.editorial,
+            ]),
+        )
+        .order_by(models.Notification.created_at.asc(), models.Notification.id.asc())
+        .all()
+    )
 
 
 @router.post("/internal/email", response_model=schemas.MessageResponse)

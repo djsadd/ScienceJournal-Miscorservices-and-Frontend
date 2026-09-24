@@ -380,6 +380,8 @@ export const api = {
   // Reviews
   getReviewById: <T>(reviewId: number | string) => request<T>(`/reviews/${reviewId}`, 'GET'),
   getNotificationPreferences: <T>() => request<T>('/notifications/preferences', 'GET'),
+  getArticleCorrespondenceHistory: <T>(articleId: number | string) =>
+    request<T>(`/notifications/article/${articleId}/history`, 'GET'),
   updateNotificationPreferences: <T>(items: unknown[]) => request<T>('/notifications/preferences', 'PUT', { json: { items } }),
   getEmailTemplates: <T>() => request<T>('/notifications/admin/email-templates', 'GET'),
   updateEmailTemplate: <T>(type: string, body: unknown) => request<T>(`/notifications/admin/email-templates/${type}`, 'PUT', { json: body }),
