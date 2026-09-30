@@ -14,20 +14,11 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import config, models, schemas
-from app.ai_client import AIProviderError, generate_review, stream_review
+from app.ai_client import AIProviderError, generate_assistant_review, generate_review, stream_review
 from app.database import SessionLocal, get_db
-from app.security import get_current_editor
+from app.security import get_current_review_assistant_user
 
 router = APIRouter(prefix="/ai-reviews", tags=["AI reviews"])
-
-
-def _recommendation_from_text(text: str) -> str:
-    match = re.search(r"ИТОГОВЫЙ_СТАТУС:\s*(РЕКОМЕНДОВАТЬ_ПОСЛЕ_ДОРАБОТКИ|НЕ_РЕКОМЕНДОВАТЬ|РЕКОМЕНДОВАТЬ)", text)
-    return {
-        "РЕКОМЕНДОВАТЬ": "accept",
-        "РЕКОМЕНДОВАТЬ_ПОСЛЕ_ДОРАБОТКИ": "major_revision",
-        "НЕ_РЕКОМЕНДОВАТЬ": "reject",
-    }.get(match.group(1) if match else "", "major_revision")
 
 
 async def _article_data(article_id: int) -> dict:
@@ -104,7 +95,7 @@ async def create_ai_review(
     payload: schemas.AIReviewCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_editor),
+    user: dict = Depends(get_current_review_assistant_user),
 ):
     article = await _article_data(payload.article_id) if payload.article_id else {}
     title = payload.title or article.get("title_ru") or article.get("title_kz") or article.get("title_en") or ""
@@ -129,7 +120,7 @@ async def create_ai_review(
 async def create_streaming_ai_review(
     payload: schemas.AIReviewCreate,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_editor),
+    user: dict = Depends(get_current_review_assistant_user),
 ):
     article = await _article_data(payload.article_id) if payload.article_id else {}
     title = payload.title or article.get("title_ru") or article.get("title_kz") or article.get("title_en") or ""
@@ -151,18 +142,17 @@ async def create_streaming_ai_review(
                 chunks.append(delta)
                 yield json.dumps({"type": "delta", "text": delta}, ensure_ascii=False) + "\n"
             full_text = "".join(chunks)
-            recommendation = _recommendation_from_text(full_text)
             session = SessionLocal()
             try:
                 saved = session.get(models.AIReview, review_id)
                 saved.review_text = full_text
-                saved.recommendation = recommendation
+                saved.recommendation = None
                 saved.status = models.ReviewStatus.completed.value
                 saved.completed_at = datetime.now(timezone.utc)
                 session.commit()
             finally:
                 session.close()
-            yield json.dumps({"type": "completed", "review_id": review_id, "recommendation": recommendation}, ensure_ascii=False) + "\n"
+            yield json.dumps({"type": "completed", "review_id": review_id, "recommendation": None}, ensure_ascii=False) + "\n"
         except Exception as exc:
             session = SessionLocal()
             try:
@@ -178,12 +168,31 @@ async def create_streaming_ai_review(
     return StreamingResponse(events(), media_type="application/x-ndjson", headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"})
 
 
+@router.post("/assistant", response_model=schemas.ReviewAssistantResult)
+async def create_review_assistant_result(
+    payload: schemas.AIReviewCreate,
+    user: dict = Depends(get_current_review_assistant_user),
+):
+    article = await _article_data(payload.article_id) if payload.article_id else {}
+    title = payload.title or article.get("title_ru") or article.get("title_kz") or article.get("title_en") or ""
+    abstract = payload.abstract or article.get("abstract_ru") or article.get("abstract_kz") or article.get("abstract_en") or ""
+    manuscript = payload.manuscript_text or (await _manuscript_text(article) if article else "")
+    if not any(value.strip() for value in (title, abstract, manuscript)):
+        raise HTTPException(status_code=422, detail="Article contains no text to review")
+    try:
+        return await generate_assistant_review(
+            title=title, abstract=abstract, manuscript_text=manuscript, language=payload.language,
+        )
+    except AIProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
 @router.get("", response_model=list[schemas.AIReviewOut])
 def list_ai_reviews(
     limit: int = Query(default=20, ge=1, le=100),
     article_id: int | None = Query(default=None, gt=0),
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_editor),
+    user: dict = Depends(get_current_review_assistant_user),
 ):
     query = db.query(models.AIReview)
     if article_id is not None:
@@ -197,7 +206,7 @@ def list_ai_reviews(
 def get_ai_review(
     review_id: int,
     db: Session = Depends(get_db),
-    user: dict = Depends(get_current_editor),
+    user: dict = Depends(get_current_review_assistant_user),
 ):
     review = db.get(models.AIReview, review_id)
     if review is None:

@@ -14,6 +14,7 @@ class NotificationType(str, enum.Enum):
     article_status = "article_status"
     review_assignment = "review_assignment"
     editorial = "editorial"
+    review_completed = "review_completed"
     custom = "custom"
 
 

@@ -85,6 +85,7 @@ services:
       - API_GATEWAY_URL=http://api-gateway:8000
       - API_GATEWAY_PREFIX=/api
       - FRONTEND_URL=http://localhost:8081
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
     ports:
       - "8004:8000"
     depends_on:
@@ -140,6 +141,7 @@ services:
       - DATABASE_URL=postgresql://notifications:pass@db/notifications
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
       - AUTH_SERVICE_URL=http://auth:8000
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
       # Email configuration
       - EMAIL_HOST=${EMAIL_HOST:-smtp.mail.ru}
       - EMAIL_PORT=${EMAIL_PORT:-465}

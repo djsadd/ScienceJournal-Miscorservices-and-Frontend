@@ -102,6 +102,23 @@ def _notify_reviewer_cancellation(article_id: int, reviewer_id: int) -> None:
         print(f"Warning: failed to notify reviewer {reviewer_id} about cancellation: {exc}")
 
 
+def _notify_editors_review_completed(review_id: int, article_id: int) -> None:
+    """Queue the opt-in editor broadcast without delaying review submission."""
+    try:
+        api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+        api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
+        shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
+        with httpx.Client(timeout=5.0) as client:
+            response = client.post(
+                f"{api_gateway}{api_prefix}/notifications/internal/review-completed",
+                json={"review_id": review_id, "article_id": article_id},
+                headers={"X-Service-Secret": shared_secret},
+            )
+            response.raise_for_status()
+    except Exception as exc:
+        print(f"Warning: failed to queue completed review notification {review_id}: {exc}")
+
+
 def _notify_editor_about_decline(article_id: int, reviewer_id: int, reason: str) -> None:
     """Send the responsible editor the reviewer's motivated refusal."""
     try:
@@ -359,7 +376,7 @@ def get_reviews(article_id: int, db: Session = Depends(get_db)):
 # UPDATE REVIEW (только автор рецензии)
 # ----------------------------
 @router.patch("/{review_id}", response_model=schemas.ReviewOut)
-def update_review(review_id: int, review: schemas.ReviewUpdate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+def update_review(review_id: int, review: schemas.ReviewUpdate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     db_review = db.query(models.Review).filter(models.Review.id == review_id).first()
     print("REVIEW")
     if not db_review:
@@ -414,6 +431,8 @@ def update_review(review_id: int, review: schemas.ReviewUpdate, db: Session = De
         db_review.status = models.ReviewStatus.completed
     db.commit()
     db.refresh(db_review)
+    if review.action == schemas.ReviewAction.submit:
+        background_tasks.add_task(_notify_editors_review_completed, db_review.id, db_review.article_id)
     # Если отправлено, уведомляем Article Management Service
     try:
         if db_review.status == models.ReviewStatus.completed:
@@ -427,35 +446,6 @@ def update_review(review_id: int, review: schemas.ReviewUpdate, db: Session = De
     except Exception:
         # Не блокируем ответ рецензенту, если межсервисный вызов не удался
         pass
-    try:
-        api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
-        api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
-        shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
-        frontend_url = getattr(config, 'FRONTEND_URL', 'http://localhost:8081')
-        payload = {
-            "user_id": db_review.assigned_editor_id,
-            "type": "editorial",
-            "title": "Рецензия завершена",
-            "message": f"Рецензия по по статье завершена #{db_review.article_id}.",
-            "related_entity": f"review:{db_review.id}",
-            "article_id": db_review.article_id,
-            "template_key": "review_completed",
-            "template_variables": {
-                "review_id": str(db_review.id),
-                "article_id": str(db_review.article_id),
-            },
-        }
-        with httpx.Client(timeout=5.0) as client:
-            print(f"{api_gateway}{api_prefix}/notifications/internal")
-            client.post(
-                f"{api_gateway}{api_prefix}/notifications/internal",
-                json=payload,
-                headers={"X-Service-Secret": shared_secret},
-            )
-    except Exception:
-        # don't block assignment on notification failures
-        pass
-
     return db_review
 
     

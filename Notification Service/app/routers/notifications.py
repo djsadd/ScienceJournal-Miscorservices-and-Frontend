@@ -13,6 +13,7 @@ from app import models, schemas, config
 from app.deps import get_db, get_current_user
 from app.services.email_service import send_email
 from app.email_templates import EMAIL_EVENTS, SAMPLE_VALUES
+from app.database import SessionLocal
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -324,8 +325,8 @@ def get_notification_preferences(
     return [
         {
             "type": notification_type,
-            "in_app_enabled": saved.get(notification_type).in_app_enabled if notification_type in saved else True,
-            "email_enabled": saved.get(notification_type).email_enabled if notification_type in saved else True,
+            "in_app_enabled": saved.get(notification_type).in_app_enabled if notification_type in saved else notification_type != models.NotificationType.review_completed,
+            "email_enabled": saved.get(notification_type).email_enabled if notification_type in saved else notification_type != models.NotificationType.review_completed,
         }
         for notification_type in NOTIFICATION_TYPES
     ]
@@ -349,6 +350,79 @@ def update_notification_preferences(
         preference.email_enabled = incoming.email_enabled
     db.commit()
     return get_notification_preferences(db, current_user)
+
+
+def _broadcast_review_completed(review_id: int, article_id: int) -> None:
+    """Notify editors who explicitly enabled completed-review emails."""
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            response = client.get(
+                f"{config.AUTH_SERVICE_URL}/auth/internal/users/by-role",
+                params={"role": "editor"},
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+            response.raise_for_status()
+            editor_ids = [item.get("id") for item in response.json() if item.get("id")]
+    except Exception as exc:
+        logger.warning("Failed to load editors for completed review %s: %s", review_id, exc)
+        return
+
+    with SessionLocal() as db:
+        opted_in_ids = {
+            item.user_id
+            for item in db.query(models.NotificationPreference).filter(
+                models.NotificationPreference.user_id.in_(editor_ids),
+                models.NotificationPreference.type == models.NotificationType.review_completed,
+                models.NotificationPreference.email_enabled.is_(True),
+            ).all()
+        } if editor_ids else set()
+
+        for editor_id in opted_in_ids:
+            related_entity = f"review:{review_id}"
+            exists = db.query(models.Notification.id).filter(
+                models.Notification.user_id == editor_id,
+                models.Notification.type == models.NotificationType.review_completed,
+                models.Notification.related_entity == related_entity,
+            ).first()
+            if exists:
+                continue
+            notification = models.Notification(
+                user_id=editor_id,
+                type=models.NotificationType.review_completed,
+                title="Рецензия завершена",
+                message=f"Рецензия по статье #{article_id} завершена.",
+                related_entity=related_entity,
+                article_id=article_id,
+            )
+            db.add(notification)
+            db.commit()
+            db.refresh(notification)
+            rendered = _render_email_template(
+                db,
+                "review_completed",
+                {
+                    "title": notification.title,
+                    "message": notification.message,
+                    "article_id": str(article_id),
+                    "review_id": str(review_id),
+                },
+                (notification.title, notification.message, f"<p>{notification.message}</p>"),
+            )
+            if rendered:
+                subject, text, html = rendered
+                _send_notification_email(editor_id, subject, text, html, notification.id)
+
+
+@router.post("/internal/review-completed", status_code=202)
+def broadcast_review_completed(
+    payload: schemas.ReviewCompletedBroadcast,
+    request: Request,
+    background_tasks: BackgroundTasks,
+):
+    if request.headers.get("X-Service-Secret") != config.SHARED_SERVICE_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    background_tasks.add_task(_broadcast_review_completed, payload.review_id, payload.article_id)
+    return {"message": "Review completion notification queued"}
 
 
 def _ensure_admin(current_user: dict) -> None:

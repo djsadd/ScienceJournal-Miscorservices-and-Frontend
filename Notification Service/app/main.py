@@ -13,6 +13,7 @@ Base.metadata.create_all(bind=engine)
 
 # Ensure optional attachment columns exist for notifications
 with engine.begin() as conn:
+    conn.execute(text("ALTER TYPE notificationtype ADD VALUE IF NOT EXISTS 'review_completed'"))
     conn.execute(text(
         """
         DO $$

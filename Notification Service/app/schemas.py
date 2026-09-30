@@ -14,6 +14,7 @@ class NotificationType(str, Enum):
     article_status = "article_status"
     review_assignment = "review_assignment"
     editorial = "editorial"
+    review_completed = "review_completed"
     custom = "custom"
 
 
@@ -70,6 +71,11 @@ class NotificationPreferenceItem(BaseModel):
 
 class NotificationPreferencesUpdate(BaseModel):
     items: List[NotificationPreferenceItem]
+
+
+class ReviewCompletedBroadcast(BaseModel):
+    review_id: int
+    article_id: int
 
 
 class EmailTemplateUpdate(BaseModel):

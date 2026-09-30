@@ -19,6 +19,12 @@ class AIReviewCreate(BaseModel):
         return self
 
 
+class ReviewAssistantResult(BaseModel):
+    criteria: dict[str, str]
+    summary: str
+    recommendation: Literal["accept", "major_revision", "reject"]
+
+
 class AIReviewOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -38,4 +44,3 @@ class AIReviewOut(BaseModel):
     error_message: str | None
     created_at: datetime
     completed_at: datetime | None
-

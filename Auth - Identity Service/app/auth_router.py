@@ -939,6 +939,29 @@ def activate_user(
     return user
 
 
+@router.get("/internal/users/by-role", response_model=list[schemas.UserOut])
+def get_active_users_by_role(
+    role: str,
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+    db: Session = Depends(get_db),
+):
+    """Return active, visible users of a role to trusted internal services."""
+    if not x_service_secret or x_service_secret != config.SHARED_SERVICE_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if role not in {"author", "editor", "reviewer", "layout", "admin"}:
+        raise HTTPException(status_code=422, detail="Unsupported role")
+    return (
+        db.query(models.User)
+        .filter(
+            models.User.role == role,
+            models.User.is_active.is_(True),
+            models.User.is_hidden.is_(False),
+        )
+        .order_by(models.User.id.asc())
+        .all()
+    )
+
+
 @router.patch("/admin/users/{user_id}/role", response_model=schemas.UserOut)
 def update_user_role(
     user_id: int,

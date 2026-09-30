@@ -8,6 +8,7 @@ const labels: Record<string, { title: string; description: string }> = {
   review_assignment: { title: 'Рецензирование', description: 'Назначения, отмены и отказы от рецензирования.' },
   editorial: { title: 'Редакционные события', description: 'Решения редакции, комментарии и завершённые рецензии.' },
   custom: { title: 'Прочие', description: 'Дополнительные сообщения редакции.' },
+  review_completed: { title: 'Завершение рецензии', description: 'Письмо на email, когда рецензент завершил рецензию.' },
 }
 
 export default function NotificationPreferencesPage() {

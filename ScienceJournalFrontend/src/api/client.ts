@@ -68,7 +68,7 @@ export interface AuthTokens {
 export type AIReviewStreamEvent =
   | { type: 'started'; review_id: number; model: string }
   | { type: 'delta'; text: string }
-  | { type: 'completed'; review_id: number; recommendation: 'accept' | 'major_revision' | 'reject' }
+  | { type: 'completed'; review_id: number; recommendation: null }
   | { type: 'error'; message: string }
 
 export class ApiError extends Error {

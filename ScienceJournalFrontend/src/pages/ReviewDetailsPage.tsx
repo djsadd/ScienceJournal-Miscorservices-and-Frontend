@@ -7,6 +7,29 @@ import Toast from '../shared/components/Toast'
 import { toApiFilesUrl } from '../shared/url'
 import { formatArticleStatus, formatArticleType } from '../shared/labels'
 
+type ReviewCriterionKey =
+  | 'importance_applicability' | 'novelty_application' | 'originality' | 'innovation_product'
+  | 'results_significance' | 'coherence' | 'style_quality' | 'editorial_compliance'
+
+type ReviewAssistantResult = {
+  criteria: Record<ReviewCriterionKey, string>
+  summary: string
+  recommendation: 'accept' | 'major_revision' | 'reject'
+}
+
+const assistantCriterionLabels: Record<ReviewCriterionKey, string> = {
+  importance_applicability: 'Важность и применимость',
+  novelty_application: 'Новизна и применение',
+  originality: 'Оригинальность',
+  innovation_product: 'Новый процесс, услуга или продукт',
+  results_significance: 'Значимость результатов',
+  coherence: 'Логичность и связность',
+  style_quality: 'Научный стиль и язык',
+  editorial_compliance: 'Требования редакции',
+}
+
+const assistantCriterionKeys = Object.keys(assistantCriterionLabels) as ReviewCriterionKey[]
+
 export default function ReviewDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -21,6 +44,10 @@ export default function ReviewDetailsPage() {
   const [declineReason, setDeclineReason] = useState('')
   const [declineError, setDeclineError] = useState<string | null>(null)
   const [declining, setDeclining] = useState(false)
+  const [assistantResult, setAssistantResult] = useState<ReviewAssistantResult | null>(null)
+  const [assistantLoading, setAssistantLoading] = useState(false)
+  const [assistantError, setAssistantError] = useState<string | null>(null)
+  const [assistantModalOpen, setAssistantModalOpen] = useState(false)
   const [lang, setLang] = useState<'ru' | 'en' | 'kz'>(() => {
     const params = new URLSearchParams(window.location.search)
     const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
@@ -107,6 +134,40 @@ export default function ReviewDetailsPage() {
 
   const onChange = (key: keyof typeof form, value: string) => {
     setDraft((d) => ({ ...d, [key]: value }))
+  }
+
+  const requestReviewAssistant = async () => {
+    const articleId = data?.article?.id ?? data?.article_id
+    if (!articleId || assistantLoading || isReadOnly) return
+    setAssistantError(null)
+    setAssistantLoading(true)
+    try {
+      const result = await api.post<ReviewAssistantResult>('/ai-reviews/assistant', {
+        article_id: articleId,
+        language: lang === 'kz' ? 'kk' : lang,
+      })
+      setAssistantResult(result)
+      setAssistantModalOpen(true)
+    } catch (e: any) {
+      const detail = e instanceof ApiError && typeof e.bodyJson === 'object' && e.bodyJson
+        ? (e.bodyJson as { detail?: string }).detail
+        : null
+      setAssistantError(detail || e?.message || 'Не удалось получить подсказки помощника')
+    } finally {
+      setAssistantLoading(false)
+    }
+  }
+
+  const applyAssistantCriterion = (key: ReviewCriterionKey) => {
+    const text = assistantResult?.criteria[key]?.trim()
+    if (!text) return
+    setDraft((current) => ({ ...current, [key]: text }))
+  }
+
+  const applyAllAssistantCriteria = () => {
+    if (!assistantResult) return
+    setDraft((current) => ({ ...current, ...assistantResult.criteria }))
+    setAssistantModalOpen(false)
   }
 
   const validRecommendations = ['accept', 'major_revision', 'reject'] as const
@@ -292,6 +353,30 @@ export default function ReviewDetailsPage() {
           <div className="table__empty">Данные не найдены.</div>
         ) : (
           <>
+          {!isReadOnly && (
+            <section className="ai-review-panel review-assistant" aria-labelledby="review-assistant-title">
+              <div className="review-assistant__header">
+                <div>
+                  <p className="eyebrow">Необязательный инструмент</p>
+                  <h3 className="panel-title" id="review-assistant-title">Помощник рецензента</h3>
+                  <p className="subtitle">Кратко анализирует каждый критерий и предлагает один из трёх итоговых вариантов. Решение остаётся за рецензентом.</p>
+                </div>
+                <button className="button button--primary" type="button" onClick={requestReviewAssistant} disabled={assistantLoading}>
+                  {assistantLoading ? 'Анализируем рукопись…' : assistantResult ? 'Сформировать заново' : 'Получить подсказки'}
+                </button>
+              </div>
+              {assistantError && <Alert variant="error" title="Помощник недоступен">{assistantError}</Alert>}
+              {assistantResult && (
+                <div className="review-assistant__actions">
+                  <span className="form-hint">Структурированный анализ готов.</span>
+                  <button className="button button--ghost" type="button" onClick={() => setAssistantModalOpen(true)}>
+                    Открыть результат
+                  </button>
+                </div>
+              )}
+              {assistantLoading && <div className="ai-stream-cursor" aria-hidden="true" />}
+            </section>
+          )}
           <form className="auth-form">
             <div className="grid grid-2">
               {isReadOnly && (
@@ -392,6 +477,64 @@ export default function ReviewDetailsPage() {
               )}
             </div>
           </form>
+          {assistantModalOpen && assistantResult && (
+            <div className="modal-backdrop" onClick={() => setAssistantModalOpen(false)}>
+              <div className="modal modal--review-detail assistant-result-modal" role="dialog" aria-modal="true" aria-labelledby="assistant-result-title" onClick={(event) => event.stopPropagation()}>
+                <div className="modal__header assistant-result-modal__header">
+                  <div>
+                    <p className="eyebrow">Черновик для проверки</p>
+                    <h3 className="panel-title" id="assistant-result-title">ИИ-анализ готов</h3>
+                  </div>
+                  <button className="modal__close" type="button" aria-label="Закрыть" onClick={() => setAssistantModalOpen(false)}>×</button>
+                </div>
+                <div className="modal__body">
+                  <div className="assistant-summary">
+                    <strong>Краткий итог</strong>
+                    <p>{assistantResult.summary}</p>
+                  </div>
+
+                  <div className="assistant-recommendations" aria-label="Три варианта итоговой рекомендации">
+                    {([
+                      ['accept', 'Рекомендовать к публикации'],
+                      ['major_revision', 'Вернуть на доработку'],
+                      ['reject', 'Отклонить'],
+                    ] as const).map(([value, label]) => (
+                      <button
+                        className={`assistant-recommendation assistant-recommendation--${value}${assistantResult.recommendation === value ? ' assistant-recommendation--suggested' : ''}${draft.recommendation === value ? ' assistant-recommendation--selected' : ''}`}
+                        key={value}
+                        type="button"
+                        onClick={() => onChange('recommendation', value)}
+                      >
+                        <span>{label}</span>
+                        {assistantResult.recommendation === value && <strong>Рекомендация ИИ</strong>}
+                        {draft.recommendation === value && <small>Выбрано вами</small>}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="form-hint assistant-disclaimer">Результат сформирован автоматически. Проверьте его по рукописи — окончательное решение принимает рецензент.</p>
+
+                  <div className="assistant-criteria">
+                    {assistantCriterionKeys.map((key) => (
+                      <article className="assistant-criterion" key={key}>
+                        <div className="assistant-criterion__header">
+                          <h4>{assistantCriterionLabels[key]}</h4>
+                          <button className="button button--ghost button--compact" type="button" onClick={() => applyAssistantCriterion(key)}>
+                            Вставить в поле
+                          </button>
+                        </div>
+                        <p>{assistantResult.criteria[key]}</p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+                <div className="modal__footer assistant-result-modal__footer">
+                  <button className="button button--ghost" type="button" onClick={() => setAssistantModalOpen(false)}>Закрыть</button>
+                  <button className="button button--primary" type="button" onClick={applyAllAssistantCriteria}>Заполнить все критерии</button>
+                </div>
+              </div>
+            </div>
+          )}
           {confirmOpen && (
             <div className="modal-backdrop" onClick={() => !saving && setConfirmOpen(false)}>
               <div className="modal review-submit-modal" role="dialog" aria-modal="true" aria-labelledby="review-submit-title" onClick={(event) => event.stopPropagation()}>
