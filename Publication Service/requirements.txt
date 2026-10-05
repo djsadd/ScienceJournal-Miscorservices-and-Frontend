@@ -3,3 +3,5 @@ uvicorn[standard]
 python-jose[cryptography]
 python-multipart
 email-validator
+psycopg2-binary
+psycopg[binary]>=3.2,<4
