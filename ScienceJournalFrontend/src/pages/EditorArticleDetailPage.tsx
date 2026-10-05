@@ -270,7 +270,7 @@ export default function EditorArticleDetailPage() {
   const [reviewLoading, setReviewLoading] = useState(false)
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [reviewDetails, setReviewDetails] = useState<ReviewOut | null>(null)
-  const [articleReviewComments, setArticleReviewComments] = useState<ReviewOut[]>([])
+  const [articleReviews, setArticleReviews] = useState<ReviewOut[]>([])
   const [resubDeadlineLocal, setResubDeadlineLocal] = useState('')
   const [resubmitting, setResubmitting] = useState(false)
   const [resubError, setResubError] = useState<string | null>(null)
@@ -515,13 +515,13 @@ export default function EditorArticleDetailPage() {
       })
       .filter((reviewId): reviewId is number => reviewId !== null)
     if (reviewIds.length === 0) {
-      setArticleReviewComments([])
+      setArticleReviews([])
       return () => { cancelled = true }
     }
     Promise.all(reviewIds.map((reviewId) => api.getReviewById<ReviewOut>(reviewId).catch(() => null)))
       .then((reviews) => {
         if (!cancelled) {
-          setArticleReviewComments(reviews.filter((review): review is ReviewOut => Boolean(review?.comments?.trim())))
+          setArticleReviews(reviews.filter((review): review is ReviewOut => Boolean(review)))
         }
       })
     return () => { cancelled = true }
@@ -1092,11 +1092,11 @@ export default function EditorArticleDetailPage() {
               </div>
             )}
             <h4 style={{ marginTop: '1.5rem', marginBottom: '0.75rem' }}>Комментарии рецензентов</h4>
-            {articleReviewComments.length === 0 ? (
+            {articleReviews.every((review) => !review.comments?.trim()) ? (
               <div className="table__empty">Комментариев рецензентов пока нет.</div>
             ) : (
               <div style={{ display: 'grid', gap: '0.75rem' }}>
-                {articleReviewComments.map((review) => {
+                {articleReviews.filter((review) => Boolean(review.comments?.trim())).map((review) => {
                   const reviewer = reviewList.find((item) => item.reviewer_id === review.reviewer_id)?.reviewer
                   return (
                     <article key={review.id} style={{ border: '1px solid #e3e3e3', borderRadius: 8, padding: '1rem' }}>
@@ -1172,7 +1172,12 @@ export default function EditorArticleDetailPage() {
                             </button>
                           ) : null}
                         </div>
-                        <div className="table__cell">{renderRecommendationBadge(r.recommendation, r.status)}</div>
+                        <div className="table__cell">
+                          {renderRecommendationBadge(
+                            r.recommendation ?? articleReviews.find((review) => review.id === rid)?.recommendation,
+                            r.status,
+                          )}
+                        </div>
                       </div>
                     )
                   })}
