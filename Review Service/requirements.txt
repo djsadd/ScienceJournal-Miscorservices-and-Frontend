@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
-psycopg2-binary
+psycopg2-binary>=2.9.10,<3
 pydantic
 python-dotenv
 python-jose[cryptography]
