@@ -12,6 +12,11 @@ interface MainLayoutProps {
 
 type RoleKey = 'author' | 'editor' | 'reviewer' | 'layout' | 'admin'
 type LangKey = 'ru' | 'en' | 'kz'
+type CabinetBrandSettings = {
+  journal_name_ru: string; journal_name_kz: string; journal_name_en: string
+  logo_available: boolean
+  logo_version: number | null
+}
 
 type NotificationPreviewDto = {
   id: number
@@ -611,6 +616,7 @@ const toNotificationPreview = (notification: NotificationPreviewDto): Notificati
 })
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const [brandSettings, setBrandSettings] = useState<CabinetBrandSettings | null>(null)
   const [activeRole, setActiveRole] = useState<RoleKey>(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem('activeRole') : null
     return stored && isRoleKey(stored) ? stored : 'author'
@@ -637,6 +643,14 @@ export function MainLayout({ children }: MainLayoutProps) {
   })
   const navigate = useNavigate()
   const { lang, setLang } = useLanguage()
+  const configuredLogo = brandSettings?.logo_available
+    ? `${api.getJournalLogoUrl()}?v=${brandSettings.logo_version || ''}`
+    : logo
+  const configuredJournalName = brandSettings?.[`journal_name_${lang}`]
+
+  useEffect(() => {
+    api.getJournalSettings<CabinetBrandSettings>().then(setBrandSettings).catch(() => undefined)
+  }, [])
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), [])
   const handleRoleChange = useCallback(async (role: RoleKey) => {
     setActiveRole(role)
@@ -900,7 +914,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="sidebar__brand">
           <Link to="/cabinet" className="brand--compact">
             <div className="brand-mark">
-              <img src={logo} alt={copy.brandAlt} className="brand-logo brand-logo--plain" />
+              <img src={configuredLogo} alt={copy.brandAlt} className="brand-logo brand-logo--plain" />
             </div>
             <div>
               <div className="brand-title">{copy.brandTitle}</div>
@@ -1252,10 +1266,10 @@ export function MainLayout({ children }: MainLayoutProps) {
         <footer className="app-footer">
           <div className="footer__brand">
             <div className="brand-mark">
-              <img src={logo} alt={copy.brandAlt} className="brand-logo" />
+              <img src={configuredLogo} alt={copy.brandAlt} className="brand-logo" />
             </div>
             <div>
-              <div className="brand-title">{copy.brandTitle}</div>
+              <div className="brand-title">{configuredJournalName || copy.brandTitle}</div>
               {copy.brandSubtitle ? <div className="brand-subtitle">{copy.brandSubtitle}</div> : null}
             </div>
           </div>

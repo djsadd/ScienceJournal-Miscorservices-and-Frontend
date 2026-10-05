@@ -8,7 +8,7 @@ from typing import Literal
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from jose import JWTError, jwt
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 app = FastAPI(title="Publication Service")
 
@@ -19,6 +19,12 @@ ALGORITHM = "HS256"
 LANGUAGES = {"ru", "kz", "en"}
 
 DEFAULT_SETTINGS = {
+    "university_name_ru": "Университет «Туран-Астана»",
+    "university_name_kz": "«Тұран-Астана» университеті",
+    "university_name_en": "Turan-Astana University",
+    "journal_name_ru": "Известия университета «Туран-Астана»",
+    "journal_name_kz": "«Тұран-Астана» университетінің хабарлары",
+    "journal_name_en": "Turan-Astana University News",
     "editor_name": "Доценко А.Н.",
     "editor_email": "zharshy@tau-edu.kz",
     "phone": "+7 (7172) 64-43-10",
@@ -28,6 +34,12 @@ DEFAULT_SETTINGS = {
 
 
 class JournalSettings(BaseModel):
+    university_name_ru: str = Field(min_length=1, max_length=200)
+    university_name_kz: str = Field(min_length=1, max_length=200)
+    university_name_en: str = Field(min_length=1, max_length=200)
+    journal_name_ru: str = Field(min_length=1, max_length=200)
+    journal_name_kz: str = Field(min_length=1, max_length=200)
+    journal_name_en: str = Field(min_length=1, max_length=200)
     editor_name: str
     editor_email: EmailStr
     phone: str
@@ -68,6 +80,10 @@ async def health():
 @app.get("/publication/journal-settings")
 async def get_journal_settings():
     settings = read_settings()
+    logo_path = DATA_DIR / "journal-logo"
+    settings["logo_available"] = logo_path.exists()
+    settings["logo_url"] = "/publication/journal-settings/logo" if settings["logo_available"] else None
+    settings["logo_version"] = logo_path.stat().st_mtime_ns if settings["logo_available"] else None
     settings["requirements"] = {
         lang: (DATA_DIR / f"requirements-{lang}.pdf").exists() for lang in LANGUAGES
     }
@@ -82,6 +98,56 @@ async def update_journal_settings(settings: JournalSettings):
         encoding="utf-8",
     )
     return await get_journal_settings()
+
+
+@app.put("/publication/journal-settings/logo", dependencies=[Depends(require_admin)])
+async def upload_journal_logo(logo: UploadFile = File(...)):
+    allowed_types = {"image/png", "image/jpeg", "image/webp"}
+    if logo.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Logo must be a PNG, JPEG, or WebP image")
+    ensure_storage()
+    target = DATA_DIR / "journal-logo"
+    with tempfile.NamedTemporaryFile(dir=DATA_DIR, delete=False) as temporary:
+        shutil.copyfileobj(logo.file, temporary)
+        temporary_path = Path(temporary.name)
+    file_size = temporary_path.stat().st_size
+    if file_size == 0 or file_size > 5 * 1024 * 1024:
+        temporary_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=413, detail="Logo must not be empty or exceed 5 MB")
+    signatures = {
+        "image/png": lambda data: data.startswith(b"\x89PNG\r\n\x1a\n"),
+        "image/jpeg": lambda data: data.startswith(b"\xff\xd8\xff"),
+        "image/webp": lambda data: data.startswith(b"RIFF") and data[8:12] == b"WEBP",
+    }
+    with temporary_path.open("rb") as uploaded:
+        header = uploaded.read(12)
+    if not signatures[logo.content_type](header):
+        temporary_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+    temporary_path.replace(target)
+    (DATA_DIR / "journal-logo.content-type").write_text(logo.content_type, encoding="ascii")
+    return {
+        "available": True,
+        "logo_url": "/publication/journal-settings/logo",
+        "logo_version": target.stat().st_mtime_ns,
+    }
+
+
+@app.get("/publication/journal-settings/logo")
+async def get_journal_logo():
+    target = DATA_DIR / "journal-logo"
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Journal logo is not uploaded")
+    content_type_file = DATA_DIR / "journal-logo.content-type"
+    content_type = content_type_file.read_text(encoding="ascii") if content_type_file.exists() else "image/png"
+    return FileResponse(target, media_type=content_type, headers={"Cache-Control": "public, max-age=300"})
+
+
+@app.delete("/publication/journal-settings/logo", dependencies=[Depends(require_admin)])
+async def delete_journal_logo():
+    (DATA_DIR / "journal-logo").unlink(missing_ok=True)
+    (DATA_DIR / "journal-logo.content-type").unlink(missing_ok=True)
+    return {"available": False, "logo_url": None}
 
 
 @app.put("/publication/journal-settings/requirements/{lang}", dependencies=[Depends(require_admin)])

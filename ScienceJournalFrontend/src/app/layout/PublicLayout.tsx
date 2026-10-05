@@ -41,6 +41,12 @@ const authNavLabels: Record<Lang, { cabinet: string; login: string; register: st
   en: { cabinet: 'Dashboard', login: 'Log in', register: 'Register' },
 }
 const languageCodes: Lang[] = ['ru', 'kz', 'en']
+type JournalBrandSettings = {
+  university_name_ru: string; university_name_kz: string; university_name_en: string
+  journal_name_ru: string; journal_name_kz: string; journal_name_en: string
+  logo_available: boolean
+  logo_version: number | null
+}
 
 function stripLanguagePrefix(pathname: string) {
   const parts = pathname.split('/').filter(Boolean)
@@ -56,6 +62,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(api.getTokens()?.accessToken))
+  const [brandSettings, setBrandSettings] = useState<JournalBrandSettings | null>(null)
   const [lowVision, setLowVision] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('lowVision')
@@ -74,6 +81,15 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   const isForgotPasswordPage = currentPublicPath === '/auth/forgot-password'
   const isLoginLikePage = isLoginPage || isForgotPasswordPage
   const isRegisterPage = currentPublicPath === '/register'
+  const configuredJournalTitle = brandSettings?.[`journal_name_${lang}`] || journalTitles[lang]
+  const configuredUniversityTitle = brandSettings?.[`university_name_${lang}`] || 'Turan-Astana University'
+  const configuredLogo = brandSettings?.logo_available
+    ? `${api.getJournalLogoUrl()}?v=${brandSettings.logo_version || ''}`
+    : logo
+
+  useEffect(() => {
+    api.getJournalSettings<JournalBrandSettings>().then(setBrandSettings).catch(() => undefined)
+  }, [])
 
   useEffect(() => {
     if (currentPublicPath.startsWith('/auth/')) return
@@ -298,9 +314,9 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
         </div>
         <div className="public-top" aria-label="Site navigation">
           <Link to={localizedHref('/')} className="brand brand--journal" onClick={() => setMobileMenuOpen(false)}>
-            <img src={logo} alt={nav.brandAlt} className="brand-logo brand-logo--journal" />
+            <img src={configuredLogo} alt={nav.brandAlt} className="brand-logo brand-logo--journal" />
             <span className="brand-site-copy">
-              <span className="brand-site-title">{journalTitles[lang]}</span>
+              <span className="brand-site-title">{configuredJournalTitle}</span>
               <span className="brand-site-subtitle">{journalSubtitles[lang]}</span>
             </span>
           </Link>
@@ -446,7 +462,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
         <div className="footer__brand">
           <div className="brand-mark">
             <img
-              src={logo}
+              src={configuredLogo}
               alt={
                 lang === 'ru'
                   ? 'Логотип журнала Известия университета Туран-Астана'
@@ -459,11 +475,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
           </div>
           <div>
             <div className="brand-title">
-              {lang === 'ru'
-                ? 'Известия университета Туран-Астана'
-                : lang === 'kz'
-                  ? 'Туран-Астана университетінің хабарлары'
-                  : 'Turan-Astana University news'}
+              {configuredJournalTitle}
             </div>
             <div className="brand-subtitle">
               <span>Print ISSN: 2663-631X</span>
@@ -489,7 +501,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
         </div>
         <div className="footer__meta">
           <span className="meta-label">Since 2025</span>
-          <span className="meta-label">&copy; Publisher - Turan-Astana University</span>
+          <span className="meta-label">&copy; Publisher - {configuredUniversityTitle}</span>
           <span className="meta-label">Publisher address: {publisherAddress}</span>
           <span className="meta-label">All rights reserved</span>
         </div>

@@ -398,12 +398,25 @@ export const api = {
     request<T>(`/auth/admin/users/${userId}`, 'DELETE'),
   getJournalSettings: <T>() => request<T>('/publication/journal-settings', 'GET'),
   updateJournalSettings: <T>(body: {
+    university_name_ru: string
+    university_name_kz: string
+    university_name_en: string
+    journal_name_ru: string
+    journal_name_kz: string
+    journal_name_en: string
     editor_name: string
     editor_email: string
     phone: string
     address: string
     contact_email: string
   }) => request<T>('/publication/journal-settings', 'PUT', { json: body }),
+  uploadJournalLogo: <T>(file: File) => {
+    const form = new FormData()
+    form.append('logo', file)
+    return request<T>('/publication/journal-settings/logo', 'PUT', { body: form })
+  },
+  deleteJournalLogo: <T>() => request<T>('/publication/journal-settings/logo', 'DELETE'),
+  getJournalLogoUrl: () => buildUrl('/publication/journal-settings/logo'),
   uploadRequirementsPdf: <T>(lang: 'ru' | 'kz' | 'en', file: File) => {
     const form = new FormData()
     form.append('document', file)
