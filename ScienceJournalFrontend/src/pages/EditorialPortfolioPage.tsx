@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useLanguage } from '../shared/LanguageContext'
 import { formatArticleStatus } from '../shared/labels'
-import type { Article, ArticleStatus, PagedResponse } from '../shared/types'
+import type { Article, ArticleStatus, PagedResponse, Pagination } from '../shared/types'
+
+const PAGE_SIZE = 20
 
 const copy = {
   ru: { title: 'Редакторская очередь', subtitle: 'Рукописи, требующие вашего внимания', all: 'Все статусы', loading: 'Загрузка рукописей…', empty: 'В этой очереди пока нет рукописей', error: 'Не удалось загрузить рукописи', priority: 'Приоритет', today: 'сегодня', day: ['день', 'дня', 'дней'], untitled: 'Без названия', author: 'Автор не указан', field: 'Направление не указано', open: 'Открыть рукопись', statusFilter: 'Фильтр по статусу' },
@@ -50,18 +52,20 @@ export default function EditorialPortfolioPage() {
   const [statusFilter, setStatusFilter] = useState<ArticleStatus | 'all'>('all')
   const [statusOptions, setStatusOptions] = useState<ArticleStatus[]>([])
   const [articles, setArticles] = useState<Article[]>([])
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState<Pagination | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
     setLoading(true)
-    api.getUnassignedArticles<PagedResponse<Article>>({ status: 'all', page: 1, page_size: 50 })
-      .then((response) => { if (active) { setArticles(response.items || []); setError(null) } })
+    api.getUnassignedArticles<PagedResponse<Article>>({ status: statusFilter, page, page_size: PAGE_SIZE })
+      .then((response) => { if (active) { setArticles(response.items || []); setPagination(response.pagination); setError(null) } })
       .catch((reason) => { if (active) setError(reason?.bodyJson?.detail || reason?.message || t.error) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [t.error])
+  }, [page, statusFilter, t.error])
 
   useEffect(() => {
     let active = true
@@ -74,14 +78,24 @@ export default function EditorialPortfolioPage() {
     return () => { active = false }
   }, [])
 
-  const visible = useMemo(() => articles.filter((article) => statusFilter === 'all' || article.status === statusFilter), [articles, statusFilter])
+  const visible = articles
+  const currentPage = pagination?.page ?? page
+  const totalPages = Math.max(1, pagination?.total_pages ?? 1)
+  const visiblePages = useMemo(() => {
+    const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4))
+    return Array.from({ length: Math.min(5, totalPages) }, (_, index) => start + index)
+  }, [currentPage, totalPages])
+  const selectStatus = (status: ArticleStatus | 'all') => {
+    setStatusFilter(status)
+    setPage(1)
+  }
 
   return <div className="editorial-queue"><section className="editorial-queue__panel">
     <header className="editorial-queue__header">
       <div><h1 className="page-title editorial-queue__title">{t.title}</h1><p className="editorial-queue__subtitle">{t.subtitle}</p></div>
       <div className="editorial-queue__filter" aria-label={t.statusFilter} role="group">
-        <button type="button" className={`editorial-queue__filter-button ${statusFilter === 'all' ? 'editorial-queue__filter-button--active' : ''}`} aria-pressed={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>{t.all}</button>
-        {statusOptions.map((status) => <button type="button" key={status} className={`editorial-queue__filter-button ${statusFilter === status ? 'editorial-queue__filter-button--active' : ''}`} aria-pressed={statusFilter === status} onClick={() => setStatusFilter(status)}>{formatArticleStatus(status, locale)}</button>)}
+        <button type="button" className={`editorial-queue__filter-button ${statusFilter === 'all' ? 'editorial-queue__filter-button--active' : ''}`} aria-pressed={statusFilter === 'all'} onClick={() => selectStatus('all')}>{t.all}</button>
+        {statusOptions.map((status) => <button type="button" key={status} className={`editorial-queue__filter-button ${statusFilter === status ? 'editorial-queue__filter-button--active' : ''}`} aria-pressed={statusFilter === status} onClick={() => selectStatus(status)}>{formatArticleStatus(status, locale)}</button>)}
       </div>
     </header>
     {error ? <div className="editorial-queue__state editorial-queue__state--error">{t.error}: {error}</div> : null}
@@ -100,5 +114,17 @@ export default function EditorialPortfolioPage() {
         <Link className="manuscript-row__open" to={`/cabinet/editorial2/${article.id}`} aria-label={`${t.open}: ${titleOf(article, t.untitled)}`}><span aria-hidden="true">›</span></Link>
       </article>
     })}</div> : null}
+    {!loading && !error && pagination && pagination.total_count > 0 ? <footer className="editorial-queue__pagination">
+      <span className="pagination__meta">{currentPage} / {totalPages} · {pagination.total_count}</span>
+      <div className="pagination" aria-label="Pagination">
+        <button type="button" className="button button--ghost button--compact" disabled={!pagination.has_prev} onClick={() => setPage(1)} aria-label="First page">«</button>
+        <button type="button" className="button button--ghost button--compact" disabled={!pagination.has_prev} onClick={() => setPage((value) => Math.max(1, value - 1))} aria-label="Previous page">‹</button>
+        <div className="pagination__pages">
+          {visiblePages.map((pageNumber) => <button key={pageNumber} type="button" className={`button button--ghost button--compact pagination__page ${pageNumber === currentPage ? 'pagination__page--active' : ''}`} aria-current={pageNumber === currentPage ? 'page' : undefined} onClick={() => setPage(pageNumber)}>{pageNumber}</button>)}
+        </div>
+        <button type="button" className="button button--ghost button--compact" disabled={!pagination.has_next} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} aria-label="Next page">›</button>
+        <button type="button" className="button button--ghost button--compact" disabled={!pagination.has_next} onClick={() => setPage(totalPages)} aria-label="Last page">»</button>
+      </div>
+    </footer> : null}
   </section></div>
 }

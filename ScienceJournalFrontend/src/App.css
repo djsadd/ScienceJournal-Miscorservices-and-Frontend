@@ -7512,6 +7512,16 @@
 
 .editorial-queue__list { display: flex; flex-direction: column; }
 
+.editorial-queue__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-top: 1px solid #eadfe3;
+  flex-wrap: wrap;
+}
+
 .manuscript-row {
   min-height: 112px;
   display: grid;
@@ -7579,6 +7589,7 @@
   .editorial-queue__tabs { width: 100%; overflow-x: auto; }
   .editorial-queue__filter { width: 100%; max-width: 100%; }
   .editorial-queue__tab { flex: 1 0 auto; padding: 0 12px; }
+  .editorial-queue__pagination { align-items: flex-start; flex-direction: column; padding: 16px; }
   .manuscript-row { grid-template-columns: minmax(0, 1fr) 40px; padding: 18px; }
   .manuscript-row__check { display: none; }
   .manuscript-row__status { align-items: flex-start; grid-column: 1; }
