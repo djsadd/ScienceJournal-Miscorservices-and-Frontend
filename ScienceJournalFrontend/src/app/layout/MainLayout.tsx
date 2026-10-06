@@ -132,25 +132,28 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       ],
       editor: [
         {
-          title: 'Обзор',
+          title: 'Рабочий стол',
           items: [
-            { label: 'Главная', path: '/cabinet' },
+            { label: 'Обзор', path: '/cabinet' },
+            { label: 'Все рукописи', path: '/cabinet/editorial2', tag: '24' },
+            { label: 'Рецензенты', path: '/cabinet/admin/users', tag: '3' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
             { label: 'Настройки уведомлений', path: '/cabinet/notification-settings' },
           ],
         },
         {
-          title: 'Редакция',
+          title: 'Публикация',
           items: [
-            { label: 'Назначения', path: '/cabinet/editorial2' },
+            { label: 'Выпуски', path: '/cabinet/volumes' },
+            { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Быстрая публикация', path: '/cabinet/quick-publish' },
             { label: 'Заявки на роли', path: '/cabinet/role-requests' },
           ],
         },
         {
-          title: 'Выпуски',
-          items: [{ label: 'Номера журнала', path: '/cabinet/volumes' }],
+          title: 'Система',
+          items: [{ label: 'Настройки журнала', path: '/cabinet/admin/journal-settings' }],
         },
       ],
       reviewer: [
@@ -266,25 +269,28 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       ],
       editor: [
         {
-          title: 'Overview',
+          title: 'Workspace',
           items: [
-            { label: 'Home', path: '/cabinet' },
+            { label: 'Overview', path: '/cabinet' },
+            { label: 'All manuscripts', path: '/cabinet/editorial2', tag: '24' },
+            { label: 'Reviewers', path: '/cabinet/admin/users', tag: '3' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
             { label: 'Notification settings', path: '/cabinet/notification-settings' },
           ],
         },
         {
-          title: 'Editorial',
+          title: 'Publication',
           items: [
-            { label: 'Assignments', path: '/cabinet/editorial2' },
+            { label: 'Issues', path: '/cabinet/volumes' },
+            { label: 'Analytics', path: '/cabinet/admin/analytics' },
             { label: 'Quick publish', path: '/cabinet/quick-publish' },
             { label: 'Role requests', path: '/cabinet/role-requests' },
           ],
         },
         {
-          title: 'Volumes',
-          items: [{ label: 'Journal issues', path: '/cabinet/volumes' }],
+          title: 'System',
+          items: [{ label: 'Journal settings', path: '/cabinet/admin/journal-settings' }],
         },
       ],
       reviewer: [
@@ -400,25 +406,28 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       ],
       editor: [
         {
-          title: 'Шолу',
+          title: 'Жұмыс үстелі',
           items: [
-            { label: 'Басты бет', path: '/cabinet' },
+            { label: 'Шолу', path: '/cabinet' },
+            { label: 'Барлық қолжазбалар', path: '/cabinet/editorial2', tag: '24' },
+            { label: 'Рецензенттер', path: '/cabinet/admin/users', tag: '3' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
             { label: 'Хабарлама баптаулары', path: '/cabinet/notification-settings' },
           ],
         },
         {
-          title: 'Редакция',
+          title: 'Жариялау',
           items: [
-            { label: 'Тапсырмалар', path: '/cabinet/editorial2' },
+            { label: 'Шығарылымдар', path: '/cabinet/volumes' },
+            { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Жылдам жариялау', path: '/cabinet/quick-publish' },
             { label: 'Рөл өтінімдері', path: '/cabinet/role-requests' },
           ],
         },
         {
-          title: 'Сандар',
-          items: [{ label: 'Журнал нөмірлері', path: '/cabinet/volumes' }],
+          title: 'Жүйе',
+          items: [{ label: 'Журнал баптаулары', path: '/cabinet/admin/journal-settings' }],
         },
       ],
       reviewer: [
@@ -529,6 +538,51 @@ const NavIcon = ({ path }: { path?: string }) => {
     )
   }
 
+  if (path === '/cabinet/admin/users') {
+    return (
+      <svg {...common}>
+        <circle cx="9" cy="9" r="3" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M4.5 18C4.9 15.5 6.4 14 9 14C11.6 14 13.1 15.5 13.5 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M17 8V14M14 11H20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (path === '/cabinet/volumes') {
+    return (
+      <svg {...common}>
+        <path d="M6 4.5H17.5V19.5H6C5.2 19.5 4.5 18.8 4.5 18V6C4.5 5.2 5.2 4.5 6 4.5Z" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M7 16.5H17.5M7 4.5V16.5" stroke="currentColor" strokeWidth="1.6" />
+      </svg>
+    )
+  }
+
+  if (path === '/cabinet/admin/journal-settings') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M12 3.75V6M12 18V20.25M3.75 12H6M18 12H20.25M6.17 6.17L7.76 7.76M16.24 16.24L17.83 17.83M17.83 6.17L16.24 7.76M7.76 16.24L6.17 17.83" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (path === '/cabinet/editorial2') {
+    return (
+      <svg {...common}>
+        <path d="M7 4.75H15L18 7.75V19.25H7V4.75Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M15 5V8H18M9.5 12H15.5M9.5 15H14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (path === '/cabinet/notifications') {
+    return (
+      <svg {...common}>
+        <path d="M5 5.5H19V15.5H9L5 19V5.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
   if (path === '/cabinet') {
     return (
       <svg {...common}>
@@ -545,15 +599,6 @@ const NavIcon = ({ path }: { path?: string }) => {
       <svg {...common}>
         <path d="M12 12.25C14.07 12.25 15.75 10.57 15.75 8.5C15.75 6.43 14.07 4.75 12 4.75C9.93 4.75 8.25 6.43 8.25 8.5C8.25 10.57 9.93 12.25 12 12.25Z" stroke="currentColor" strokeWidth="1.6" />
         <path d="M5.75 19.25C6.55 16.7 8.9 15 12 15C15.1 15 17.45 16.7 18.25 19.25" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
-    )
-  }
-
-  if (path === '/cabinet/notifications') {
-    return (
-      <svg {...common}>
-        <path d="M17 10C17 7.24 14.76 5 12 5C9.24 5 7 7.24 7 10V13.5L5.5 16H18.5L17 13.5V10Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-        <path d="M10 18C10.42 18.63 11.1 19 12 19C12.9 19 13.58 18.63 14 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
     )
   }
@@ -935,6 +980,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     <NavLink
                       key={item.label}
                       to={item.path}
+                      end={item.path === '/cabinet'}
                       className={({ isActive }) =>
                         ['sidebar__link', isActive ? 'sidebar__link--active' : ''].join(' ')
                       }
@@ -945,7 +991,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                       </span>
                       <span className="sidebar__link-label">{item.label}</span>
                       <span className="sidebar__link-meta">
-                        {item.path === '/cabinet/notifications' && unreadCount > 0 ? (
+                        {item.path === '/cabinet/notifications' && !item.tag && unreadCount > 0 ? (
                           <span className="sidebar__tag">{unreadCount}</span>
                         ) : null}
                         {item.tag ? <span className="sidebar__tag">{item.tag}</span> : null}

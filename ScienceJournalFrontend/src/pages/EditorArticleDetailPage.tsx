@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { toApiFilesUrl } from '../shared/url'
 import { formatArticleStatus, formatArticleType, formatReviewRecommendation } from '../shared/labels'
 import { getCountryLabel, type CountryValue } from '../shared/countries'
+import { getArticleLanguageLabel } from '../shared/articleLanguages'
 import { useLanguage } from '../shared/LanguageContext'
 import ConfirmModal from '../shared/components/ConfirmModal'
 import Toast from '../shared/components/Toast'
@@ -86,6 +87,7 @@ interface CorrespondenceItem {
 export default function EditorArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { lang: pageLang } = useLanguage()
+  const [activeTab, setActiveTab] = useState<'overview' | 'metadata' | 'authors' | 'files' | 'versions' | 'reviews' | 'history'>('overview')
   const [data, setData] = useState<ArticleOut | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -111,6 +113,27 @@ export default function EditorArticleDetailPage() {
   const [volumesLoading, setVolumesLoading] = useState(false)
   const [volumesError, setVolumesError] = useState<string | null>(null)
   const [addingToVolumeId, setAddingToVolumeId] = useState<number | null>(null)
+  const [doiDraft, setDoiDraft] = useState('')
+  const [doiSaving, setDoiSaving] = useState(false)
+  const [doiError, setDoiError] = useState<string | null>(null)
+  const [doiSaved, setDoiSaved] = useState(false)
+  useEffect(() => setDoiDraft(data?.doi || ''), [data?.doi])
+
+  const handleSaveDoi = async () => {
+    if (!data) return
+    setDoiSaving(true)
+    setDoiError(null)
+    setDoiSaved(false)
+    try {
+      const updated = await api.updateEditorArticleDoi<ArticleOut>(data.id, doiDraft.trim() || null)
+      setData(updated)
+      setDoiSaved(true)
+    } catch (e: any) {
+      setDoiError(String(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить DOI'))
+    } finally {
+      setDoiSaving(false)
+    }
+  }
   useEffect(() => {
     if (!isAcceptOpen) return
     setVolumesLoading(true)
@@ -674,11 +697,11 @@ export default function EditorArticleDetailPage() {
   }, [pageLang])
 
   return (
-    <div className="app-container">
-      <section className="section-header">
-        <div>
-          <p className="eyebrow">Редактор</p>
-        </div>
+    <div className="app-container app-container--wide manuscript-detail">
+      <section className="manuscript-detail__toolbar">
+        <Link className="manuscript-detail__back" to="/cabinet/editorial2">
+          <span aria-hidden="true">←</span> Вернуться ко всем рукописям
+        </Link>
         <div className="lang-switch editor-form-lang-switch" aria-label="Язык формы статьи">
           {(['ru','en','kz'] as const).map((l) => (
             <button
@@ -698,10 +721,17 @@ export default function EditorArticleDetailPage() {
       {loading && <div className="loading">Загрузка...</div>}
 
       {data && (
-        <section className="section">
-          <div className="panel">
+        <section className="section manuscript-detail__sheet">
+          <div className="panel manuscript-hero">
+            <div className="manuscript-hero__badges">
+              <span className="manuscript-hero__number">№ {String(data.id).padStart(6, '0')}</span>
+              <span className="manuscript-status">{formatArticleStatus(data.status, pageLang)}</span>
+              <span className="manuscript-type">{formatArticleType(data.article_type, pageLang)}</span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', gap: '1rem', flexWrap: 'wrap' }}>
-              <h2 className="panel-title" style={{ margin: 0 }}>{title}</h2>
+              <div className="manuscript-hero__heading">
+                <h1>{title}</h1>
+              </div>
               {data.status === 'published' && isEditor && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <a className="button button--primary" href={`/cabinet/editorial2/${data.id}/edit`}>Редактировать</a>
@@ -746,61 +776,78 @@ export default function EditorArticleDetailPage() {
                 </div>
               )}
             </div>
-            <div className="article-meta">
-              <span className="meta-label">Тип:</span> {formatArticleType(data.article_type, pageLang)}
-              <span className="dot">•</span>
-              <span className="meta-label">Статус:</span> {formatArticleStatus(data.status, pageLang)}
-              <span className="dot">•</span>
-              <span className="meta-label">DOI:</span> {data.doi || '—'}
-              <span className="dot">•</span>
-              <span className="meta-label">Создано:</span> {new Date(data.created_at).toLocaleString()}
+            <div className="manuscript-meta">
+              <div><span>Язык</span><strong>{getArticleLanguageLabel(data.article_language || lang, pageLang) || 'Не указан'}</strong></div>
+              <div><span>Поступила</span><strong>{new Date(data.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>
+              <div><span>Обновлена</span><strong>{new Date(data.updated_at || data.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>
+              <div><span>DOI</span><strong>{data.doi || 'Не присвоен'}</strong></div>
             </div>
             {statusError && (
               <div className="alert error" style={{ marginTop: '0.75rem' }}>Ошибка смены статуса: {statusError}</div>
             )}
-            {abstract && (
-              <div style={{ marginTop: '1.5rem', lineHeight: '1.6', color: '#444' }}>
-                <h4 style={{ marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 600, color: '#555' }}>
-                  {pageLang === 'ru' ? 'Аннотация' : pageLang === 'en' ? 'Abstract' : 'Аңдатпа'}
-                </h4>
-                <p style={{ whiteSpace: 'pre-wrap', textAlign: 'justify' }}>{abstract}</p>
-              </div>
-            )}
           </div>
 
-          <CollapsibleSection title="Авторы" defaultOpen>
-            {data.authors.length === 0 ? (
-              <div className="table__empty">Авторы пока не добавлены.</div>
-            ) : (
-              <div className="table">
-                <div className="table__head">
-                  <span>Имя</span>
-                  <span>Email</span>
-                  <span>Аффилиация</span>
-                  <span>Контактный?</span>
-                </div>
-                <div className="table__body">
-                  {data.authors.map((a) => (
-                    <div className="table__row" key={a.id}>
-                      <div className="table__cell">
-                        <div className="table__title">
-                          <a href="#" style={{ textDecoration: 'underline' }} onClick={(e) => { e.preventDefault(); setSelectedAuthor(a); setAuthorModalOpen(true) }}>
-                            {`${a.last_name} ${a.first_name}${a.patronymic ? ' ' + a.patronymic : ''}`}
-                          </a>
-                        </div>
-                        <div className="table__meta">{a.prefix || ''}</div>
-                      </div>
-                      <div className="table__cell">{a.email}</div>
-                      <div className="table__cell">{[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || '—'}</div>
-                      <div className="table__cell">{a.is_corresponding ? 'Да' : 'Нет'}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CollapsibleSection>
+          <nav className="manuscript-tabs" aria-label="Разделы рукописи">
+            <button className={activeTab === 'overview' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('overview')}>Обзор</button>
+            <button className={activeTab === 'metadata' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('metadata')}>Метаданные</button>
+            <button className={activeTab === 'authors' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('authors')}>Авторы · {data.authors.length}</button>
+            <button className={activeTab === 'files' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('files')}>Файлы</button>
+            <button className={activeTab === 'versions' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('versions')}>Версии · {data.versions.length}</button>
+            <button className={activeTab === 'reviews' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('reviews')}>Рецензии · {reviewList.length}</button>
+            <button className={activeTab === 'history' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('history')}>История</button>
+          </nav>
 
-          <CollapsibleSection title="Ключевые слова" defaultOpen>
+          {activeTab === 'metadata' && <div className="manuscript-module">
+            <div className="manuscript-module__header">
+              <div><p className="eyebrow">Данные публикации</p><h2>Метаданные рукописи</h2></div>
+              <p>Основные сведения и идентификаторы научной публикации.</p>
+            </div>
+            <div className="metadata-layout">
+              <div className="metadata-card metadata-card--doi">
+                <span className="metadata-card__label">Цифровой идентификатор</span>
+                <h3>DOI</h3>
+                <p>Укажите DOI полностью, например: 10.1234/journal.2026.001</p>
+                <div className="metadata-doi-form">
+                  <input className="text-input" value={doiDraft} onChange={(e) => { setDoiDraft(e.target.value); setDoiSaved(false) }} placeholder="10.xxxx/xxxxx" />
+                  <button className="button button--primary" type="button" disabled={doiSaving} onClick={handleSaveDoi}>{doiSaving ? 'Сохранение…' : data.doi ? 'Обновить DOI' : 'Присвоить DOI'}</button>
+                </div>
+                {doiError && <div className="alert error">{doiError}</div>}
+                {doiSaved && <div className="metadata-success">DOI успешно сохранён</div>}
+              </div>
+              <dl className="metadata-list">
+                <div><dt>Язык рукописи</dt><dd>{getArticleLanguageLabel(data.article_language || lang, pageLang) || 'Не указан'}</dd></div>
+                <div><dt>Тип статьи</dt><dd>{formatArticleType(data.article_type, pageLang)}</dd></div>
+                <div><dt>Статус</dt><dd>{formatArticleStatus(data.status, pageLang)}</dd></div>
+                <div><dt>Дата поступления</dt><dd>{new Date(data.created_at).toLocaleDateString('ru-RU')}</dd></div>
+              </dl>
+            </div>
+          </div>}
+
+          {activeTab === 'authors' && <div className="manuscript-module">
+            <div className="manuscript-module__header">
+              <div><p className="eyebrow">Участники</p><h2>Авторы</h2></div>
+              <p>{data.authors.length ? `Указано авторов: ${data.authors.length}` : 'Авторы не указаны'}</p>
+            </div>
+            {data.authors.length === 0 ? <div className="module-empty">Авторы пока не добавлены.</div> : <div className="author-cards">
+              {data.authors.map((author) => <button className="author-card" type="button" key={author.id} onClick={() => { setSelectedAuthor(author); setAuthorModalOpen(true) }}>
+                <span className="author-card__avatar">{author.first_name.charAt(0)}{author.last_name.charAt(0)}</span>
+                <span className="author-card__content"><strong>{author.last_name} {author.first_name} {author.patronymic || ''}</strong><small>{author.email}</small><small>{author.affiliation1 || 'Аффилиация не указана'}</small></span>
+                {author.is_corresponding && <span className="author-card__badge">Контактный автор</span>}
+                <span className="author-card__arrow">→</span>
+              </button>)}
+            </div>}
+          </div>}
+
+          {activeTab === 'overview' && <div className="manuscript-overview">
+            <div className="manuscript-module__header">
+              <div><p className="eyebrow">Содержание</p><h2>Обзор рукописи</h2></div>
+            </div>
+            <div className="manuscript-abstract">
+              <h4>{pageLang === 'ru' ? 'Аннотация' : pageLang === 'en' ? 'Abstract' : 'Аңдатпа'}</h4>
+              <p>{abstract || 'Аннотация не указана.'}</p>
+            </div>
+          <div className="module-keywords">
+            <h3>Ключевые слова</h3>
             {data.keywords.length === 0 ? (
               <div className="table__empty">Ключевые слова не указаны.</div>
             ) : (
@@ -821,8 +868,11 @@ export default function EditorArticleDetailPage() {
                 ))}
               </div>
             )}
-          </CollapsibleSection>
+          </div>
+          </div>}
 
+          <div className="manuscript-tab-panel" hidden={activeTab !== 'files'}>
+          <div className="manuscript-module__header"><div><p className="eyebrow">Материалы</p><h2>Файлы рукописи</h2></div><p>Исходные документы, антиплагиат и материалы вёрстки.</p></div>
           <CollapsibleSection title="Файлы" defaultOpen>
             <div className="actions">
               <a className="button button--ghost button--compact" href={toApiFilesUrl(data.manuscript_file_url) || '#'} target="_blank" rel="noreferrer">Рукопись</a>
@@ -1030,7 +1080,10 @@ export default function EditorArticleDetailPage() {
               </div>
             )}
           </CollapsibleSection>
+          </div>
 
+          <div className="manuscript-tab-panel" hidden={activeTab !== 'versions'}>
+          <div className="manuscript-module__header"><div><p className="eyebrow">Изменения</p><h2>Версии рукописи</h2></div><p>Снимки статьи, сохранённые в ходе редакционного процесса.</p></div>
           <CollapsibleSection title="Версии" defaultOpen>
             {data.versions.length === 0 ? (
               <div className="table__empty">Версий пока нет.</div>
@@ -1059,9 +1112,10 @@ export default function EditorArticleDetailPage() {
               </div>
             )}
           </CollapsibleSection>
+          </div>
 
-
-
+          <div className="manuscript-tab-panel" hidden={activeTab !== 'history'}>
+          <div className="manuscript-module__header"><div><p className="eyebrow">Коммуникация</p><h2>История</h2></div><p>Переписка редакции с автором и комментарии рецензентов.</p></div>
           <CollapsibleSection title="Комментарии и переписка" defaultOpen>
             <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
@@ -1111,7 +1165,10 @@ export default function EditorArticleDetailPage() {
               </div>
             )}
           </CollapsibleSection>
+          </div>
 
+          <div className="manuscript-tab-panel" hidden={activeTab !== 'reviews'}>
+          <div className="manuscript-module__header"><div><p className="eyebrow">Экспертиза</p><h2>Рецензии</h2></div><p>Назначения, сроки и рекомендации рецензентов.</p></div>
           <CollapsibleSection title="Рецензенты" defaultOpen>
             <div className="panel-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
               {data.status !== 'rejected' && (
@@ -1185,6 +1242,7 @@ export default function EditorArticleDetailPage() {
               </div>
             )}
           </CollapsibleSection>
+          </div>
         </section>
       )}
       {authorModalOpen && selectedAuthor && (

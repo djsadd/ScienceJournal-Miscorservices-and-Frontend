@@ -308,6 +308,8 @@ export const api = {
     page_size?: number
   }) => request<T>('/articles/unassigned', 'GET', { params }),
   getEditorArticleDetail: <T>(id: string | number) => request<T>(`/articles/editor/${id}`, 'GET'),
+  updateEditorArticleDoi: <T>(id: string | number, doi: string | null) =>
+    request<T>(`/articles/editor/${id}/doi`, 'PATCH', { json: { doi } }),
   getEditorArticleVersion: <T>(articleId: string | number, versionId: string | number) =>
     request<T>(`/articles/editor/${articleId}/versions/${versionId}`, 'GET'),
   // Editor-only update for published articles (keeps status = published, creates a new version snapshot)

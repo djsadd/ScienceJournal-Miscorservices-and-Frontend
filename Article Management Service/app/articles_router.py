@@ -331,6 +331,7 @@ def list_unassigned_articles(
 
 @router.get("/statuses")
 def list_article_statuses(
+    db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     scope: str | None = None,
 ):
@@ -341,19 +342,9 @@ def list_article_statuses(
     """
     # Require auth; editors will be the primary consumers but other authed pages may re-use it.
     if scope == "unassigned":
-        # Keep only statuses that are actually used in the editorial workflow UI.
-        # `under_review` exists in enum but isn't used by current workflow screens.
-        return [
-            models.ArticleStatus.draft.value,
-            models.ArticleStatus.submitted.value,
-            models.ArticleStatus.editor_check.value,
-            models.ArticleStatus.reviewer_check.value,
-            models.ArticleStatus.sent_for_revision.value,
-            models.ArticleStatus.accepted.value,
-            models.ArticleStatus.rejected.value,
-            models.ArticleStatus.published.value,
-            models.ArticleStatus.withdrawn.value,
-        ]
+        ensure_editor(current_user)
+        rows = db.query(models.Article.status).distinct().order_by(models.Article.status).all()
+        return [status.value if hasattr(status, "value") else str(status) for (status,) in rows if status]
 
     return [s.value for s in models.ArticleStatus]
 
@@ -496,6 +487,26 @@ def update_published_article_for_editor(
     db.commit()
     db.refresh(existing_article)
     return existing_article
+
+
+@router.patch("/editor/{article_id}/doi", response_model=schemas.ArticleOut)
+def update_article_doi_for_editor(
+    article_id: int,
+    payload: schemas.ArticleDoiUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Assign, replace, or clear an article DOI without changing its workflow status."""
+    ensure_editor(current_user)
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    normalized_doi = payload.doi.strip() if payload.doi else None
+    article.doi = normalized_doi or None
+    db.commit()
+    db.refresh(article)
+    return article
 
 
 @router.get("/editor/{article_id}/versions/{version_id}", response_model=schemas.ArticleVersionOut)

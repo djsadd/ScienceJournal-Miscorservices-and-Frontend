@@ -22,6 +22,10 @@ class ArticleType(str, Enum):
     review = "review"
 
 
+class ArticleDoiUpdate(BaseModel):
+    doi: Optional[str] = Field(default=None, max_length=255)
+
+
 class KeywordCreate(BaseModel):
     title_kz: str
     title_en: str
