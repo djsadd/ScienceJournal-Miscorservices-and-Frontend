@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 
 
@@ -319,6 +319,8 @@ class VolumeBase(BaseModel):
     year: int
     number: str  # Can be "1", "1-2", "2-3", etc.
     month: int | None = Field(default=None, ge=1, le=12, description="Month number 1-12")
+    planned_publication_date: date | None = None
+    target_article_count: int | None = Field(default=None, ge=1)
     title_kz: str | None = None
     title_en: str | None = None
     title_ru: str | None = None
@@ -340,6 +342,8 @@ class VolumeUpdate(BaseModel):
     year: int | None = None
     number: str | None = None
     month: int | None = Field(default=None, ge=1, le=12)
+    planned_publication_date: date | None = None
+    target_article_count: int | None = Field(default=None, ge=1)
     title_kz: str | None = None
     title_en: str | None = None
     title_ru: str | None = None

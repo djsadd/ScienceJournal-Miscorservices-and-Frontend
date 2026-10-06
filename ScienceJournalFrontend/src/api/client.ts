@@ -472,6 +472,8 @@ export const api = {
     year: number
     number: string
     month?: number | null
+    planned_publication_date?: string | null
+    target_article_count?: number | null
     title_kz?: string | null
     title_en?: string | null
     title_ru?: string | null
@@ -489,6 +491,8 @@ export const api = {
     year: number
     number: string
     month: number | null
+    planned_publication_date: string | null
+    target_article_count: number | null
     title_kz: string | null
     title_en: string | null
     title_ru: string | null

@@ -183,8 +183,8 @@ export default function VolumeEditPage() {
         </div>
         <div className="section-actions volume-edit__actions">
           <span className="badge badge--info volume-edit__badge">Выбрано: {selectedCount}</span>
-          <Link className="button button--ghost" to={`/cabinet/volumes/${id}`}>
-            ← Назад к деталям
+          <Link className="button button--ghost" to="/cabinet/volumes">
+            ← Вернуться к выпускам
           </Link>
           <button className="button button--primary" onClick={save} disabled={saving || loading}>
             {saving ? 'Сохранение…' : 'Сохранить изменения'}

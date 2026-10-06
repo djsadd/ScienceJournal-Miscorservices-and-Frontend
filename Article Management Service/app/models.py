@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum, ForeignKey, Table, Boolean
+from sqlalchemy import Column, Integer, String, Date, DateTime, Enum, ForeignKey, Table, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -207,6 +207,8 @@ class Volume(Base):
     year = Column(Integer, nullable=False)
     number = Column(String, nullable=False)  # Номер выпуска (issue) - может быть "1", "1-2", "2-3" и т.д.
     month = Column(Integer, nullable=True)  # Месяц выпуска (1-12), опционально
+    planned_publication_date = Column(Date, nullable=True)
+    target_article_count = Column(Integer, nullable=True)
     title_kz = Column(String, nullable=True)
     title_en = Column(String, nullable=True)
     title_ru = Column(String, nullable=True)
