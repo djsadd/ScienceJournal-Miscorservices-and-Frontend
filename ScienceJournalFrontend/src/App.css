@@ -7283,7 +7283,7 @@
 }
 
 .app-shell--sidebar-hidden {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
 }
 
 .app-shell .sidebar {
@@ -7294,7 +7294,75 @@
 }
 
 .app-shell .sidebar--hidden {
-  width: 253px;
+  position: sticky;
+  left: auto;
+  width: 76px;
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+  box-shadow: none;
+}
+
+.app-shell .sidebar--hidden .sidebar__brand {
+  justify-content: center;
+  padding: 0 10px;
+}
+
+.app-shell .sidebar--hidden .brand--compact {
+  justify-content: center;
+}
+
+.app-shell .sidebar--hidden .brand--compact > div:last-child,
+.app-shell .sidebar--hidden .sidebar__section-top,
+.app-shell .sidebar--hidden .sidebar__link-label,
+.app-shell .sidebar--hidden .sidebar__link-meta,
+.app-shell .sidebar--hidden .sidebar__footer-action:not(:last-child) {
+  display: none;
+}
+
+.app-shell .sidebar--hidden .sidebar__nav {
+  padding-inline: 8px;
+}
+
+.app-shell .sidebar--hidden .sidebar__section {
+  padding-inline: 0;
+  padding-bottom: 14px;
+}
+
+.app-shell .sidebar--hidden .sidebar__link {
+  width: 50px;
+  min-height: 48px;
+  justify-content: center;
+  margin-inline: auto;
+  padding: 0;
+  border-radius: 10px;
+}
+
+.app-shell .sidebar--hidden .sidebar__link-icon,
+.app-shell .sidebar--hidden .sidebar__link-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.app-shell .sidebar--hidden .sidebar__footer {
+  padding: 12px;
+}
+
+.app-shell .sidebar--hidden .sidebar__footer-action:last-child {
+  width: 50px;
+  min-height: 46px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 10px;
+  color: #8b1831;
+  background: #fbf2f5;
+  font-size: 0;
+}
+
+.app-shell .sidebar--hidden .sidebar__footer-action:last-child .sidebar__footer-icon,
+.app-shell .sidebar--hidden .sidebar__footer-action:last-child .sidebar__footer-icon svg {
+  width: 21px;
+  height: 21px;
 }
 
 .app-shell .sidebar__brand {
@@ -7657,24 +7725,7 @@
   display: none;
 }
 
-.app-shell.app-shell--sidebar-hidden .sidebar-toggle {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  margin-right: 16px;
-  border-radius: 2px;
-  border-color: #ead5df;
-  background: #fffefe;
-  color: #8b1831;
-  box-shadow: none;
-}
-
-.app-shell.app-shell--sidebar-hidden .sidebar-toggle:hover {
-  border-color: #8b1831;
-  background: #fbf5f7;
-  box-shadow: none;
-  transform: none;
-}
+.app-shell.app-shell--sidebar-hidden .sidebar-toggle { display: none; }
 
 .cabinet-breadcrumbs {
   display: inline-flex;

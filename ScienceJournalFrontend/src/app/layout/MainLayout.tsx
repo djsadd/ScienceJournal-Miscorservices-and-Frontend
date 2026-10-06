@@ -218,8 +218,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     brandAlt: 'Логотип университета',
     mobileMenuOpen: 'Меню',
     mobileMenuClose: 'Закрыть меню',
-    sidebarShow: 'Показать меню',
-    sidebarHide: 'Скрыть меню',
+    sidebarShow: 'Развернуть меню',
+    sidebarHide: 'Свернуть меню',
     notificationsLabel: 'Уведомления',
     notificationsTitle: 'Уведомления',
     notificationsLoading: 'Загрузка...',
@@ -355,8 +355,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     brandAlt: 'University logo',
     mobileMenuOpen: 'Menu',
     mobileMenuClose: 'Close menu',
-    sidebarShow: 'Show sidebar',
-    sidebarHide: 'Hide sidebar',
+    sidebarShow: 'Expand sidebar',
+    sidebarHide: 'Collapse sidebar',
     notificationsLabel: 'Notifications',
     notificationsTitle: 'Notifications',
     notificationsLoading: 'Loading...',
@@ -492,8 +492,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     brandAlt: 'Университет логотипі',
     mobileMenuOpen: 'Мәзір',
     mobileMenuClose: 'Мәзірді жабу',
-    sidebarShow: 'Мәзірді көрсету',
-    sidebarHide: 'Мәзірді жасыру',
+    sidebarShow: 'Мәзірді жаю',
+    sidebarHide: 'Мәзірді жию',
     notificationsLabel: 'Хабарламалар',
     notificationsTitle: 'Хабарламалар',
     notificationsLoading: 'Жүктелуде...',
@@ -532,11 +532,20 @@ const NavIcon = ({ path }: { path?: string }) => {
   if (path === '/cabinet/admin/analytics') {
     return (
       <svg {...common}>
-        <path d="M5 19V13M12 19V5M19 19V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M4 19.25H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M4.5 18.5L9.2 13.6L12.6 15.7L19.5 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M15.5 7.5H19.5V11.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4.5 5.5V18.5H19.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     )
   }
+
+  if (path === '/cabinet/quick-publish') return <svg {...common}><path d="M12 3.8L13.9 9.2L19.5 11L13.9 12.8L12 18.2L10.1 12.8L4.5 11L10.1 9.2L12 3.8Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M18.5 3.5V7M16.75 5.25H20.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  if (path === '/cabinet/role-requests') return <svg {...common}><circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.6"/><path d="M4.5 18C5 14.9 6.7 13.5 9 13.5C10.3 13.5 11.4 13.9 12.2 14.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M15 15.5L17 17.5L20.5 13.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+  if (path === '/cabinet/notification-settings') return <svg {...common}><path d="M7 16.5H17L15.8 14.7V10A3.8 3.8 0 008.2 10V14.7L7 16.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M10.4 19H13.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M18.5 5.5L20 4M5.5 5.5L4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  if (path === '/cabinet/submissions') return <svg {...common}><path d="M7 4.5H17V19.5H7V4.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M9.5 8H14.5M9.5 11.5H14.5M9.5 15H12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+  if (path === '/cabinet/reviews') return <svg {...common}><path d="M6 4.5H18V19.5H6V4.5Z" stroke="currentColor" strokeWidth="1.6"/><path d="M9 9L10.5 10.5L14.5 6.5M9 15L10.5 16.5L14.5 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+  if (path === '/cabinet/layout') return <svg {...common}><rect x="4.5" y="4.5" width="15" height="15" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><path d="M4.5 10H19.5M11 10V19.5" stroke="currentColor" strokeWidth="1.6"/></svg>
+  if (path === '/cabinet/admin/email-templates') return <svg {...common}><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M5 7L12 13L19 7" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>
 
   if (path === '/cabinet/admin/users') {
     return (
@@ -985,6 +994,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                         ['sidebar__link', isActive ? 'sidebar__link--active' : ''].join(' ')
                       }
                       onClick={closeSidebar}
+                      title={item.label}
                     >
                       <span className="sidebar__link-icon">
                         <NavIcon path={item.path} />
@@ -1002,6 +1012,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                       key={item.label}
                       className="sidebar__link sidebar__link--static"
                       onClick={closeSidebar}
+                      title={item.label}
                     >
                       <span className="sidebar__link-icon">
                         <NavIcon path={item.path} />
@@ -1020,6 +1031,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           <button
             className="sidebar__footer-action"
             type="button"
+            aria-label={copy.logout}
+            title={copy.logout}
             onClick={() => {
               api.logout()
               navigate('/login')
@@ -1038,10 +1051,12 @@ export function MainLayout({ children }: MainLayoutProps) {
             className="sidebar__footer-action"
             type="button"
             onClick={toggleSidebar}
+            aria-label={sidebarToggleLabel}
+            title={sidebarToggleLabel}
           >
             <span className="sidebar__footer-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d={isDesktopViewport && !isSidebarVisible ? "M9 6L15 12L9 18" : "M15 6L9 12L15 18"} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
             {sidebarToggleLabel}
