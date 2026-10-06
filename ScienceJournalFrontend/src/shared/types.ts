@@ -40,6 +40,7 @@ export type ArticleStatus =
   | 'draft'
   | 'submitted'
   | 'under_review'
+  | 'review_completed'
   | 'editor_check'
   | 'reviewer_check'
   | 'sent_for_revision'

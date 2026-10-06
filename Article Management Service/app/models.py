@@ -55,6 +55,7 @@ class ArticleStatus(str, enum.Enum):
     draft = "draft"
     submitted = "submitted"
     under_review = "under_review"
+    review_completed = "review_completed"
     editor_check = "editor_check"
     reviewer_check = "reviewer_check"
     sent_for_revision = "sent_for_revision"

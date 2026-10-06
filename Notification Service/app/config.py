@@ -13,6 +13,7 @@ ALGORITHM = "HS256"
 # Service URLs
 USERS_SERVICE_URL = os.getenv("USERS_SERVICE_URL", "http://users:8000")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth:8000")
+ARTICLE_SERVICE_URL = os.getenv("ARTICLE_SERVICE_URL", "http://articles:8000")
 
 SHARED_SERVICE_SECRET = os.getenv("SHARED_SERVICE_SECRET", "service-shared-secret")
 

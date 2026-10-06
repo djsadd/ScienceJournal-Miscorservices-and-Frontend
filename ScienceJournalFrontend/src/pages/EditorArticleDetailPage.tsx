@@ -114,24 +114,39 @@ export default function EditorArticleDetailPage() {
   const [volumesError, setVolumesError] = useState<string | null>(null)
   const [addingToVolumeId, setAddingToVolumeId] = useState<number | null>(null)
   const [doiDraft, setDoiDraft] = useState('')
-  const [doiSaving, setDoiSaving] = useState(false)
-  const [doiError, setDoiError] = useState<string | null>(null)
-  const [doiSaved, setDoiSaved] = useState(false)
-  useEffect(() => setDoiDraft(data?.doi || ''), [data?.doi])
-
-  const handleSaveDoi = async () => {
+  const [metadataStatus, setMetadataStatus] = useState('')
+  const [metadataType, setMetadataType] = useState<'original' | 'review'>('original')
+  const [metadataLanguage, setMetadataLanguage] = useState('ru')
+  const [metadataSaving, setMetadataSaving] = useState(false)
+  const [metadataError, setMetadataError] = useState<string | null>(null)
+  const [metadataSaved, setMetadataSaved] = useState(false)
+  useEffect(() => {
     if (!data) return
-    setDoiSaving(true)
-    setDoiError(null)
-    setDoiSaved(false)
+    setDoiDraft(data.doi || '')
+    setMetadataStatus(data.status)
+    setMetadataType(data.article_type === 'review' ? 'review' : 'original')
+    setMetadataLanguage(data.article_language || 'ru')
+    setMetadataSaved(false)
+  }, [data?.id, data?.doi, data?.status, data?.article_type, data?.article_language])
+
+  const handleSaveMetadata = async () => {
+    if (!data || !metadataStatus || !metadataLanguage) return
+    setMetadataSaving(true)
+    setMetadataError(null)
+    setMetadataSaved(false)
     try {
-      const updated = await api.updateEditorArticleDoi<ArticleOut>(data.id, doiDraft.trim() || null)
+      const updated = await api.updateEditorArticleMetadata<ArticleOut>(data.id, {
+        status: metadataStatus,
+        article_type: metadataType,
+        article_language: metadataLanguage,
+        doi: doiDraft.trim() || null,
+      })
       setData(updated)
-      setDoiSaved(true)
+      setMetadataSaved(true)
     } catch (e: any) {
-      setDoiError(String(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить DOI'))
+      setMetadataError(String(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить метаданные'))
     } finally {
-      setDoiSaving(false)
+      setMetadataSaving(false)
     }
   }
   useEffect(() => {
@@ -355,6 +370,33 @@ export default function EditorArticleDetailPage() {
     size_bytes?: number
     url?: string
     created_at?: string
+  }
+  type EditableArticleFile = 'manuscript_file_id' | 'author_info_file_id' | 'cover_letter_file_id'
+  const [editorFileDrafts, setEditorFileDrafts] = useState<Partial<Record<EditableArticleFile, File>>>({})
+  const [editorFileSaving, setEditorFileSaving] = useState<EditableArticleFile | null>(null)
+  const [editorFileError, setEditorFileError] = useState<string | null>(null)
+
+  const saveEditorFile = async (field: EditableArticleFile) => {
+    const file = editorFileDrafts[field]
+    if (!file || !data) return
+    setEditorFileSaving(field)
+    setEditorFileError(null)
+    try {
+      const uploaded = await api.uploadFile<FileOut>(file)
+      const updated = await api.updateEditorArticleFiles<ArticleOut>(data.id, { [field]: uploaded.id })
+      setData(updated)
+      setEditorFileDrafts((current) => {
+        const next = { ...current }
+        delete next[field]
+        return next
+      })
+      setToastMessage('Файл сохранён')
+      setToastOpen(true)
+    } catch (e: any) {
+      setEditorFileError(String(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить файл'))
+    } finally {
+      setEditorFileSaving(null)
+    }
   }
 
   // Layout records fetched from Layout Service
@@ -803,16 +845,48 @@ export default function EditorArticleDetailPage() {
               <p>Основные сведения и идентификаторы научной публикации.</p>
             </div>
             <div className="metadata-layout">
-              <div className="metadata-card metadata-card--doi">
-                <span className="metadata-card__label">Цифровой идентификатор</span>
-                <h3>DOI</h3>
-                <p>Укажите DOI полностью, например: 10.1234/journal.2026.001</p>
-                <div className="metadata-doi-form">
-                  <input className="text-input" value={doiDraft} onChange={(e) => { setDoiDraft(e.target.value); setDoiSaved(false) }} placeholder="10.xxxx/xxxxx" />
-                  <button className="button button--primary" type="button" disabled={doiSaving} onClick={handleSaveDoi}>{doiSaving ? 'Сохранение…' : data.doi ? 'Обновить DOI' : 'Присвоить DOI'}</button>
+              <div className="metadata-card">
+                <span className="metadata-card__label">Данные публикации</span>
+                <h3>Редактирование</h3>
+                <p>Измените необходимые сведения и сохраните их одной кнопкой.</p>
+                <div className="metadata-form">
+                  <div className="metadata-form__grid">
+                    <label className="metadata-form__field">
+                      <span>Статус</span>
+                      <select className="text-input" value={metadataStatus} onChange={(e) => { setMetadataStatus(e.target.value); setMetadataSaved(false) }}>
+                        {['draft', 'submitted', 'under_review', 'review_completed', 'editor_check', 'reviewer_check', 'sent_for_revision', 'accepted', 'rejected', 'published', 'withdrawn'].map((status) =>
+                          <option value={status} key={status}>{formatArticleStatus(status, pageLang)}</option>
+                        )}
+                      </select>
+                    </label>
+                    <label className="metadata-form__field">
+                      <span>Тип статьи</span>
+                      <select className="text-input" value={metadataType} onChange={(e) => { setMetadataType(e.target.value as 'original' | 'review'); setMetadataSaved(false) }}>
+                        <option value="original">{formatArticleType('original', pageLang)}</option>
+                        <option value="review">{formatArticleType('review', pageLang)}</option>
+                      </select>
+                    </label>
+                    <label className="metadata-form__field">
+                      <span>Язык рукописи</span>
+                      <select className="text-input" value={metadataLanguage} onChange={(e) => { setMetadataLanguage(e.target.value); setMetadataSaved(false) }}>
+                        {['ru', 'kk', 'en'].map((language) =>
+                          <option value={language} key={language}>{getArticleLanguageLabel(language, pageLang)}</option>
+                        )}
+                      </select>
+                    </label>
+                    <label className="metadata-form__field">
+                      <span>DOI</span>
+                      <input className="text-input" value={doiDraft} onChange={(e) => { setDoiDraft(e.target.value); setMetadataSaved(false) }} placeholder="10.xxxx/xxxxx" />
+                    </label>
+                  </div>
+                  <div className="metadata-form__actions">
+                    <button className="button button--primary" type="button" disabled={metadataSaving} onClick={handleSaveMetadata}>
+                      {metadataSaving ? 'Сохранение…' : 'Сохранить'}
+                    </button>
+                    {metadataSaved && <span className="metadata-success">Метаданные сохранены</span>}
+                  </div>
+                  {metadataError && <div className="alert error">{metadataError}</div>}
                 </div>
-                {doiError && <div className="alert error">{doiError}</div>}
-                {doiSaved && <div className="metadata-success">DOI успешно сохранён</div>}
               </div>
               <dl className="metadata-list">
                 <div><dt>Язык рукописи</dt><dd>{getArticleLanguageLabel(data.article_language || lang, pageLang) || 'Не указан'}</dd></div>
@@ -900,6 +974,64 @@ export default function EditorArticleDetailPage() {
                 )
               })}
             </div>
+
+            <>
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                <h4 style={{ margin: 0, marginBottom: '0.35rem' }}>Управление файлами статьи</h4>
+                <p className="form-hint" style={{ marginTop: 0 }}>Добавьте отсутствующий файл или выберите новый, чтобы заменить текущий.</p>
+                {editorFileError && <div className="alert error" style={{ marginBottom: '0.75rem' }}>{editorFileError}</div>}
+                <div className="editor-article-file-manager">
+                  {([
+                    ['manuscript_file_id', 'Рукопись', data.manuscript_file_url, '.pdf,.doc,.docx,.odt'] as const,
+                    ['author_info_file_id', 'Сведения об авторах', data.author_info_file_url, '.pdf,.doc,.docx,.odt'] as const,
+                    ['cover_letter_file_id', 'Сопроводительное письмо', data.cover_letter_file_url, '.pdf,.doc,.docx,.odt'] as const,
+                  ]).map(([field, label, currentUrl, accept]) => {
+                    const selected = editorFileDrafts[field]
+                    const saving = editorFileSaving === field
+                    return (
+                      <div key={field} className="editor-article-file-manager__item">
+                        <h4>{currentUrl ? `Замена файла: ${label}` : `Загрузка файла: ${label}`}</h4>
+                        <p className="form-hint">Поддерживаемые форматы: PDF, DOC, DOCX, ODT. {currentUrl ? 'Новый файл заменит текущий.' : 'Файл будет привязан к статье.'}</p>
+                        <div
+                          className="editor-article-file-dropzone"
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={(event) => {
+                            event.preventDefault()
+                            const file = event.dataTransfer.files?.[0]
+                            if (file) setEditorFileDrafts((current) => ({ ...current, [field]: file }))
+                          }}
+                        >
+                          <input
+                            id={`editor-${field}`}
+                            type="file"
+                            accept={accept}
+                            disabled={saving}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0]
+                              setEditorFileDrafts((current) => ({ ...current, [field]: file }))
+                              setEditorFileError(null)
+                            }}
+                          />
+                          <label htmlFor={`editor-${field}`} className="button button--ghost">Выбрать файл</label>
+                          <span>или перетащите сюда</span>
+                          {selected && <strong className="editor-article-file-dropzone__name">{selected.name}</strong>}
+                        </div>
+                        <div className="actions editor-article-file-manager__actions">
+                          <button className="button button--primary" type="button" disabled={!selected || saving} onClick={() => saveEditorFile(field)}>
+                            {saving ? 'Сохранение…' : currentUrl ? 'Заменить файл' : 'Загрузить файл'}
+                          </button>
+                          <button className="button button--ghost" type="button" disabled={!selected || saving} onClick={() => setEditorFileDrafts((current) => {
+                            const next = { ...current }
+                            delete next[field]
+                            return next
+                          })}>Отмена</button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
 
             {isEditor && (
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>

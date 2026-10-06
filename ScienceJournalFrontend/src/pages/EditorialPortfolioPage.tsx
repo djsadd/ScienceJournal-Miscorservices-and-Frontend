@@ -26,6 +26,7 @@ const statusMeta: Record<string, { ru: string; en: string; kz: string; tone: str
   submitted: { ru: 'Первичная проверка', en: 'Initial review', kz: 'Алғашқы тексеру', tone: 'rose' },
   editor_check: { ru: 'Решение редактора', en: 'Editor decision', kz: 'Редактор шешімі', tone: 'blue' },
   under_review: { ru: 'На рецензировании', en: 'Under review', kz: 'Рецензияда', tone: 'amber' },
+  review_completed: { ru: 'Рецензирование завершено', en: 'Review completed', kz: 'Рецензия аяқталды', tone: 'green' },
   reviewer_check: { ru: 'Поиск рецензента', en: 'Reviewer search', kz: 'Рецензент іздеу', tone: 'amber' },
   in_review: { ru: 'На рецензировании', en: 'Under review', kz: 'Рецензияда', tone: 'amber' },
   sent_for_revision: { ru: 'После доработки', en: 'After revision', kz: 'Түзетуден кейін', tone: 'lilac' },
@@ -123,7 +124,7 @@ export default function EditorialPortfolioPage() {
 
   return <div className="editorial-queue"><section className="editorial-queue__panel">
     <header className="editorial-queue__header">
-      <div><h1 className="page-title editorial-queue__title">{t.title}</h1><p className="editorial-queue__subtitle">{t.subtitle}</p></div>
+      <div><h1 className="page-title editorial-queue__title">{t.title}</h1></div>
       <div className="editorial-queue__filter" aria-label={t.statusFilter} role="group">
         <button type="button" className={`editorial-queue__filter-button ${statusFilter === 'all' ? 'editorial-queue__filter-button--active' : ''}`} aria-pressed={statusFilter === 'all'} onClick={() => selectStatus('all')}>{t.all}</button>
         {statusOptions.map((status) => <button type="button" key={status} className={`editorial-queue__filter-button ${statusFilter === status ? 'editorial-queue__filter-button--active' : ''}`} aria-pressed={statusFilter === status} onClick={() => selectStatus(status)}>{formatArticleStatus(status, locale)}</button>)}

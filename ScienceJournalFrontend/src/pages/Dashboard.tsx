@@ -89,6 +89,7 @@ const copies: Record<Lang, DashboardCopy> = {
       draft: 'Черновик',
       submitted: 'Отправлено',
       under_review: 'На рецензировании',
+      review_completed: 'Рецензирование завершено',
       in_review: 'На рецензировании',
       editor_check: 'Проверка редактора',
       reviewer_check: 'Проверка рецензента',
@@ -143,6 +144,7 @@ const copies: Record<Lang, DashboardCopy> = {
       draft: 'Draft',
       submitted: 'Submitted',
       under_review: 'Under review',
+      review_completed: 'Review completed',
       in_review: 'Under review',
       editor_check: 'Editor check',
       reviewer_check: 'Reviewer check',
@@ -197,6 +199,7 @@ const copies: Record<Lang, DashboardCopy> = {
       draft: 'Жоба',
       submitted: 'Жіберілді',
       under_review: 'Рецензияда',
+      review_completed: 'Рецензия аяқталды',
       in_review: 'Рецензияда',
       editor_check: 'Редактор тексеруі',
       reviewer_check: 'Рецензент тексеруі',
@@ -237,7 +240,7 @@ const copies: Record<Lang, DashboardCopy> = {
 
 const roleKeys: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
 const isRoleKey = (value: string): value is RoleKey => roleKeys.includes(value as RoleKey)
-const reviewStatuses = ['under_review', 'in_review', 'editor_check', 'reviewer_check']
+const reviewStatuses = ['under_review', 'in_review', 'review_completed', 'editor_check', 'reviewer_check']
 
 const readStoredRole = (): RoleKey | null => {
   if (typeof window === 'undefined') return null

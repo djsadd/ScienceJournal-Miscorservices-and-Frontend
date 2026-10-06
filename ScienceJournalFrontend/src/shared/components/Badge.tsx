@@ -14,6 +14,7 @@ const statusMap: Record<
   pending: { label: 'Ожидает', tone: 'info' },
   in_review: { label: 'На рецензии', tone: 'warn' },
   under_review: { label: 'На рецензировании', tone: 'warn' },
+  review_completed: { label: 'Рецензирование завершено', tone: 'success' },
   editor_check: { label: 'Проверка редактора', tone: 'info' },
   reviewer_check: { label: 'Проверка рецензента', tone: 'info' },
   revisions: { label: 'Правки', tone: 'warn' },

@@ -519,6 +519,61 @@ def update_article_doi_for_editor(
     return article
 
 
+@router.patch("/editor/{article_id}/files", response_model=schemas.ArticleOut)
+def update_article_files_for_editor(
+    article_id: int,
+    payload: schemas.ArticleFilesUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Attach or replace manuscript files at any stage of the editorial workflow."""
+    ensure_editor(current_user)
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    updates = payload.dict(exclude_unset=True)
+    file_fields = {
+        "manuscript_file_id": "manuscript_file_url",
+        "author_info_file_id": "author_info_file_url",
+        "cover_letter_file_id": "cover_letter_file_url",
+        "antiplagiarism_file_id": "antiplagiarism_file_url",
+    }
+    for file_id_field, file_url_field in file_fields.items():
+        if file_id_field in updates:
+            setattr(article, file_url_field, _file_id_to_url(updates[file_id_field]))
+
+    db.commit()
+    db.refresh(article)
+    return article
+
+
+@router.patch("/editor/{article_id}/metadata", response_model=schemas.ArticleOut)
+def update_article_metadata_for_editor(
+    article_id: int,
+    payload: schemas.ArticleMetadataUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Update the publication metadata maintained by editors."""
+    ensure_editor(current_user)
+    article = db.query(models.Article).filter(models.Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    article.status = payload.status
+    article.article_type = payload.article_type
+    article.article_language = payload.article_language.strip().lower()
+    normalized_doi = payload.doi.strip() if payload.doi else None
+    article.doi = normalized_doi or None
+    if payload.status == models.ArticleStatus.editor_check:
+        article.assigned_editor_id = int(current_user["user_id"])
+
+    db.commit()
+    db.refresh(article)
+    return article
+
+
 @router.get("/editor/{article_id}/versions/{version_id}", response_model=schemas.ArticleVersionOut)
 def get_article_version_detail_for_editor(
     article_id: int,
@@ -1464,7 +1519,7 @@ def mark_review_submitted_internal(
     article = db.query(models.Article).filter(models.Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    article.status = models.ArticleStatus.editor_check
+    article.status = models.ArticleStatus.review_completed
     db.commit()
     db.refresh(article)
     return {"id": article.id, "status": article.status}

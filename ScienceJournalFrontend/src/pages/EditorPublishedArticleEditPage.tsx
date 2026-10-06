@@ -177,13 +177,9 @@ const mapApiAuthorToForm = (author: ApiAuthor): AuthorForm => ({
 export default function EditorPublishedArticleEditPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [me, setMe] = useState<{ role?: string; roles?: string[] } | null>(null)
-  useEffect(() => {
-    api.get<{ role?: string; roles?: string[] }>('/auth/me').then(setMe).catch(() => {})
-  }, [])
-  const isEditor = (me?.role === 'editor') || (me?.roles?.includes('editor'))
   const [article, setArticle] = useState<ApiArticle | null>(null)
-  const canEdit = Boolean(isEditor && article?.status === 'published')
+  // This route is editor-only on the backend; do not hide controls while /auth/me is still loading.
+  const canEdit = Boolean(article?.status === 'published')
   const [myFiles, setMyFiles] = useState<ApiMyFile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -1225,7 +1221,7 @@ export default function EditorPublishedArticleEditPage() {
             ) : (
               <div className="form-hint">Не загружено</div>
             )}
-            {article.status === 'withdrawn' ? (
+            {canEdit ? (
               <div style={{ marginTop: '0.5rem' }}>
                 <input type="file" className="file-input" onChange={(e) => setFileCoverLetter(e.target.files?.[0] ?? null)} />
                 {fileCoverLetter ? <div className="form-hint">Новый файл: {fileCoverLetter.name}</div> : null}

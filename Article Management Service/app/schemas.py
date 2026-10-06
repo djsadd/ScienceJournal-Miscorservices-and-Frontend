@@ -8,6 +8,7 @@ class ArticleStatus(str, Enum):
     draft = "draft"
     submitted = "submitted"
     under_review = "under_review"
+    review_completed = "review_completed"
     editor_check = "editor_check"
     reviewer_check = "reviewer_check"
     sent_for_revision = "sent_for_revision"
@@ -23,6 +24,13 @@ class ArticleType(str, Enum):
 
 
 class ArticleDoiUpdate(BaseModel):
+    doi: Optional[str] = Field(default=None, max_length=255)
+
+
+class ArticleMetadataUpdate(BaseModel):
+    status: ArticleStatus
+    article_type: ArticleType
+    article_language: str = Field(..., min_length=2, max_length=10)
     doi: Optional[str] = Field(default=None, max_length=255)
 
 
@@ -313,6 +321,14 @@ class AntiplagiarismUploadRequest(BaseModel):
     """
     file_id: Optional[str] = None
     file_url: Optional[str] = None
+
+
+class ArticleFilesUpdate(BaseModel):
+    """Files that an editor may attach to or replace on a manuscript."""
+    manuscript_file_id: Optional[str] = None
+    author_info_file_id: Optional[str] = None
+    cover_letter_file_id: Optional[str] = None
+    antiplagiarism_file_id: Optional[str] = None
 
 
 class VolumeBase(BaseModel):

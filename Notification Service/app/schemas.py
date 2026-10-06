@@ -76,6 +76,7 @@ class NotificationPreferencesUpdate(BaseModel):
 class ReviewCompletedBroadcast(BaseModel):
     review_id: int
     article_id: int
+    reviewer_id: int
 
 
 class EmailTemplateUpdate(BaseModel):

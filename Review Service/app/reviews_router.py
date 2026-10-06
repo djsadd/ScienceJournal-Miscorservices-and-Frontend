@@ -102,8 +102,8 @@ def _notify_reviewer_cancellation(article_id: int, reviewer_id: int) -> None:
         print(f"Warning: failed to notify reviewer {reviewer_id} about cancellation: {exc}")
 
 
-def _notify_editors_review_completed(review_id: int, article_id: int) -> None:
-    """Queue the opt-in editor broadcast without delaying review submission."""
+def _notify_editor_review_completed(review_id: int, article_id: int, reviewer_id: int) -> None:
+    """Notify the responsible editor without delaying review submission."""
     try:
         api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
         api_prefix = getattr(config, 'API_GATEWAY_PREFIX', '/api')
@@ -111,7 +111,7 @@ def _notify_editors_review_completed(review_id: int, article_id: int) -> None:
         with httpx.Client(timeout=5.0) as client:
             response = client.post(
                 f"{api_gateway}{api_prefix}/notifications/internal/review-completed",
-                json={"review_id": review_id, "article_id": article_id},
+                json={"review_id": review_id, "article_id": article_id, "reviewer_id": reviewer_id},
                 headers={"X-Service-Secret": shared_secret},
             )
             response.raise_for_status()
@@ -432,17 +432,27 @@ def update_review(review_id: int, review: schemas.ReviewUpdate, background_tasks
     db.commit()
     db.refresh(db_review)
     if review.action == schemas.ReviewAction.submit:
-        background_tasks.add_task(_notify_editors_review_completed, db_review.id, db_review.article_id)
+        background_tasks.add_task(
+            _notify_editor_review_completed,
+            db_review.id,
+            db_review.article_id,
+            db_review.reviewer_id,
+        )
     # Если отправлено, уведомляем Article Management Service
     try:
-        if db_review.status == models.ReviewStatus.completed:
-            api_gateway = getattr(config, 'API_GATEWAY_URL', 'http://localhost:8000')
+        incomplete_review = db.query(models.Review.id).filter(
+            models.Review.article_id == db_review.article_id,
+            models.Review.status != models.ReviewStatus.completed,
+        ).first()
+        if db_review.status == models.ReviewStatus.completed and incomplete_review is None:
+            article_service_url = getattr(config, 'ARTICLE_SERVICE_URL', 'http://articles:8000')
             shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
             with httpx.Client(timeout=5.0) as client:
-                client.patch(
-                    f"{api_gateway}/articles/internal/{db_review.article_id}/review-submitted",
+                response = client.patch(
+                    f"{article_service_url}/articles/internal/{db_review.article_id}/review-submitted",
                     headers={"X-Service-Secret": shared_secret}
                 )
+                response.raise_for_status()
     except Exception:
         # Не блокируем ответ рецензенту, если межсервисный вызов не удался
         pass

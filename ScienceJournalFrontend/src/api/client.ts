@@ -311,6 +311,18 @@ export const api = {
   getEditorArticleDetail: <T>(id: string | number) => request<T>(`/articles/editor/${id}`, 'GET'),
   updateEditorArticleDoi: <T>(id: string | number, doi: string | null) =>
     request<T>(`/articles/editor/${id}/doi`, 'PATCH', { json: { doi } }),
+  updateEditorArticleFiles: <T>(id: string | number, body: Partial<{
+    manuscript_file_id: string | null
+    author_info_file_id: string | null
+    cover_letter_file_id: string | null
+    antiplagiarism_file_id: string | null
+  }>) => request<T>(`/articles/editor/${id}/files`, 'PATCH', { json: body }),
+  updateEditorArticleMetadata: <T>(id: string | number, body: {
+    status: string
+    article_type: 'original' | 'review'
+    article_language: string
+    doi: string | null
+  }) => request<T>(`/articles/editor/${id}/metadata`, 'PATCH', { json: body }),
   getEditorArticleVersion: <T>(articleId: string | number, versionId: string | number) =>
     request<T>(`/articles/editor/${articleId}/versions/${versionId}`, 'GET'),
   // Editor-only update for published articles (keeps status = published, creates a new version snapshot)
