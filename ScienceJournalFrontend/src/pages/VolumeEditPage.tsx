@@ -3,7 +3,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Article, Volume } from '../shared/types'
 import { toApiFilesUrl } from '../shared/url'
+import { useLanguage } from '../shared/LanguageContext'
 import './VolumeEditPage.css'
+
+const copy = {
+  ru: { editor:'Редактор', edit:'Редактирование выпуска', issue:'Выпуск', selected:'Выбрано', back:'Вернуться к выпускам', save:'Сохранить изменения', saving:'Сохранение…', loading:'Загрузка…', basic:'Основные сведения', year:'Год', number:'Номер выпуска', month:'Месяц', status:'Статус', active:'Активен', plannedDate:'Плановая дата выпуска', targetCount:'Нужное количество статей', titles:'Название', description:'Описание', files:'Файлы выпуска', filesHint:'Загрузите готовые материалы выпуска в PDF или изображение обложки', completeIssue:'Полный выпуск', contentsFile:'Содержание выпуска', currentFile:'Текущий файл', cover:'Обложка выпуска', openCover:'Открыть текущую обложку', noFile:'Файл ещё не загружен', articles:'Статьи в выпуске', currentArticles:'Текущие статьи', noArticles:'В выпуске пока нет статей', addArticle:'Добавить статью', actualArticles:'Актуальные статьи', actualHint:'Выберите опубликованные статьи для добавления в выпуск', article:'Статья', authors:'Авторы', action:'Действие', openArticle:'Открыть статью', remove:'Убрать', add:'Добавить', searchLabel:'Поиск по названию или аннотации', searchPlaceholder:'Например: нейросети', author:'Автор', authorPlaceholder:'Фамилия или имя', pageSize:'На странице', search:'Найти статьи', searching:'Поиск…', found:'Найдено', page:'Страница', previous:'Назад', next:'Далее', nothing:'Ничего не найдено', close:'Готово', untitled:'Без заголовка', type:'Тип' },
+  en: { editor:'Editor', edit:'Edit issue', issue:'Issue', selected:'Selected', back:'Back to issues', save:'Save changes', saving:'Saving…', loading:'Loading…', basic:'Issue details', year:'Year', number:'Issue number', month:'Month', status:'Status', active:'Active', plannedDate:'Planned publication date', targetCount:'Required article count', titles:'Title', description:'Description', files:'Issue files', filesHint:'Upload the complete issue and contents as PDF, or add a cover image', completeIssue:'Complete issue', contentsFile:'Issue contents', currentFile:'Current file', cover:'Issue cover', openCover:'Open current cover', noFile:'No file uploaded yet', articles:'Articles in this issue', currentArticles:'Current articles', noArticles:'There are no articles in this issue yet', addArticle:'Add article', actualArticles:'Available articles', actualHint:'Select published articles to add to the issue', article:'Article', authors:'Authors', action:'Action', openArticle:'Open article', remove:'Remove', add:'Add', searchLabel:'Search title or abstract', searchPlaceholder:'For example: neural networks', author:'Author', authorPlaceholder:'First or last name', pageSize:'Per page', search:'Find articles', searching:'Searching…', found:'Found', page:'Page', previous:'Previous', next:'Next', nothing:'Nothing found', close:'Done', untitled:'Untitled', type:'Type' },
+  kz: { editor:'Редактор', edit:'Шығарылымды өңдеу', issue:'Шығарылым', selected:'Таңдалды', back:'Шығарылымдарға оралу', save:'Өзгерістерді сақтау', saving:'Сақталуда…', loading:'Жүктелуде…', basic:'Негізгі мәліметтер', year:'Жыл', number:'Шығарылым нөмірі', month:'Ай', status:'Күйі', active:'Белсенді', plannedDate:'Жоспарланған шығу күні', targetCount:'Қажетті мақалалар саны', titles:'Атауы', description:'Сипаттама', files:'Шығарылым файлдары', filesHint:'Толық шығарылым мен мазмұнды PDF түрінде немесе мұқаба суретін жүктеңіз', completeIssue:'Толық шығарылым', contentsFile:'Шығарылым мазмұны', currentFile:'Ағымдағы файл', cover:'Шығарылым мұқабасы', openCover:'Ағымдағы мұқабаны ашу', noFile:'Файл әлі жүктелмеген', articles:'Шығарылымдағы мақалалар', currentArticles:'Ағымдағы мақалалар', noArticles:'Бұл шығарылымда әзірге мақала жоқ', addArticle:'Мақала қосу', actualArticles:'Өзекті мақалалар', actualHint:'Шығарылымға қосу үшін жарияланған мақалаларды таңдаңыз', article:'Мақала', authors:'Авторлар', action:'Әрекет', openArticle:'Мақаланы ашу', remove:'Алып тастау', add:'Қосу', searchLabel:'Атауы немесе аңдатпасы бойынша іздеу', searchPlaceholder:'Мысалы: нейрондық желілер', author:'Автор', authorPlaceholder:'Тегі немесе аты', pageSize:'Бетте', search:'Мақалаларды табу', searching:'Іздеу…', found:'Табылды', page:'Бет', previous:'Артқа', next:'Келесі', nothing:'Ештеңе табылмады', close:'Дайын', untitled:'Атаусыз', type:'Түрі' },
+} as const
 
 interface ArticleSearchResult {
   items: Article[]
@@ -21,6 +28,8 @@ type FormState = {
   year?: number
   number?: string
   month?: number | null
+  planned_publication_date?: string | null
+  target_article_count?: number | null
   title_kz?: string | null
   title_en?: string | null
   title_ru?: string | null
@@ -30,6 +39,8 @@ type FormState = {
 }
 
 export default function VolumeEditPage() {
+  const { lang } = useLanguage()
+  const t = copy[lang] || copy.ru
   const { id } = useParams()
   const navigate = useNavigate()
 
@@ -48,8 +59,15 @@ export default function VolumeEditPage() {
   const [pageSize, setPageSize] = useState(10)
   const [results, setResults] = useState<ArticleSearchResult | null>(null)
   const [searching, setSearching] = useState(false)
+  const [articlePickerOpen, setArticlePickerOpen] = useState(false)
 
   const currentArticleIds = useMemo(() => new Set(form.article_ids || []), [form.article_ids])
+  const selectedArticles = useMemo(() => {
+    const byId = new Map<number, Article>()
+    for (const article of volume?.articles || []) byId.set(Number(article.id), article)
+    for (const article of results?.items || []) byId.set(Number(article.id), article)
+    return Array.from(byId.values()).filter((article) => currentArticleIds.has(Number(article.id)))
+  }, [currentArticleIds, results?.items, volume?.articles])
 
   useEffect(() => {
     let cancelled = false
@@ -65,6 +83,8 @@ export default function VolumeEditPage() {
             year: data.year,
             number: data.number,
             month: data.month ?? null,
+            planned_publication_date: data.planned_publication_date ?? null,
+            target_article_count: data.target_article_count ?? null,
             title_kz: data.title_kz ?? null,
             title_en: data.title_en ?? null,
             title_ru: data.title_ru ?? null,
@@ -110,11 +130,6 @@ export default function VolumeEditPage() {
     }
   }
 
-  useEffect(() => {
-    void doSearch({ resetPage: true })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   const updateField = (key: keyof FormState, value: any) => {
     setForm((prev: FormState) => ({ ...prev, [key]: value }))
   }
@@ -142,6 +157,8 @@ export default function VolumeEditPage() {
       body.year = form.year
       body.number = form.number
       body.month = form.month ?? null
+      body.planned_publication_date = form.planned_publication_date ?? null
+      body.target_article_count = form.target_article_count ?? null
       body.title_kz = form.title_kz ?? null
       body.title_en = form.title_en ?? null
       body.title_ru = form.title_ru ?? null
@@ -170,43 +187,43 @@ export default function VolumeEditPage() {
   const selectedCount = form.article_ids?.length ?? 0
 
   return (
-    <div className="app-container">
-      <section className="section-header">
+    <div className="app-container volume-edit-page">
+      <section className="section-header volume-edit__hero">
         <div>
-          <p className="eyebrow">Редактор</p>
-          <h1 className="page-title">Редактирование тома</h1>
+          <p className="eyebrow">{t.editor}</p>
+          <h1 className="page-title">{t.edit}</h1>
           {volume && (
             <p className="subtitle">
-              Том {volume.number} / {volume.year}
+              {t.issue} № {volume.number} / {volume.year}
             </p>
           )}
         </div>
         <div className="section-actions volume-edit__actions">
-          <span className="badge badge--info volume-edit__badge">Выбрано: {selectedCount}</span>
+          <span className="badge badge--info volume-edit__badge">{t.selected}: {selectedCount}</span>
           <Link className="button button--ghost" to="/cabinet/volumes">
-            ← Вернуться к выпускам
+            ← {t.back}
           </Link>
           <button className="button button--primary" onClick={save} disabled={saving || loading}>
-            {saving ? 'Сохранение…' : 'Сохранить изменения'}
+            {saving ? t.saving : t.save}
           </button>
         </div>
       </section>
 
       <section className="section section--narrow">
         {error && <div className="alert error">{error}</div>}
-        {loading && <div className="loading">Загрузка...</div>}
+        {loading && <div className="loading">{t.loading}</div>}
 
         <div className="volume-edit__grid">
           <div className="volume-edit__col">
             <div className="panel volume-edit__panel">
               <div className="volume-edit__panelHeader">
-                <div className="panel-title">Основные сведения</div>
+                <div className="panel-title">{t.basic}</div>
                 <div className="volume-edit__panelHint meta-label">ID: {id || '—'}</div>
               </div>
 
               <div className="volume-edit__fields volume-edit__fields--basic">
                 <label className="form-field">
-                  <span className="form-label">Год</span>
+                  <span className="form-label">{t.year}</span>
                   <input
                     className="text-input"
                     type="number"
@@ -217,7 +234,7 @@ export default function VolumeEditPage() {
                   />
                 </label>
                 <label className="form-field">
-                  <span className="form-label">Номер журнала</span>
+                  <span className="form-label">{t.number}</span>
                   <input
                     className="text-input"
                     type="text"
@@ -227,7 +244,7 @@ export default function VolumeEditPage() {
                   />
                 </label>
                 <label className="form-field">
-                  <span className="form-label">Месяц</span>
+                  <span className="form-label">{t.month}</span>
                   <input
                     className="text-input"
                     type="number"
@@ -239,17 +256,25 @@ export default function VolumeEditPage() {
                   />
                 </label>
                 <div className="form-field">
-                  <span className="form-label">Статус</span>
+                  <span className="form-label">{t.status}</span>
                   <label className="checkbox volume-edit__checkbox">
                     <input type="checkbox" checked={!!form.is_active} onChange={(e) => updateField('is_active', e.target.checked)} />
-                    <span>Активен</span>
+                    <span>{t.active}</span>
                   </label>
                 </div>
+                <label className="form-field">
+                  <span className="form-label">{t.plannedDate}</span>
+                  <input className="text-input" type="date" value={form.planned_publication_date ?? ''} onChange={(e) => updateField('planned_publication_date', e.target.value || null)} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">{t.targetCount}</span>
+                  <input className="text-input" type="number" min={1} value={form.target_article_count ?? ''} onChange={(e) => updateField('target_article_count', e.target.value ? Number(e.target.value) : null)} />
+                </label>
               </div>
 
               <div className="volume-edit__fields volume-edit__fields--titles">
                 <label className="form-field">
-                  <span className="form-label">Заголовок (RU)</span>
+                  <span className="form-label">{t.titles} (RU)</span>
                   <input
                     className="text-input"
                     type="text"
@@ -258,7 +283,7 @@ export default function VolumeEditPage() {
                   />
                 </label>
                 <label className="form-field">
-                  <span className="form-label">Заголовок (EN)</span>
+                  <span className="form-label">{t.titles} (EN)</span>
                   <input
                     className="text-input"
                     type="text"
@@ -267,7 +292,7 @@ export default function VolumeEditPage() {
                   />
                 </label>
                 <label className="form-field">
-                  <span className="form-label">Заголовок (KZ)</span>
+                  <span className="form-label">{t.titles} (KZ)</span>
                   <input
                     className="text-input"
                     type="text"
@@ -278,7 +303,7 @@ export default function VolumeEditPage() {
               </div>
 
               <label className="form-field volume-edit__description">
-                <span className="form-label">Описание</span>
+                <span className="form-label">{t.description}</span>
                 <textarea
                   className="text-input volume-edit__textarea"
                   rows={4}
@@ -288,10 +313,11 @@ export default function VolumeEditPage() {
               </label>
 
               <div className="volume-edit__files">
-                <div className="panel-title" style={{ fontSize: '1.05rem', marginTop: '0.85rem' }}>Файлы выпуска</div>
+                <div className="volume-edit__sectionTitle"><div><div className="panel-title">{t.files}</div><p>{t.filesHint}</p></div></div>
                 <div className="volume-edit__fields volume-edit__fields--files">
-                  <label className="form-field">
-                    <span className="form-label">Complete Issue</span>
+                  <label className="form-field volume-edit__fileCard">
+                    <span className="volume-edit__fileIcon">PDF</span>
+                    <span className="form-label">{t.completeIssue}</span>
                     <input
                       type="file"
                       className="file-input"
@@ -300,14 +326,15 @@ export default function VolumeEditPage() {
                     />
                     <div className="meta-label">
                       {volume?.complete_issue_file_url ? (
-                        <a href={toApiFilesUrl(volume.complete_issue_file_url)} target="_blank" rel="noreferrer">Текущий файл</a>
+                        <a href={toApiFilesUrl(volume.complete_issue_file_url)} target="_blank" rel="noreferrer">{t.currentFile}</a>
                       ) : (
-                        'Текущий файл: —'
+                        t.noFile
                       )}
                     </div>
                   </label>
-                  <label className="form-field">
-                    <span className="form-label">Обложка (постер)</span>
+                  <label className="form-field volume-edit__fileCard volume-edit__fileCard--cover">
+                    <span className="volume-edit__fileIcon volume-edit__fileIcon--image">IMG</span>
+                    <span className="form-label">{t.cover}</span>
                     <input
                       type="file"
                       className="file-input"
@@ -316,9 +343,9 @@ export default function VolumeEditPage() {
                     />
                     <div className="meta-label">
                       {volume?.cover_file_url ? (
-                        <a href={toApiFilesUrl(volume.cover_file_url)} target="_blank" rel="noreferrer">Открыть текущую обложку</a>
+                        <a href={toApiFilesUrl(volume.cover_file_url)} target="_blank" rel="noreferrer">{t.openCover}</a>
                       ) : (
-                        'Текущий файл: —'
+                        t.noFile
                       )}
                     </div>
                     {(() => {
@@ -333,8 +360,9 @@ export default function VolumeEditPage() {
                       )
                     })()}
                   </label>
-                  <label className="form-field">
-                    <span className="form-label">Contents File</span>
+                  <label className="form-field volume-edit__fileCard">
+                    <span className="volume-edit__fileIcon">PDF</span>
+                    <span className="form-label">{t.contentsFile}</span>
                     <input
                       type="file"
                       className="file-input"
@@ -343,9 +371,9 @@ export default function VolumeEditPage() {
                     />
                     <div className="meta-label">
                       {volume?.contents_file_url ? (
-                        <a href={toApiFilesUrl(volume.contents_file_url)} target="_blank" rel="noreferrer">Текущий файл</a>
+                        <a href={toApiFilesUrl(volume.contents_file_url)} target="_blank" rel="noreferrer">{t.currentFile}</a>
                       ) : (
-                        'Текущий файл: —'
+                        t.noFile
                       )}
                     </div>
                   </label>
@@ -359,28 +387,29 @@ export default function VolumeEditPage() {
         <div className="panel volume-edit__panel" style={{ marginTop: '1rem' }}>
           <div className="volume-edit__panelHeader volume-edit__panelHeader--tight">
             <div>
-              <div className="panel-title">Статьи в томе</div>
-              <div className="meta-label">Выбрано: {selectedCount}</div>
+              <div className="panel-title">{t.articles}</div>
+              <div className="meta-label">{t.selected}: {selectedCount}</div>
             </div>
+            <button className="button button--primary" type="button" onClick={() => { setArticlePickerOpen(true); if (!results) void doSearch({ resetPage: true }) }}>+ {t.addArticle}</button>
           </div>
 
-          {volume?.articles && volume.articles.length > 0 ? (
+          {selectedArticles.length > 0 ? (
             <div className="latest-table volume-edit__table volume-edit__table--articles">
-              <div className="latest-table__title">Текущие статьи</div>
+              <div className="latest-table__title">{t.currentArticles}</div>
               <div className="latest-table__head volume-edit__head">
-                <div>Статья</div>
-                <div>Авторы</div>
+                <div>{t.article}</div>
+                <div>{t.authors}</div>
                 <div>PDF</div>
-                <div>Действие</div>
+                <div>{t.action}</div>
               </div>
               <div className="latest-table__body">
-                {volume.articles.map((a) => (
+                {selectedArticles.map((a) => (
                   <div
                     className={`latest-table__row volume-edit__row ${currentArticleIds.has(Number(a.id!)) ? 'volume-edit__row--selected' : ''}`}
                     key={String(a.id)}
                   >
                     <div className="latest-table__cell latest-table__cell--title">
-                      <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
+                      <div className="latest-table__name">{(lang === 'en' ? a.title_en : lang === 'kz' ? a.title_kz : a.title_ru) || a.title_ru || a.title_en || a.title_kz || t.untitled}</div>
                       <div className="latest-table__meta">DOI: {a.doi || '—'}</div>
                     </div>
                     <div className="latest-table__cell volume-edit__authors">
@@ -392,7 +421,7 @@ export default function VolumeEditPage() {
                           PDF
                         </a>
                       ) : (
-                        <span className="meta-label">Нет файла</span>
+                        <span className="meta-label">{t.noFile}</span>
                       )}
                     </div>
                     <div className="latest-table__cell volume-edit__cell--actions">
@@ -402,10 +431,10 @@ export default function VolumeEditPage() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Перейти к статье
+                        {t.openArticle}
                       </a>
                       <button className="button button--secondary button--compact" type="button" onClick={() => toggleArticle(Number(a.id!))}>
-                        {currentArticleIds.has(Number(a.id!)) ? 'Убрать из тома' : 'Добавить в том'}
+                        {currentArticleIds.has(Number(a.id!)) ? t.remove : t.add}
                       </button>
                     </div>
                   </div>
@@ -413,27 +442,28 @@ export default function VolumeEditPage() {
               </div>
             </div>
           ) : (
-            <div className="meta-label">В этом томе пока нет статей</div>
+            <div className="volume-edit__empty"><strong>{t.noArticles}</strong><button className="button button--primary" type="button" onClick={() => { setArticlePickerOpen(true); if (!results) void doSearch({ resetPage: true }) }}>+ {t.addArticle}</button></div>
           )}
         </div>
 
-        <div className="panel volume-edit__panel">
+        {articlePickerOpen && <div className="volume-edit__modal" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget) setArticlePickerOpen(false) }}><div className="panel volume-edit__panel volume-edit__picker">
           <div className="volume-edit__panelHeader">
             <div>
-              <div className="panel-title">Добавление статей</div>
+              <div className="panel-title">{t.actualArticles}</div>
               {results ? (
                 <div className="meta-label">
-                  Найдено: {results.pagination.total_count} · Стр. {results.pagination.page} / {results.pagination.total_pages}
+                  {t.found}: {results.pagination.total_count} · {t.page} {results.pagination.page} / {results.pagination.total_pages}
                 </div>
               ) : (
-                <div className="meta-label">Фильтры для поиска опубликованных статей</div>
+                <div className="meta-label">{t.actualHint}</div>
               )}
             </div>
+            <button className="volume-edit__modalClose" type="button" onClick={() => setArticlePickerOpen(false)} aria-label={t.close}>×</button>
           </div>
 
           <div className="volume-edit__fields volume-edit__fields--search">
             <label className="form-field">
-              <span className="form-label">Поиск по названию/аннотации</span>
+              <span className="form-label">{t.searchLabel}</span>
               <input
                 className="text-input"
                 type="text"
@@ -442,11 +472,11 @@ export default function VolumeEditPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') void doSearch({ resetPage: true })
                 }}
-                placeholder="Например: нейросети"
+                placeholder={t.searchPlaceholder}
               />
             </label>
             <label className="form-field">
-              <span className="form-label">Автор</span>
+              <span className="form-label">{t.author}</span>
               <input
                 className="text-input"
                 type="text"
@@ -455,11 +485,11 @@ export default function VolumeEditPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') void doSearch({ resetPage: true })
                 }}
-                placeholder="Фамилия или имя"
+                placeholder={t.authorPlaceholder}
               />
             </label>
             <label className="form-field">
-              <span className="form-label">Размер страницы</span>
+              <span className="form-label">{t.pageSize}</span>
               <input
                 className="text-input"
                 type="number"
@@ -476,7 +506,7 @@ export default function VolumeEditPage() {
 
           <div className="volume-edit__toolbar">
             <button className="button" onClick={() => doSearch({ resetPage: true })} disabled={searching}>
-              {searching ? 'Поиск…' : 'Искать опубликованные'}
+              {searching ? t.searching : t.search}
             </button>
             {results && (
               <div className="volume-edit__pager">
@@ -487,7 +517,7 @@ export default function VolumeEditPage() {
                   }}
                   disabled={!results.pagination.has_prev || searching}
                 >
-                  Назад
+                  {t.previous}
                 </button>
                 <button
                   className="button button--ghost button--compact"
@@ -496,7 +526,7 @@ export default function VolumeEditPage() {
                   }}
                   disabled={!results.pagination.has_next || searching}
                 >
-                  Далее
+                  {t.next}
                 </button>
               </div>
             )}
@@ -505,13 +535,13 @@ export default function VolumeEditPage() {
           {results && (
             <div className="latest-table volume-edit__table volume-edit__table--search">
               <div className="latest-table__head volume-edit__head">
-                <div>Статья</div>
-                <div>Авторы</div>
+                <div>{t.article}</div>
+                <div>{t.authors}</div>
                 <div>PDF</div>
-                <div>Действие</div>
+                <div>{t.action}</div>
               </div>
               <div className="latest-table__body">
-                {results.items.length === 0 && <div className="meta-label">Ничего не найдено</div>}
+                {results.items.length === 0 && <div className="meta-label">{t.nothing}</div>}
                 {results.items.map((a) => (
                   <div
                     className={`latest-table__row volume-edit__row ${
@@ -520,9 +550,9 @@ export default function VolumeEditPage() {
                     key={String(a.id)}
                   >
                     <div className="latest-table__cell latest-table__cell--title">
-                      <div className="latest-table__name">{a.title_ru || a.title_en || a.title_kz || 'Без заголовка'}</div>
+                      <div className="latest-table__name">{(lang === 'en' ? a.title_en : lang === 'kz' ? a.title_kz : a.title_ru) || a.title_ru || a.title_en || a.title_kz || t.untitled}</div>
                       <div className="latest-table__meta">
-                        Тип: {a.article_type || '—'} · DOI: {a.doi || '—'}
+                        {t.type}: {a.article_type || '—'} · DOI: {a.doi || '—'}
                       </div>
                     </div>
                     <div className="latest-table__cell volume-edit__authors">
@@ -534,7 +564,7 @@ export default function VolumeEditPage() {
                           PDF
                         </a>
                       ) : (
-                        <span className="meta-label">Нет файла</span>
+                        <span className="meta-label">{t.noFile}</span>
                       )}
                     </div>
                     <div className="latest-table__cell volume-edit__cell--actions">
@@ -544,10 +574,10 @@ export default function VolumeEditPage() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Перейти к статье
+                        {t.openArticle}
                       </a>
                       <button className="button button--secondary button--compact" type="button" onClick={() => toggleArticle(Number(a.id!))}>
-                        {currentArticleIds.has(Number(a.id!)) ? 'Убрать' : 'Добавить'}
+                        {currentArticleIds.has(Number(a.id!)) ? t.remove : t.add}
                       </button>
                     </div>
                   </div>
@@ -555,7 +585,8 @@ export default function VolumeEditPage() {
               </div>
             </div>
           )}
-        </div>
+          <div className="volume-edit__pickerFooter"><span>{t.selected}: {selectedCount}</span><button className="button button--primary" type="button" onClick={() => setArticlePickerOpen(false)}>{t.close}</button></div>
+        </div></div>}
       </section>
     </div>
   )

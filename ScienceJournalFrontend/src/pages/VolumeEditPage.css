@@ -10,6 +10,24 @@
   align-items: start;
 }
 
+.volume-edit-page {
+  padding-bottom: 64px;
+  background: linear-gradient(180deg, #f7f8fb 0, #fff 420px);
+}
+
+.volume-edit__hero {
+  margin-bottom: 24px;
+  padding: 26px 30px;
+  border: 1px solid #e4e7ed;
+  border-radius: 20px;
+  background: linear-gradient(125deg, #ffffff 0%, #f4f1f2 100%);
+  box-shadow: 0 14px 38px rgba(31, 35, 48, 0.07);
+}
+
+.volume-edit__hero .page-title {
+  margin-bottom: 7px;
+}
+
 .volume-edit__col {
   min-width: 0;
   display: flex;
@@ -26,7 +44,10 @@
 }
 
 .volume-edit__panel {
-  background: linear-gradient(135deg, #fdf9fb, #ffffff);
+  background: #ffffff;
+  border: 1px solid #e6e8ee;
+  border-radius: 18px;
+  box-shadow: 0 10px 32px rgba(27, 31, 43, 0.06);
 }
 
 .volume-edit__panelHeader {
@@ -69,11 +90,77 @@
 }
 
 .volume-edit__files {
-  margin-top: 0.25rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e8eaf0;
 }
 
 .volume-edit__fields--files {
-  margin-top: 0.55rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.volume-edit__sectionTitle p {
+  margin: 5px 0 0;
+  color: #737987;
+  font-size: 0.88rem;
+}
+
+.volume-edit__fileCard {
+  position: relative;
+  align-content: start;
+  min-height: 190px;
+  padding: 18px;
+  border: 1px solid #e1e4eb;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #fafbfc, #fff);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.volume-edit__fileCard:hover {
+  transform: translateY(-2px);
+  border-color: #c9ced9;
+  box-shadow: 0 12px 28px rgba(31, 35, 48, .08);
+}
+
+.volume-edit__fileIcon {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 11px;
+  background: #f7e9ec;
+  color: #8b1d35;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.volume-edit__fileIcon--image {
+  background: #e9f1ee;
+  color: #287055;
+}
+
+.volume-edit__fileCard .file-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #ccd1db;
+  border-radius: 10px;
+  background: #fff;
+  font-size: .82rem;
+}
+
+.volume-edit__fileCard .meta-label {
+  margin-top: 4px;
+}
+
+.volume-edit__fileCard .meta-label a {
+  color: #7c2639;
+  font-weight: 650;
+}
+
+.volume-edit__fileCard--cover {
+  min-height: 190px;
 }
 
 .volume-edit__coverPreview {
@@ -177,6 +264,66 @@
   color: #2f3c7e;
 }
 
+.volume-edit__empty {
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: #697080;
+  text-align: center;
+  border: 1px dashed #d9dde7;
+  border-radius: 14px;
+  background: #fafbfc;
+}
+
+.volume-edit__modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(24, 28, 34, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.volume-edit__picker {
+  width: min(1120px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 24px;
+}
+
+.volume-edit__modalClose {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #e0e3e9;
+  border-radius: 50%;
+  background: #fff;
+  color: #343946;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.volume-edit__pickerFooter {
+  position: sticky;
+  bottom: -24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin: 20px -24px -24px;
+  padding: 16px 24px;
+  border-top: 1px solid #e6e8ee;
+  background: rgba(255, 255, 255, 0.96);
+  font-weight: 600;
+}
+
 @media (max-width: 600px) {
   .volume-edit__actions {
     width: 100%;
@@ -185,6 +332,34 @@
 
   .volume-edit__toolbar {
     justify-content: flex-start;
+  }
+
+  .volume-edit__modal {
+    padding: 0;
+  }
+
+  .volume-edit__picker {
+    width: 100%;
+    max-height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+    padding: 18px;
+  }
+
+  .volume-edit__pickerFooter {
+    bottom: -18px;
+    margin: 18px -18px -18px;
+    padding: 14px 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .volume-edit__fields--files {
+    grid-template-columns: 1fr;
+  }
+
+  .volume-edit__fileCard {
+    min-height: auto;
   }
 }
 
