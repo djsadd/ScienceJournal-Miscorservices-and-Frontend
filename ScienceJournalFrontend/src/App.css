@@ -7514,9 +7514,10 @@
 .editorial-queue__header {
   min-height: 92px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  align-items: stretch;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
   padding: 18px 24px;
   border-bottom: 1px solid #eadfe2;
 }
@@ -7562,10 +7563,12 @@
 .editorial-queue__filter {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 3px;
-  max-width: 70%;
+  width: 100%;
+  max-width: none;
   padding: 3px;
-  overflow-x: auto;
+  overflow: visible;
   border: 1px solid #e4cfd6;
   border-radius: 5px;
   background: #fcf8f9;
