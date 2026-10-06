@@ -210,9 +210,9 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Приватность',
     logout: 'Выйти',
     langLabel: 'Язык',
-    brandTitle: 'Кабинет',
+    brandTitle: 'Вернуться на главную',
     brandSubtitle: '',
-    brandAlt: 'Логотип журнала',
+    brandAlt: 'Логотип университета',
     mobileMenuOpen: 'Меню',
     mobileMenuClose: 'Закрыть меню',
     sidebarShow: 'Показать меню',
@@ -344,9 +344,9 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Privacy',
     logout: 'Logout',
     langLabel: 'Language',
-    brandTitle: 'Cabinet',
+    brandTitle: 'Back to home',
     brandSubtitle: '',
-    brandAlt: 'Turan-Astana University news logo',
+    brandAlt: 'University logo',
     mobileMenuOpen: 'Menu',
     mobileMenuClose: 'Close menu',
     sidebarShow: 'Show sidebar',
@@ -478,9 +478,9 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
     privacy: 'Құпиялылық',
     logout: 'Шығу',
     langLabel: 'Тіл',
-    brandTitle: 'Кабинет',
+    brandTitle: 'Басты бетке оралу',
     brandSubtitle: '',
-    brandAlt: 'Журнал логотипы',
+    brandAlt: 'Университет логотипі',
     mobileMenuOpen: 'Мәзір',
     mobileMenuClose: 'Мәзірді жабу',
     sidebarShow: 'Мәзірді көрсету',
@@ -912,7 +912,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className={`app-shell ${lowVision ? 'low-vision' : ''} ${isDesktopViewport && !isSidebarVisible ? 'app-shell--sidebar-hidden' : ''}`}>
       <aside id="cabinet-sidebar" className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''} ${isDesktopViewport && !isSidebarVisible ? 'sidebar--hidden' : ''}`}>
         <div className="sidebar__brand">
-          <Link to="/cabinet" className="brand--compact">
+          <Link to={`/${lang}`} className="brand--compact" onClick={closeSidebar}>
             <div className="brand-mark">
               <img src={configuredLogo} alt={copy.brandAlt} className="brand-logo brand-logo--plain" />
             </div>
