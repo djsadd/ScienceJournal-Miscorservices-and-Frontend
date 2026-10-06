@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useLanguage } from '../shared/LanguageContext'
@@ -6,6 +6,15 @@ import { formatArticleStatus } from '../shared/labels'
 import type { Article, ArticleStatus, PagedResponse, Pagination } from '../shared/types'
 
 const PAGE_SIZE = 20
+
+type SearchFilters = { title: string; author: string; keywords: string }
+const emptySearchFilters: SearchFilters = { title: '', author: '', keywords: '' }
+
+const searchCopy = {
+  ru: { title: 'Название', titlePlaceholder: 'Введите название статьи', author: 'Автор', authorPlaceholder: 'Имя или фамилия автора', keywords: 'Ключевые слова', keywordsPlaceholder: 'Например: экономика, ИИ', apply: 'Применить', applying: 'Поиск…' },
+  en: { title: 'Title', titlePlaceholder: 'Enter article title', author: 'Author', authorPlaceholder: 'Author name or surname', keywords: 'Keywords', keywordsPlaceholder: 'For example: economics, AI', apply: 'Apply', applying: 'Searching…' },
+  kz: { title: 'Атауы', titlePlaceholder: 'Мақала атауын енгізіңіз', author: 'Автор', authorPlaceholder: 'Автордың аты немесе тегі', keywords: 'Кілт сөздер', keywordsPlaceholder: 'Мысалы: экономика, ЖИ', apply: 'Қолдану', applying: 'Іздеу…' },
+} as const
 
 const copy = {
   ru: { title: 'Редакторская очередь', subtitle: 'Рукописи, требующие вашего внимания', all: 'Все статусы', loading: 'Загрузка рукописей…', empty: 'В этой очереди пока нет рукописей', error: 'Не удалось загрузить рукописи', priority: 'Приоритет', today: 'сегодня', day: ['день', 'дня', 'дней'], untitled: 'Без названия', author: 'Автор не указан', field: 'Направление не указано', open: 'Открыть рукопись', statusFilter: 'Фильтр по статусу' },
@@ -49,7 +58,10 @@ export default function EditorialPortfolioPage() {
   const { lang } = useLanguage()
   const locale = lang === 'en' || lang === 'kz' ? lang : 'ru'
   const t = copy[locale]
+  const searchText = searchCopy[locale]
   const [statusFilter, setStatusFilter] = useState<ArticleStatus | 'all'>('all')
+  const [searchDraft, setSearchDraft] = useState<SearchFilters>(emptySearchFilters)
+  const [appliedSearch, setAppliedSearch] = useState<SearchFilters>(emptySearchFilters)
   const [statusOptions, setStatusOptions] = useState<ArticleStatus[]>([])
   const [articles, setArticles] = useState<Article[]>([])
   const [page, setPage] = useState(1)
@@ -60,12 +72,19 @@ export default function EditorialPortfolioPage() {
   useEffect(() => {
     let active = true
     setLoading(true)
-    api.getUnassignedArticles<PagedResponse<Article>>({ status: statusFilter, page, page_size: PAGE_SIZE })
+    api.getUnassignedArticles<PagedResponse<Article>>({
+      status: statusFilter,
+      title: appliedSearch.title || undefined,
+      author_name: appliedSearch.author || undefined,
+      keywords: appliedSearch.keywords || undefined,
+      page,
+      page_size: PAGE_SIZE,
+    })
       .then((response) => { if (active) { setArticles(response.items || []); setPagination(response.pagination); setError(null) } })
       .catch((reason) => { if (active) setError(reason?.bodyJson?.detail || reason?.message || t.error) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [page, statusFilter, t.error])
+  }, [appliedSearch, page, statusFilter, t.error])
 
   useEffect(() => {
     let active = true
@@ -89,6 +108,18 @@ export default function EditorialPortfolioPage() {
     setStatusFilter(status)
     setPage(1)
   }
+  const updateSearch = (field: keyof SearchFilters, value: string) => {
+    setSearchDraft((current) => ({ ...current, [field]: value }))
+  }
+  const applySearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPage(1)
+    setAppliedSearch({
+      title: searchDraft.title.trim(),
+      author: searchDraft.author.trim(),
+      keywords: searchDraft.keywords.trim(),
+    })
+  }
 
   return <div className="editorial-queue"><section className="editorial-queue__panel">
     <header className="editorial-queue__header">
@@ -98,6 +129,23 @@ export default function EditorialPortfolioPage() {
         {statusOptions.map((status) => <button type="button" key={status} className={`editorial-queue__filter-button ${statusFilter === status ? 'editorial-queue__filter-button--active' : ''}`} aria-pressed={statusFilter === status} onClick={() => selectStatus(status)}>{formatArticleStatus(status, locale)}</button>)}
       </div>
     </header>
+    <form className="editorial-search" onSubmit={applySearch}>
+      <label className="editorial-search__field">
+        <span>{searchText.title}</span>
+        <input type="search" value={searchDraft.title} onChange={(event) => updateSearch('title', event.target.value)} placeholder={searchText.titlePlaceholder} />
+      </label>
+      <label className="editorial-search__field">
+        <span>{searchText.author}</span>
+        <input type="search" value={searchDraft.author} onChange={(event) => updateSearch('author', event.target.value)} placeholder={searchText.authorPlaceholder} />
+      </label>
+      <label className="editorial-search__field">
+        <span>{searchText.keywords}</span>
+        <input type="search" value={searchDraft.keywords} onChange={(event) => updateSearch('keywords', event.target.value)} placeholder={searchText.keywordsPlaceholder} />
+      </label>
+      <button className="editorial-search__submit" type="submit" disabled={loading}>
+        <span aria-hidden="true">⌕</span>{loading ? searchText.applying : searchText.apply}
+      </button>
+    </form>
     {error ? <div className="editorial-queue__state editorial-queue__state--error">{t.error}: {error}</div> : null}
     {loading ? <div className="editorial-queue__state">{t.loading}</div> : null}
     {!loading && !error && visible.length === 0 ? <div className="editorial-queue__state">{t.empty}</div> : null}

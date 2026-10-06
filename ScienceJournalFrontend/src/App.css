@@ -7571,6 +7571,55 @@
 .editorial-queue__filter-button--active:hover { background: #8b1831; color: #fff; }
 .editorial-queue__filter-button:focus-visible { outline: 2px solid #8b1831; outline-offset: -2px; }
 
+.editorial-search {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr)) auto;
+  align-items: end;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eadfe2;
+  background: linear-gradient(135deg, #fffafb 0%, #fffefe 55%, #fdf7f9 100%);
+}
+
+.editorial-search__field { display: grid; gap: 7px; min-width: 0; }
+.editorial-search__field span { color: #6f4f59; font-size: 12px; font-weight: 700; letter-spacing: .035em; }
+.editorial-search__field input {
+  width: 100%;
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid #dfcbd1;
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  color: #24161b;
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.editorial-search__field input::placeholder { color: #b99da6; }
+.editorial-search__field input:focus { border-color: #9d3048; box-shadow: 0 0 0 3px rgba(139, 24, 49, .1); }
+.editorial-search__submit {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 22px;
+  border: 1px solid #79152b;
+  border-radius: 6px;
+  background: #8b1831;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 7px 16px rgba(139, 24, 49, .16);
+  transition: background 150ms ease, transform 150ms ease;
+}
+.editorial-search__submit:hover:not(:disabled) { background: #751328; transform: translateY(-1px); }
+.editorial-search__submit:disabled { cursor: wait; opacity: .65; }
+.editorial-search__submit:focus-visible { outline: 2px solid #8b1831; outline-offset: 2px; }
+
 .editorial-queue__state {
   padding: 54px 24px;
   color: #9e7f89;
@@ -7656,6 +7705,8 @@
   .editorial-queue__header { align-items: flex-start; flex-direction: column; }
   .editorial-queue__tabs { width: 100%; overflow-x: auto; }
   .editorial-queue__filter { width: 100%; max-width: 100%; }
+  .editorial-search { grid-template-columns: 1fr; padding: 18px; }
+  .editorial-search__submit { width: 100%; }
   .editorial-queue__tab { flex: 1 0 auto; padding: 0 12px; }
   .editorial-queue__pagination { align-items: flex-start; flex-direction: column; padding: 16px; }
   .manuscript-row { grid-template-columns: minmax(0, 1fr) 40px; padding: 18px; }

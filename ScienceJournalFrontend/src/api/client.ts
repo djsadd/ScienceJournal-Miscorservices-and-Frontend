@@ -299,6 +299,7 @@ export const api = {
   getArticleStatuses: <T>(params?: { scope?: 'unassigned' }) => request<T>('/articles/statuses', 'GET', { params }),
   getUnassignedArticles: <T>(params?: {
     status?: ArticleStatus | 'all'
+    title?: string
     author_name?: string
     year?: number
     article_type?: 'original' | 'review'

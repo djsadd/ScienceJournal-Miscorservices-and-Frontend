@@ -184,6 +184,7 @@ def list_unassigned_articles(
     current_user: dict = Depends(get_current_user),
     # Фильтры
     status: str = None,
+    title: str = None,
     author_name: str = None,
     year: int = None,
     article_type: str = None,
@@ -247,6 +248,15 @@ def list_unassigned_articles(
         query = query.filter(models.Article.status == models.ArticleStatus.submitted)
     
     # Фильтр по автору
+    if title:
+        query = query.filter(
+            or_(
+                models.Article.title_kz.ilike(f"%{title}%"),
+                models.Article.title_en.ilike(f"%{title}%"),
+                models.Article.title_ru.ilike(f"%{title}%")
+            )
+        )
+
     if author_name:
         query = query.join(models.Article.authors).filter(
             or_(
