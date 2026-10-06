@@ -135,8 +135,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Рабочий стол',
           items: [
             { label: 'Обзор', path: '/cabinet' },
-            { label: 'Все рукописи', path: '/cabinet/editorial2', tag: '24' },
-            { label: 'Рецензенты', path: '/cabinet/admin/users', tag: '3' },
+            { label: 'Все рукописи', path: '/cabinet/editorial2' },
+            { label: 'Рецензенты', path: '/cabinet/admin/users' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
             { label: 'Настройки уведомлений', path: '/cabinet/notification-settings' },
@@ -272,8 +272,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Workspace',
           items: [
             { label: 'Overview', path: '/cabinet' },
-            { label: 'All manuscripts', path: '/cabinet/editorial2', tag: '24' },
-            { label: 'Reviewers', path: '/cabinet/admin/users', tag: '3' },
+            { label: 'All manuscripts', path: '/cabinet/editorial2' },
+            { label: 'Reviewers', path: '/cabinet/admin/users' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
             { label: 'Notification settings', path: '/cabinet/notification-settings' },
@@ -409,8 +409,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Жұмыс үстелі',
           items: [
             { label: 'Шолу', path: '/cabinet' },
-            { label: 'Барлық қолжазбалар', path: '/cabinet/editorial2', tag: '24' },
-            { label: 'Рецензенттер', path: '/cabinet/admin/users', tag: '3' },
+            { label: 'Барлық қолжазбалар', path: '/cabinet/editorial2' },
+            { label: 'Рецензенттер', path: '/cabinet/admin/users' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
             { label: 'Хабарлама баптаулары', path: '/cabinet/notification-settings' },
