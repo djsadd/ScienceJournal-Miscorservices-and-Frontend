@@ -1,74 +1,65 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import './EmailTemplates.css'
 
-type TemplateVariable = { name: string; description: string; sample: string }
-type Template = { key: string; type?: string | null; name: string; description: string; variables: TemplateVariable[]; subject_template: string; text_template: string; html_template?: string | null; is_active: boolean }
+export type TemplateVariable = { name: string; description: string; sample: string }
+export type EmailTemplate = { key: string; type?: string | null; name: string; description: string; variables: TemplateVariable[]; subject_template: string; text_template: string; html_template?: string | null; is_active: boolean }
+
+const sections = [
+  { id: 'access', title: 'Пользователи и доступ', description: 'Регистрация, подтверждение почты, пароль и состояние аккаунта.', icon: '01', keys: ['registration_welcome', 'email_verification', 'password_reset', 'account_status_changed'] },
+  { id: 'editorial', title: 'Редакция', description: 'Письма авторам и редакторам на этапах редакционного процесса.', icon: '02', keys: ['new_article_submitted', 'editor_comments', 'article_withdrawn', 'reviewer_declined', 'review_completed', 'notification_editorial'] },
+  { id: 'review', title: 'Рецензирование', description: 'Назначение, отмена и другие события работы рецензента.', icon: '03', keys: ['review_assigned', 'review_cancelled', 'notification_review_assignment'] },
+  { id: 'notifications', title: 'Общие уведомления', description: 'Системные, статусные и пользовательские сообщения.', icon: '04', keys: ['notification_system', 'notification_article_status', 'notification_custom'] },
+]
+
+const recipientFor = (key: string) => {
+  if (['new_article_submitted', 'reviewer_declined', 'review_completed'].includes(key)) return 'Редактору'
+  if (['review_assigned', 'review_cancelled', 'notification_review_assignment'].includes(key)) return 'Рецензенту'
+  if (['editor_comments', 'article_withdrawn', 'registration_welcome', 'email_verification', 'password_reset'].includes(key)) return 'Пользователю'
+  return 'По событию'
+}
 
 export default function AdminEmailTemplatesPage() {
-  const [items, setItems] = useState<Template[]>([])
-  const [selected, setSelected] = useState<string>('')
+  const [items, setItems] = useState<EmailTemplate[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [testEmail, setTestEmail] = useState('')
-  const [testSending, setTestSending] = useState(false)
-  const [message, setMessage] = useState('')
-  const current = items.find(item => item.key === selected)
+  const [error, setError] = useState('')
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
-    api.getEmailTemplates<Template[]>().then(result => { setItems(result); setSelected(result[0]?.key || '') }).catch(() => setMessage('Не удалось загрузить шаблоны')).finally(() => setLoading(false))
+    api.getEmailTemplates<EmailTemplate[]>().then(setItems).catch(() => setError('Не удалось загрузить шаблоны писем.')).finally(() => setLoading(false))
   }, [])
 
-  const update = (field: keyof Template, value: string | boolean) => setItems(list => list.map(item => item.key === selected ? { ...item, [field]: value } : item))
-  const insertVariable = (name: string) => update('text_template', `${current?.text_template || ''}{${name}}`)
-  const save = async () => {
-    if (!current) return
-    setSaving(true); setMessage('')
-    try {
-      const saved = await api.updateEmailTemplate<Template>(current.key, current)
-      setItems(list => list.map(item => item.key === saved.key ? saved : item))
-      setMessage('Шаблон сохранён')
-    } catch (error: any) { setMessage(String(error?.bodyJson?.detail || error?.message || 'Не удалось сохранить шаблон')) }
-    finally { setSaving(false) }
-  }
+  const grouped = useMemo(() => {
+    const normalized = query.trim().toLowerCase()
+    return sections.map(section => ({
+      ...section,
+      items: items.filter(item => section.keys.includes(item.key) && (!normalized || `${item.name} ${item.description} ${item.key}`.toLowerCase().includes(normalized))),
+    })).filter(section => section.items.length)
+  }, [items, query])
 
-  const sendTest = async () => {
-    if (!current || !testEmail.trim()) return
-    setTestSending(true); setMessage('')
-    try {
-      const result = await api.testEmailTemplate<{ message: string }>(current.key, { ...current, recipient_email: testEmail.trim() })
-      setMessage(result.message)
-    } catch (error: any) {
-      setMessage(String(error?.bodyJson?.detail || error?.message || 'Не удалось отправить письмо'))
-    } finally { setTestSending(false) }
-  }
-
-  return <div className="page">
-    <section className="section-header"><div><p className="eyebrow">Администратор</p><h1 className="page-title">Шаблоны писем</h1><p className="subtitle">Настройка email для различных событий системы.</p></div></section>
-    <section className="grid grid-2">
-      <aside className="panel"><h3 className="panel-title">Тип письма</h3>{loading ? <div className="loading">Загрузка...</div> : <div className="auth-form">{items.map(item => <button key={item.key} type="button" className={`button ${selected === item.key ? 'button--primary' : 'button--ghost'}`} onClick={() => { setSelected(item.key); setMessage('') }}>{item.name}</button>)}</div>}</aside>
-      <div className="panel">{current ? <div className="auth-form">
-        <div><div className="form-label">Событие</div><div>{current.description}</div><div className="form-hint">Ключ: {current.key}</div></div>
-        <label className="form-field"><span className="form-label">Название шаблона</span><input className="text-input" value={current.name} onChange={e => update('name', e.target.value)} /></label>
-        <label className="form-field"><span className="form-label">Тема письма</span><input className="text-input" value={current.subject_template} onChange={e => update('subject_template', e.target.value)} /></label>
-        <label className="form-field"><span className="form-label">Текст письма</span><textarea className="text-input" rows={6} value={current.text_template} onChange={e => update('text_template', e.target.value)} /></label>
-        <label className="form-field"><span className="form-label">HTML письма</span><textarea className="text-input" rows={8} value={current.html_template || ''} onChange={e => update('html_template', e.target.value)} /></label>
-        <label className="choice-chip"><input type="checkbox" checked={current.is_active} onChange={e => update('is_active', e.target.checked)} /><span className="choice-chip__label">Отправлять email для этого события</span></label>
-        <div className="panel panel--compact">
-          <div className="form-label">Переменные этого события</div>
-          {current.variables.length ? current.variables.map(variable => <div key={variable.name} style={{ marginBottom: 8 }}>
-            <button type="button" className="button button--ghost" onClick={() => insertVariable(variable.name)}>{`{${variable.name}}`}</button>
-            <span className="form-hint" style={{ marginLeft: 8 }}>{variable.description}. Пример: {variable.sample || '—'}</span>
-          </div>) : <span className="form-hint">У этого события нет переменных.</span>}
-          <span className="form-hint">Кнопка добавляет переменную в конец текстовой версии письма. Её также можно вставить вручную в тему или HTML.</span>
-        </div>
-        {message && <div className="alert alert--info">{message}</div>}
-        <div className="panel panel--compact">
-          <label className="form-field"><span className="form-label">Адрес получателя</span><input className="text-input" type="email" placeholder="name@example.com" value={testEmail} onChange={e => setTestEmail(e.target.value)} /></label>
-          <button className="button button--ghost" type="button" disabled={testSending || !testEmail.trim() || !current.subject_template.trim() || !current.text_template.trim()} onClick={sendTest}>{testSending ? 'Отправляем...' : 'Отправить письмо'}</button>
-          <span className="form-hint">Будут использованы текущие значения формы, даже если шаблон ещё не сохранён.</span>
-        </div>
-        <button className="button button--primary" disabled={saving || !current.subject_template.trim() || !current.text_template.trim()} onClick={save}>{saving ? 'Сохраняем...' : 'Сохранить шаблон'}</button>
-      </div> : <div className="table__empty">Выберите шаблон.</div>}</div>
+  return <div className="page email-templates-page">
+    <section className="section-header email-templates-hero">
+      <div><p className="eyebrow">Администратор · Коммуникации</p><h1 className="page-title">Шаблоны писем</h1><p className="subtitle">Все письма журнала собраны по рабочим процессам. Выберите событие, чтобы открыть его редактор.</p></div>
+      <Link className="button button--ghost" to="/cabinet/admin/email-template-docs">Справочник тегов</Link>
     </section>
+
+    <section className="email-template-toolbar panel">
+      <label className="email-template-search"><span aria-hidden="true">⌕</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Найти шаблон или событие" /></label>
+      <div className="email-template-summary"><strong>{items.length}</strong><span>шаблонов</span><i /><strong>{items.filter(item => item.is_active).length}</strong><span>активны</span></div>
+    </section>
+
+    {loading ? <div className="email-template-state">Загружаем шаблоны…</div> : error ? <div className="alert alert--error">{error}</div> : grouped.length ? <div className="email-template-sections">
+      {grouped.map(section => <section className="email-template-section" key={section.id}>
+        <header className="email-template-section__header"><span>{section.icon}</span><div><h2>{section.title}</h2><p>{section.description}</p></div><b>{section.items.length}</b></header>
+        <div className="email-template-cards">
+          {section.items.map(item => <Link className="email-template-card" to={`/cabinet/admin/email-templates/${encodeURIComponent(item.key)}`} key={item.key}>
+            <div className="email-template-card__top"><span className={`email-template-status ${item.is_active ? 'email-template-status--active' : ''}`}>{item.is_active ? 'Активен' : 'Выключен'}</span><span className="email-template-recipient">{recipientFor(item.key)}</span></div>
+            <h3>{item.name}</h3><p>{item.description || 'Системный шаблон электронного письма.'}</p>
+            <div className="email-template-card__footer"><code>{item.key}</code><span>Редактировать →</span></div>
+          </Link>)}
+        </div>
+      </section>)}
+    </div> : <div className="email-template-state"><strong>Ничего не найдено</strong><span>Попробуйте изменить поисковый запрос.</span></div>}
   </div>
 }

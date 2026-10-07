@@ -203,6 +203,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
             { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Настройки журнала', path: '/cabinet/admin/journal-settings' },
             { label: 'Шаблоны писем', path: '/cabinet/admin/email-templates' },
+            { label: 'Документация шаблонов', path: '/cabinet/admin/email-template-docs' },
             { label: 'Заявки на роли', path: '/cabinet/role-requests' },
           ],
         },
@@ -340,6 +341,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
             { label: 'Analytics', path: '/cabinet/admin/analytics' },
             { label: 'Journal settings', path: '/cabinet/admin/journal-settings' },
             { label: 'Email templates', path: '/cabinet/admin/email-templates' },
+            { label: 'Template documentation', path: '/cabinet/admin/email-template-docs' },
             { label: 'Role requests', path: '/cabinet/role-requests' },
           ],
         },
@@ -477,6 +479,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
             { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Журнал баптаулары', path: '/cabinet/admin/journal-settings' },
             { label: 'Хат үлгілері', path: '/cabinet/admin/email-templates' },
+            { label: 'Үлгілер құжаттамасы', path: '/cabinet/admin/email-template-docs' },
             { label: 'Рөл өтінімдері', path: '/cabinet/role-requests' },
           ],
         },
@@ -546,6 +549,7 @@ const NavIcon = ({ path }: { path?: string }) => {
   if (path === '/cabinet/reviews') return <svg {...common}><path d="M6 4.5H18V19.5H6V4.5Z" stroke="currentColor" strokeWidth="1.6"/><path d="M9 9L10.5 10.5L14.5 6.5M9 15L10.5 16.5L14.5 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
   if (path === '/cabinet/layout') return <svg {...common}><rect x="4.5" y="4.5" width="15" height="15" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><path d="M4.5 10H19.5M11 10V19.5" stroke="currentColor" strokeWidth="1.6"/></svg>
   if (path === '/cabinet/admin/email-templates') return <svg {...common}><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M5 7L12 13L19 7" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>
+  if (path === '/cabinet/admin/email-template-docs') return <svg {...common}><path d="M6 4.5H16.5L19 7V19.5H6V4.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M9 9H16M9 12.5H16M9 16H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
 
   if (path === '/cabinet/admin/users') {
     return (

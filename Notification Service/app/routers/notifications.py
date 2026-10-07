@@ -32,18 +32,34 @@ DEFAULT_TEMPLATES = {
 }
 
 
-def _get_user_email(user_id: int) -> Optional[str]:
+def _get_user_context(user_id: int) -> dict[str, str]:
+    """Resolve variables that are available to every email template."""
     try:
         with httpx.Client(timeout=5.0) as client:
             r = client.get(f"{config.AUTH_SERVICE_URL}/auth/users/{user_id}")
             if r.status_code == 200:
                 data = r.json()
-                email = data.get("email")
-                if email and isinstance(email, str):
-                    return email
+                first_name = str(data.get("first_name") or "").strip()
+                last_name = str(data.get("last_name") or "").strip()
+                user_name = str(
+                    data.get("full_name")
+                    or " ".join(part for part in (first_name, last_name) if part)
+                    or data.get("username")
+                    or ""
+                ).strip()
+                return {
+                    "user_name": user_name,
+                    "user_email": str(data.get("email") or "").strip(),
+                    "first_name": first_name,
+                    "last_name": last_name,
+                }
     except Exception as e:
-        logger.warning("Failed to resolve user email for %s: %s", user_id, e)
-    return None
+        logger.warning("Failed to resolve user context for %s: %s", user_id, e)
+    return {"user_name": "", "user_email": "", "first_name": "", "last_name": ""}
+
+
+def _get_user_email(user_id: int) -> Optional[str]:
+    return _get_user_context(user_id).get("user_email") or None
 
 
 def _send_notification_email(user_id: int, subject: str, message: str, html: str, notification_id: int) -> None:
@@ -104,11 +120,13 @@ def _queue_notification_email(
     ).first()
     if preference and not preference.email_enabled:
         return
+    user_context = _get_user_context(n.user_id)
     values = {
         "title": n.title,
         "message": n.message,
         "article_id": n.article_id or "",
         **(template_variables or {}),
+        **user_context,
     }
     key = template_key or f"notification_{n.type.value}"
     rendered = _render_email_template(
@@ -246,10 +264,12 @@ def send_internal_email(
     if not secret or secret != config.SHARED_SERVICE_SECRET:
         raise HTTPException(status_code=403, detail="Forbidden")
 
+    user_context = _get_user_context(payload.user_id)
     values = {
         "title": payload.subject,
         "message": payload.text,
         **payload.template_variables,
+        **user_context,
     }
     rendered = _render_email_template(
         db,
@@ -534,9 +554,14 @@ def test_email_template(
     template_key: str,
     payload: schemas.EmailTemplateTestRequest,
     background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     _ensure_admin(current_user)
+    _ensure_default_templates(db)
+    template = db.query(models.EmailTemplate).filter(models.EmailTemplate.key == template_key).first()
+    if not template or template_key not in EMAIL_EVENTS:
+        raise HTTPException(status_code=404, detail="Email template not found")
     recipient = payload.recipient_email.strip().lower()
     if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", recipient):
         raise HTTPException(status_code=422, detail="Некорректный адрес электронной почты")
@@ -571,12 +596,15 @@ def test_email_template(
     try:
         subject = payload.subject_template.format_map(sample_values)
         text = payload.text_template.format_map(sample_values)
-        html = (payload.html_template or "<p>{message}</p>").format_map(sample_values)
+        # Use exactly the version currently open in the editor. In particular,
+        # do not replace an empty HTML version with a generic event message:
+        # email clients prefer HTML and would hide the actual text template.
+        html = payload.html_template.format_map(sample_values) if payload.html_template else None
     except (KeyError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=f"Ошибка в переменных шаблона: {exc}") from exc
 
     background_tasks.add_task(_send_email_to_address, recipient, subject, text, html)
-    return {"message": f"Письмо поставлено в очередь для {recipient}"}
+    return {"message": f"Тест шаблона «{payload.name}» поставлен в очередь для {recipient}"}
 
 
 @router.get("/", response_model=List[schemas.NotificationOut])

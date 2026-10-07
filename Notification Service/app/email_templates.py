@@ -103,12 +103,22 @@ EMAIL_EVENTS = {
     },
 }
 
-# Every notification path supplies these two fallback values, including direct
-# emails.  Exposing them consistently also keeps templates created by older
-# versions editable in the admin panel.
+# Variables resolved by the notification service for every recipient. Services
+# that create an event do not have to pass them explicitly.
+COMMON_VARIABLES = {
+    "user_name": "Полное имя получателя (или логин, если имя не заполнено)",
+    "user_email": "Email получателя",
+    "first_name": "Имя получателя",
+    "last_name": "Фамилия получателя",
+}
+
+# Every notification path supplies the fallback values below. Exposing them
+# consistently also keeps templates created by older versions editable.
 for _event in EMAIL_EVENTS.values():
     _event["variables"].setdefault("title", "Исходный заголовок события")
     _event["variables"].setdefault("message", "Исходный текст события")
+    for _name, _description in COMMON_VARIABLES.items():
+        _event["variables"].setdefault(_name, _description)
 
 SAMPLE_VALUES = {
     "title": "Тестовое уведомление", "message": "Это пример текста уведомления.", "article_id": "123",
@@ -116,4 +126,5 @@ SAMPLE_VALUES = {
     "expires_minutes": "30", "role": "рецензент", "status": "active", "cabinet_url": "https://journal.example/login",
     "article_title": "Искусственный интеллект в современной науке", "comments": "Просим учесть замечания редакции.",
     "article_label": "«Искусственный интеллект в современной науке»", "reviewer_id": "42", "review_id": "77", "reason": "Тема вне моей специализации.",
+    "user_name": "Алексей Иванов", "user_email": "alexey.ivanov@example.com", "first_name": "Алексей", "last_name": "Иванов",
 }

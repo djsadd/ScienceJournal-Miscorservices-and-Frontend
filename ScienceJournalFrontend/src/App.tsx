@@ -51,6 +51,8 @@ import RoleRequestsPage from './pages/RoleRequestsPage'
 import AdminJournalSettingsPage from './pages/AdminJournalSettingsPage'
 import NotificationPreferencesPage from './pages/NotificationPreferencesPage'
 import AdminEmailTemplatesPage from './pages/AdminEmailTemplatesPage'
+import AdminEmailTemplateEditPage from './pages/AdminEmailTemplateEditPage'
+import EmailTemplateDocsPage from './pages/EmailTemplateDocsPage'
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -272,6 +274,8 @@ function App() {
       />
       <Route path="/cabinet/notification-settings" element={<RequireAuth><MainLayout><NotificationPreferencesPage /></MainLayout></RequireAuth>} />
       <Route path="/cabinet/admin/email-templates" element={<RequireAuth><MainLayout><AdminEmailTemplatesPage /></MainLayout></RequireAuth>} />
+      <Route path="/cabinet/admin/email-templates/:templateKey" element={<RequireAuth><MainLayout><AdminEmailTemplateEditPage /></MainLayout></RequireAuth>} />
+      <Route path="/cabinet/admin/email-template-docs" element={<RequireAuth><MainLayout><EmailTemplateDocsPage /></MainLayout></RequireAuth>} />
       <Route path="/cabinet/admin/analytics" element={<RequireAuth><MainLayout><AdminAnalyticsPage /></MainLayout></RequireAuth>} />
       <Route
         path="/cabinet/admin/users"
