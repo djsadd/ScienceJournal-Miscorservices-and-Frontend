@@ -240,7 +240,6 @@ const copies: Record<Lang, DashboardCopy> = {
 
 const roleKeys: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
 const isRoleKey = (value: string): value is RoleKey => roleKeys.includes(value as RoleKey)
-const reviewStatuses = ['under_review', 'in_review', 'review_completed', 'editor_check', 'reviewer_check']
 
 const readStoredRole = (): RoleKey | null => {
   if (typeof window === 'undefined') return null
@@ -414,42 +413,6 @@ export function Dashboard() {
     }
   }, [t.error])
 
-  const unreadCount = notifications.filter((item) => item.status === 'unread').length
-
-  const stats = useMemo(() => {
-    if (activeRole === 'reviewer') {
-      return [
-        { label: t.stats.manuscripts, value: reviews.length },
-        { label: t.stats.reviews, value: reviews.filter((r) => ['pending', 'in_progress'].includes(r.status)).length },
-        { label: t.stats.published, value: reviews.filter((r) => ['submitted', 'completed'].includes(r.status)).length },
-        { label: t.stats.unread, value: unreadCount },
-      ]
-    }
-    if (activeRole === 'layout') {
-      const articlesInVolumes = volumes.reduce((sum, volume) => sum + (volume.articles?.length ?? 0), 0)
-      return [
-        { label: t.stats.volumes, value: volumes.length },
-        { label: t.stats.manuscripts, value: articlesInVolumes },
-        { label: t.stats.published, value: volumes.filter((v) => v.is_active).length },
-        { label: t.stats.unread, value: unreadCount },
-      ]
-    }
-    if (activeRole === 'admin') {
-      return [
-        { label: t.stats.users, value: adminStats?.total ?? 0 },
-        { label: t.stats.active, value: adminStats?.active ?? 0 },
-        { label: t.stats.pending, value: adminStats?.pending ?? 0 },
-        { label: t.stats.unread, value: unreadCount },
-      ]
-    }
-    return [
-      { label: t.stats.manuscripts, value: articles.length },
-      { label: t.stats.reviews, value: articles.filter((a) => reviewStatuses.includes(a.status)).length },
-      { label: t.stats.published, value: articles.filter((a) => a.status === 'published' || a.status === 'accepted').length },
-      { label: t.stats.unread, value: unreadCount },
-    ]
-  }, [activeRole, adminStats, articles, reviews, t, unreadCount, volumes])
-
   const rows = useMemo(() => {
     if (activeRole === 'reviewer') {
       return reviews.slice(0, 5).map((review) => ({
@@ -500,15 +463,6 @@ export function Dashboard() {
           <p className="eyebrow">{t.roleNames[activeRole]}</p>
           <h1 className="page-title">{t.title}</h1>
         </div>
-      </section>
-
-      <section className="dashboard-home__stats" aria-label={t.title}>
-        {stats.map((stat) => (
-          <div className="dashboard-home__stat" key={stat.label}>
-            <div className="dashboard-home__stat-value">{loading ? '...' : stat.value}</div>
-            <div className="dashboard-home__stat-label">{stat.label}</div>
-          </div>
-        ))}
       </section>
 
       <section className="dashboard-home__block">
