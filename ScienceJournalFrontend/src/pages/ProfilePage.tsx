@@ -37,6 +37,7 @@ interface MeResponse {
   preferred_language?: string | PreferredLanguage[] | null
   academic_degrees?: string[]
   orcid?: string | null
+  orcid_verified?: boolean
   reviewer_science_fields?: ReviewerScienceField[]
   reviewer_science_other?: string | null
 }
@@ -322,7 +323,6 @@ const academicDegreeLabels: Record<Lang, Record<AcademicDegreeOption, string>> =
   },
 }
 
-const orcidPattern = /^(\d{4}-){3}[\dX]{4}$/i
 const legacyAcademicDegreeMap: Record<string, AcademicDegreeOption> = {
   candidate: 'candidate',
   doctor: 'doctor',
@@ -374,7 +374,7 @@ export function ProfilePage() {
   const [reviewerScienceFields, setReviewerScienceFields] = useState<ReviewerScienceField[]>([])
   const [reviewerScienceOther, setReviewerScienceOther] = useState('')
   const [academicDegrees, setAcademicDegrees] = useState<AcademicDegreeOption[]>([])
-  const [orcid, setOrcid] = useState('')
+  const [orcidBusy, setOrcidBusy] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -394,7 +394,6 @@ export function ProfilePage() {
         setReviewerScienceFields(me.reviewer_science_fields || [])
         setReviewerScienceOther(me.reviewer_science_other || '')
         setAcademicDegrees(normalizeAcademicDegreeValues(me.academic_degrees))
-        setOrcid(me.orcid || '')
       } catch (caught) {
         console.error(caught)
         if (mounted) setError(t.error)
@@ -407,6 +406,20 @@ export function ProfilePage() {
       mounted = false
     }
   }, [t.error])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const result = params.get('orcid')
+    const oauthError = params.get('orcid_error')
+    if (result === 'linked') setSaveMessage(l === 'en' ? 'ORCID linked successfully' : l === 'kz' ? 'ORCID сәтті байланыстырылды' : 'ORCID успешно привязан')
+    if (oauthError) {
+      const message = oauthError === 'already_linked'
+        ? (l === 'en' ? 'This ORCID is linked to another account' : 'Этот ORCID уже привязан к другому аккаунту')
+        : (l === 'en' ? 'Failed to link ORCID' : 'Не удалось привязать ORCID')
+      setSaveMessage(message)
+    }
+    if (result || oauthError) window.history.replaceState({}, '', window.location.pathname)
+  }, [l])
 
   const roles = useMemo(() => (data?.roles?.length ? data.roles : data?.role ? [data.role] : []), [data])
   const isReviewer = roles.includes('reviewer')
@@ -433,10 +446,6 @@ export function ProfilePage() {
 
   const handleSaveProfile = async () => {
     if (saving) return
-    if (orcid.trim() && !orcidPattern.test(orcid.trim())) {
-      setSaveMessage(t.invalidOrcid)
-      return
-    }
     if (isReviewer && reviewLanguages.length === 0) {
       setSaveMessage(t.requiredLanguage)
       return
@@ -460,7 +469,6 @@ export function ProfilePage() {
       })
       await api.updateMyProfileDetails({
         academic_degrees: academicDegrees,
-        orcid: orcid.trim() || null,
       })
       if (isReviewer) {
         await api.updateMyLanguage(reviewLanguages)
@@ -477,7 +485,6 @@ export function ProfilePage() {
               organization: organization.trim() || null,
               phone: phone.trim() || null,
               academic_degrees: academicDegrees,
-              orcid: orcid.trim() || null,
               preferred_language: reviewLanguages.join(','),
               reviewer_science_fields: reviewerScienceFields,
               reviewer_science_other: reviewerScienceFields.includes('other') ? reviewerScienceOther.trim() : null,
@@ -490,6 +497,36 @@ export function ProfilePage() {
       setSaveMessage(t.saveError)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleLinkOrcid = async () => {
+    if (orcidBusy) return
+    setOrcidBusy(true)
+    setSaveMessage(null)
+    try {
+      const response = await api.get<{ authorization_url: string }>('/auth/orcid/start', {
+        params: { intent: 'link', language: l },
+      })
+      window.location.assign(response.authorization_url)
+    } catch {
+      setSaveMessage(l === 'en' ? 'ORCID linking is unavailable' : 'Привязка ORCID пока недоступна')
+      setOrcidBusy(false)
+    }
+  }
+
+  const handleUnlinkOrcid = async () => {
+    if (orcidBusy || !window.confirm(l === 'en' ? 'Unlink ORCID from this account?' : 'Отвязать ORCID от этого аккаунта?')) return
+    setOrcidBusy(true)
+    setSaveMessage(null)
+    try {
+      await api.delete<void>('/auth/orcid/link')
+      setData((current) => current ? { ...current, orcid: null, orcid_verified: false } : current)
+      setSaveMessage(l === 'en' ? 'ORCID unlinked' : 'ORCID отвязан')
+    } catch {
+      setSaveMessage(l === 'en' ? 'Failed to unlink ORCID' : 'Не удалось отвязать ORCID')
+    } finally {
+      setOrcidBusy(false)
     }
   }
 
@@ -550,11 +587,32 @@ export function ProfilePage() {
               <span className="form-label">{t.fields.phone}</span>
               <input className="text-input" value={phone} onChange={(event) => setPhone(event.target.value)} disabled={saving} />
             </label>
-            <label className="form-field">
-              <span className="form-label">{t.fields.orcid}</span>
-              <input className="text-input" placeholder="0000-0000-0000-0000" value={orcid} onChange={(event) => setOrcid(event.target.value)} disabled={saving} />
-            </label>
           </div>
+        </section>
+
+        <section className="panel profile-section">
+          <div className="profile-section__head">
+            <h2>ORCID</h2>
+            <span>{data?.orcid_verified ? (l === 'en' ? 'Verified' : 'Подтверждён') : (l === 'en' ? 'Not linked' : 'Не привязан')}</span>
+          </div>
+          {data?.orcid_verified && data.orcid ? (
+            <div className="orcid-connection">
+              <a href={`https://orcid.org/${data.orcid}`} target="_blank" rel="noreferrer" className="orcid-connection__id">
+                <span className="orcid-button__icon" aria-hidden="true">iD</span>{data.orcid}
+              </a>
+              <button type="button" className="button button--ghost" onClick={handleUnlinkOrcid} disabled={orcidBusy}>
+                {l === 'en' ? 'Unlink' : 'Отвязать'}
+              </button>
+            </div>
+          ) : (
+            <div className="orcid-connection">
+              <p>{l === 'en' ? 'Link a verified ORCID iD to use it for sign-in.' : 'Привяжите подтверждённый ORCID iD, чтобы входить с его помощью.'}</p>
+              <button type="button" className="button orcid-button" onClick={handleLinkOrcid} disabled={orcidBusy}>
+                <span className="orcid-button__icon" aria-hidden="true">iD</span>
+                {orcidBusy ? (l === 'en' ? 'Opening…' : 'Открываем…') : (l === 'en' ? 'Link ORCID' : 'Привязать ORCID')}
+              </button>
+            </div>
+          )}
         </section>
 
         <section className="panel profile-section">

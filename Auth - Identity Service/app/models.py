@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from app.database import Base
 
 
@@ -35,3 +35,41 @@ class PasswordResetToken(Base):
     used_at = Column(DateTime, nullable=True)
     request_ip = Column(String(64), nullable=True)
     request_user_agent = Column(String(512), nullable=True)
+
+
+class ExternalIdentity(Base):
+    __tablename__ = "external_identities"
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_subject", name="uq_external_identity_provider_subject"),
+        UniqueConstraint("provider", "user_id", name="uq_external_identity_provider_user"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    provider = Column(String(32), index=True, nullable=False)
+    provider_subject = Column(String(64), nullable=False)
+    display_name = Column(String(255), nullable=True)
+    linked_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class OAuthState(Base):
+    __tablename__ = "oauth_states"
+
+    id = Column(Integer, primary_key=True)
+    state_hash = Column(String(64), unique=True, index=True, nullable=False)
+    provider = Column(String(32), nullable=False)
+    intent = Column(String(16), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    language = Column(String(8), nullable=True)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+
+
+class OAuthLoginCode(Base):
+    __tablename__ = "oauth_login_codes"
+
+    id = Column(Integer, primary_key=True)
+    code_hash = Column(String(64), unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)

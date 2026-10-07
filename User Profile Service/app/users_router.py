@@ -551,6 +551,23 @@ def update_contact_profile_internal(
     return profile
 
 
+@router.patch("/internal/{user_id}/orcid", response_model=schemas.UserProfileOut)
+def update_profile_orcid_internal(
+    user_id: int,
+    payload: schemas.InternalOrcidUpdate,
+    x_service_secret: str | None = Header(default=None, alias="X-Service-Secret"),
+    db: Session = Depends(get_db),
+):
+    ensure_service_secret(x_service_secret)
+    profile = db.query(models.UserProfile).filter(models.UserProfile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    profile.orcid = normalize_orcid(payload.orcid)
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
 @router.patch("/me/contact", response_model=schemas.UserProfileOut)
 async def update_my_contact_profile(
     payload: schemas.UserContactProfileUpdate,
@@ -584,7 +601,6 @@ async def update_my_details(
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     profile.academic_degrees = normalize_academic_degrees(payload.academic_degrees)
-    profile.orcid = normalize_orcid(payload.orcid)
     db.commit()
     db.refresh(profile)
     return profile

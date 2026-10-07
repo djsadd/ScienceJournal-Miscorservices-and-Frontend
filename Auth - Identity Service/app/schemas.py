@@ -74,6 +74,7 @@ class UserFullInfo(BaseModel):
     preferred_language: str | None = None
     academic_degrees: list[str] = []
     orcid: str | None = None
+    orcid_verified: bool = False
     reviewer_science_fields: list[str] = []
     reviewer_science_other: str | None = None
     roles: list[str] = []
@@ -177,3 +178,18 @@ class LoginRequest(BaseModel):
 
     username: str
     password: str
+
+
+class OAuthStartResponse(BaseModel):
+    authorization_url: str
+
+
+class OAuthExchangeRequest(BaseModel):
+    code: str = Field(min_length=20, max_length=256)
+
+
+class OrcidStatusResponse(BaseModel):
+    linked: bool
+    orcid: str | None = None
+    display_name: str | None = None
+    linked_at: str | None = None

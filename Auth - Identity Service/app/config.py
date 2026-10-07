@@ -16,3 +16,12 @@ USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://users:8000")
 NOTIFICATIONS_SERVICE_URL = os.getenv("NOTIFICATIONS_SERVICE_URL", "http://notifications:8000")
 SHARED_SERVICE_SECRET = os.getenv("SHARED_SERVICE_SECRET", "service-shared-secret")
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8001")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://journal.tau-edu.kz").rstrip("/")
+ORCID_CLIENT_ID = os.getenv("ORCID_CLIENT_ID", "").strip()
+ORCID_CLIENT_SECRET = os.getenv("ORCID_CLIENT_SECRET", "").strip()
+ORCID_REDIRECT_URI = os.getenv(
+    "ORCID_REDIRECT_URI",
+    "https://journal.tau-edu.kz/api/auth/orcid/callback",
+).strip()
+ORCID_ENV = os.getenv("ORCID_ENV", "production").strip().lower()
+ORCID_BASE_URL = "https://orcid.org" if ORCID_ENV == "production" else "https://sandbox.orcid.org"

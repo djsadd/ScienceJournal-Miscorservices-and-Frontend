@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 import httpx
 import secrets
 import string
+from urllib.parse import urlencode
 from jose import jwt, JWTError
 from app import models, schemas, database, security, config
 
@@ -151,6 +152,22 @@ def update_profile_contact(user_id: int, full_name: str, phone: str | None, orga
         raise
     except Exception as exc:
         raise HTTPException(status_code=502, detail="Could not update user profile") from exc
+
+
+def sync_profile_orcid(user_id: int, orcid: str | None) -> None:
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            response = client.patch(
+                f"{config.USER_SERVICE_URL}/users/internal/{user_id}/orcid",
+                json={"orcid": orcid},
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+        if response.status_code not in {200, 404}:
+            raise HTTPException(status_code=502, detail="Could not update ORCID in user profile")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Could not update ORCID in user profile") from exc
 
 
 def get_effective_roles(user_id: int, primary_role: str) -> list[str]:
@@ -655,7 +672,8 @@ def get_current_active_user(user_id: int = Depends(get_current_user_id), db: Ses
 
 @router.get("/me", response_model=schemas.UserFullInfo)
 def get_user_full_info(
-    user: models.User = Depends(get_current_active_user)
+    user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
 ):
     """Get complete user information from Auth and User Profile services"""
     # User is already fetched and validated by get_current_active_user
@@ -680,6 +698,7 @@ def get_user_full_info(
         "preferred_language": None,
         "academic_degrees": [],
         "orcid": None,
+        "orcid_verified": False,
         "reviewer_science_fields": [],
         "reviewer_science_other": None,
         "roles": [user.role],
@@ -707,6 +726,14 @@ def get_user_full_info(
     except Exception:
         # Fail-soft: return auth data even if profile service is unavailable
         pass
+
+    identity = db.query(models.ExternalIdentity).filter(
+        models.ExternalIdentity.provider == "orcid",
+        models.ExternalIdentity.user_id == user.id,
+    ).first()
+    if identity:
+        user_info["orcid"] = identity.provider_subject
+        user_info["orcid_verified"] = True
     
     return user_info
 
@@ -937,6 +964,200 @@ def activate_user(
     if previous_is_active != user.is_active:
         send_account_status_notification(user, user.is_active)
     return user
+
+
+def require_orcid_configuration() -> None:
+    if not config.ORCID_CLIENT_ID or not config.ORCID_CLIENT_SECRET or not config.ORCID_REDIRECT_URI:
+        raise HTTPException(status_code=503, detail="ORCID authentication is not configured")
+
+
+def token_hash(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def frontend_orcid_redirect(language: str | None, **params: str) -> str:
+    prefix = f"/{language}" if language in {"ru", "en", "kz"} else ""
+    return f"{config.FRONTEND_URL}{prefix}/login?{urlencode(params)}"
+
+
+@router.get("/orcid/start", response_model=schemas.OAuthStartResponse)
+def start_orcid_login(
+    intent: str = "login",
+    language: str | None = None,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    require_orcid_configuration()
+    if intent not in {"login", "link"}:
+        raise HTTPException(status_code=400, detail="Invalid ORCID intent")
+    user_id = None
+    if intent == "link":
+        user_id = get_current_user_id(authorization)
+        user = db.query(models.User).filter(
+            models.User.id == user_id,
+            models.User.is_hidden == False,
+            models.User.is_active == True,
+        ).first()
+        if not user:
+            raise HTTPException(status_code=403, detail="Active account required")
+
+    raw_state = secrets.token_urlsafe(32)
+    db.add(models.OAuthState(
+        state_hash=token_hash(raw_state),
+        provider="orcid",
+        intent=intent,
+        user_id=user_id,
+        language=language if language in {"ru", "en", "kz"} else None,
+        expires_at=datetime.utcnow() + timedelta(minutes=10),
+    ))
+    db.commit()
+    query = urlencode({
+        "client_id": config.ORCID_CLIENT_ID,
+        "response_type": "code",
+        "scope": "/authenticate",
+        "redirect_uri": config.ORCID_REDIRECT_URI,
+        "state": raw_state,
+    })
+    return {"authorization_url": f"{config.ORCID_BASE_URL}/oauth/authorize?{query}"}
+
+
+@router.get("/orcid/callback")
+def orcid_callback(
+    state: str | None = None,
+    code: str | None = None,
+    error: str | None = None,
+    db: Session = Depends(get_db),
+):
+    from fastapi.responses import RedirectResponse
+
+    require_orcid_configuration()
+    if not state:
+        return RedirectResponse(frontend_orcid_redirect(None, orcid_error="invalid_state"), status_code=303)
+    oauth_state = db.query(models.OAuthState).filter(models.OAuthState.state_hash == token_hash(state)).first()
+    if not oauth_state or oauth_state.used_at or oauth_state.expires_at < datetime.utcnow():
+        return RedirectResponse(frontend_orcid_redirect(None, orcid_error="invalid_state"), status_code=303)
+    oauth_state.used_at = datetime.utcnow()
+    db.commit()
+    if error or not code:
+        return RedirectResponse(frontend_orcid_redirect(oauth_state.language, orcid_error="access_denied"), status_code=303)
+
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            response = client.post(
+                f"{config.ORCID_BASE_URL}/oauth/token",
+                data={
+                    "client_id": config.ORCID_CLIENT_ID,
+                    "client_secret": config.ORCID_CLIENT_SECRET,
+                    "grant_type": "authorization_code",
+                    "code": code,
+                    "redirect_uri": config.ORCID_REDIRECT_URI,
+                },
+                headers={"Accept": "application/json"},
+            )
+        response.raise_for_status()
+        token_data = response.json()
+        orcid = normalize_orcid(token_data.get("orcid"))
+        if not orcid:
+            raise ValueError("ORCID token response did not contain an iD")
+    except Exception:
+        return RedirectResponse(frontend_orcid_redirect(oauth_state.language, orcid_error="token_exchange_failed"), status_code=303)
+
+    identity = db.query(models.ExternalIdentity).filter(
+        models.ExternalIdentity.provider == "orcid",
+        models.ExternalIdentity.provider_subject == orcid,
+    ).first()
+    if oauth_state.intent == "link":
+        if identity and identity.user_id != oauth_state.user_id:
+            return RedirectResponse(f"{config.FRONTEND_URL}/cabinet/profile?orcid_error=already_linked", status_code=303)
+        existing_for_user = db.query(models.ExternalIdentity).filter(
+            models.ExternalIdentity.provider == "orcid",
+            models.ExternalIdentity.user_id == oauth_state.user_id,
+        ).first()
+        if existing_for_user and existing_for_user.provider_subject != orcid:
+            return RedirectResponse(f"{config.FRONTEND_URL}/cabinet/profile?orcid_error=different_orcid_linked", status_code=303)
+        if not identity:
+            db.add(models.ExternalIdentity(
+                user_id=oauth_state.user_id,
+                provider="orcid",
+                provider_subject=orcid,
+                display_name=token_data.get("name"),
+            ))
+            db.commit()
+        try:
+            sync_profile_orcid(oauth_state.user_id, orcid)
+        except HTTPException:
+            pass
+        return RedirectResponse(f"{config.FRONTEND_URL}/cabinet/profile?orcid=linked", status_code=303)
+
+    if not identity:
+        return RedirectResponse(frontend_orcid_redirect(oauth_state.language, orcid_error="not_linked"), status_code=303)
+    user = db.query(models.User).filter(
+        models.User.id == identity.user_id,
+        models.User.is_hidden == False,
+    ).first()
+    if not user or not user.is_active:
+        return RedirectResponse(frontend_orcid_redirect(oauth_state.language, orcid_error="account_inactive"), status_code=303)
+    raw_code = secrets.token_urlsafe(40)
+    db.add(models.OAuthLoginCode(
+        code_hash=token_hash(raw_code),
+        user_id=user.id,
+        expires_at=datetime.utcnow() + timedelta(minutes=2),
+    ))
+    db.commit()
+    return RedirectResponse(frontend_orcid_redirect(oauth_state.language, orcid_code=raw_code), status_code=303)
+
+
+@router.post("/orcid/exchange", response_model=schemas.Token)
+def exchange_orcid_login_code(payload: schemas.OAuthExchangeRequest, db: Session = Depends(get_db)):
+    login_code = db.query(models.OAuthLoginCode).filter(
+        models.OAuthLoginCode.code_hash == token_hash(payload.code),
+    ).first()
+    if not login_code or login_code.used_at or login_code.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=401, detail="Invalid or expired ORCID login code")
+    user = db.query(models.User).filter(
+        models.User.id == login_code.user_id,
+        models.User.is_hidden == False,
+        models.User.is_active == True,
+    ).first()
+    if not user:
+        raise HTTPException(status_code=403, detail="Account inactive")
+    login_code.used_at = datetime.utcnow()
+    db.commit()
+    return {
+        "access_token": security.create_access_token({"sub": str(user.id), "roles": get_effective_roles(user.id, user.role)}),
+        "refresh_token": security.create_refresh_token({"sub": str(user.id)}),
+        "token_type": "bearer",
+    }
+
+
+@router.get("/orcid/status", response_model=schemas.OrcidStatusResponse)
+def get_orcid_status(user: models.User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    identity = db.query(models.ExternalIdentity).filter(
+        models.ExternalIdentity.provider == "orcid",
+        models.ExternalIdentity.user_id == user.id,
+    ).first()
+    return {
+        "linked": bool(identity),
+        "orcid": identity.provider_subject if identity else None,
+        "display_name": identity.display_name if identity else None,
+        "linked_at": identity.linked_at.isoformat() if identity else None,
+    }
+
+
+@router.delete("/orcid/link", status_code=204)
+def unlink_orcid(user: models.User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    identity = db.query(models.ExternalIdentity).filter(
+        models.ExternalIdentity.provider == "orcid",
+        models.ExternalIdentity.user_id == user.id,
+    ).first()
+    if identity:
+        db.delete(identity)
+        db.commit()
+        try:
+            sync_profile_orcid(user.id, None)
+        except HTTPException:
+            pass
+    return None
 
 
 @router.get("/internal/users/by-role", response_model=list[schemas.UserOut])

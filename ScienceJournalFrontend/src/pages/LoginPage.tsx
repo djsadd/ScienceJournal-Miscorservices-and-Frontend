@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { Alert } from '../shared/components/Alert'
 import { useLanguage } from '../shared/LanguageContext'
@@ -15,6 +15,55 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    const exchangeCode = searchParams.get('orcid_code')
+    const oauthError = searchParams.get('orcid_error')
+    if (oauthError) {
+      const messages: Record<string, string> = {
+        access_denied: 'Вы отменили вход через ORCID.',
+        not_linked: 'Этот ORCID ещё не привязан. Войдите с паролем и привяжите ORCID в профиле.',
+        account_inactive: 'Аккаунт, связанный с ORCID, неактивен.',
+        invalid_state: 'Сессия ORCID истекла. Попробуйте ещё раз.',
+        token_exchange_failed: 'ORCID не удалось подтвердить. Попробуйте ещё раз.',
+      }
+      setErrorMsg(messages[oauthError] || 'Не удалось войти через ORCID.')
+      setSearchParams({}, { replace: true })
+      return
+    }
+    if (!exchangeCode) return
+    setSubmitting(true)
+    api.post<{ access_token: string; refresh_token?: string; token_type?: string }>('/auth/orcid/exchange', { code: exchangeCode })
+      .then((response) => {
+        api.setTokens({
+          accessToken: response.access_token,
+          refreshToken: response.refresh_token,
+          tokenType: response.token_type ?? 'bearer',
+        })
+        navigate('/cabinet', { replace: true })
+      })
+      .catch(() => {
+        setErrorMsg('Код входа ORCID недействителен или уже использован.')
+        setSearchParams({}, { replace: true })
+      })
+      .finally(() => setSubmitting(false))
+  }, [navigate, searchParams, setSearchParams])
+
+  const handleOrcidLogin = async () => {
+    if (submitting) return
+    setSubmitting(true)
+    setErrorMsg(null)
+    try {
+      const response = await api.get<{ authorization_url: string }>('/auth/orcid/start', {
+        params: { intent: 'login', language: lang },
+      })
+      window.location.assign(response.authorization_url)
+    } catch {
+      setErrorMsg('Вход через ORCID пока недоступен.')
+      setSubmitting(false)
+    }
+  }
 
   const loginPageCopy =
     lang === 'en'
@@ -180,6 +229,12 @@ export function LoginPage() {
 
           <button type="submit" className="button button--primary auth-submit" disabled={submitting}>
             {submitting ? t.submitBusy : t.submitIdle}
+          </button>
+
+          <div className="oauth-divider"><span>или</span></div>
+          <button type="button" className="button orcid-button" onClick={handleOrcidLogin} disabled={submitting}>
+            <span className="orcid-button__icon" aria-hidden="true">iD</span>
+            Войти через ORCID
           </button>
 
           <div className="auth-footer">

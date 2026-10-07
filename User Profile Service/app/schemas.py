@@ -71,6 +71,10 @@ class UserAcademicProfileUpdate(BaseModel):
     orcid: str | None = None
 
 
+class InternalOrcidUpdate(BaseModel):
+    orcid: str | None = None
+
+
 class UserRolesUpdate(BaseModel):
     roles: List[str]
 

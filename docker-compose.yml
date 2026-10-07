@@ -43,6 +43,11 @@ services:
       - NOTIFICATIONS_SERVICE_URL=http://notifications:8000
       - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:8001}
+      - FRONTEND_URL=${FRONTEND_URL:-https://journal.tau-edu.kz}
+      - ORCID_CLIENT_ID=${ORCID_CLIENT_ID:-}
+      - ORCID_CLIENT_SECRET=${ORCID_CLIENT_SECRET:-}
+      - ORCID_REDIRECT_URI=${ORCID_REDIRECT_URI:-https://journal.tau-edu.kz/api/auth/orcid/callback}
+      - ORCID_ENV=${ORCID_ENV:-production}
     ports:
       - "8001:8000"
     depends_on:
@@ -55,6 +60,7 @@ services:
       - DATABASE_URL=postgresql://users:pass@db/users
       - AUTH_SERVICE_URL=http://auth:8000
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
     ports:
       - "8002:8000"
     depends_on:
@@ -127,6 +133,7 @@ services:
     build: ./Publication Service
     environment:
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
       - PUBLICATION_DATA_DIR=/app/data
     volumes:
       - publication_data:/app/data

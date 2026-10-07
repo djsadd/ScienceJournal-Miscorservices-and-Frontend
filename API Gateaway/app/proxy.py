@@ -93,7 +93,7 @@ async def proxy_request(service_url: str, request: Request) -> Response:
             headers=headers,
             # Follow upstream redirects (e.g. trailing slash) inside the cluster so
             # browsers don't try to hit internal Docker hostnames like "articles".
-            follow_redirects=True,
+            follow_redirects=not upstream_path.startswith("/auth/orcid/callback"),
         )
 
     return Response(
