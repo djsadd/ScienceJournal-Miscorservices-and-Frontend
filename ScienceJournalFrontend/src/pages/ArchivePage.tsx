@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../shared/LanguageContext'
 import { api } from '../api/client'
 import type { Volume as ApiVolume } from '../shared/types'
+import { toApiFilesUrl } from '../shared/url'
 
 type ArchiveYear = { year: number; volumes: ApiVolume[] }
 
 export function ArchivePage() {
   const { lang } = useLanguage()
+  const localizedHref = (path: string) => `/${lang}${path}`
   const t = {
     ru: {
       title: 'Архив выпусков',
@@ -167,12 +170,12 @@ export function ArchivePage() {
                             {monthOpen && <div className="archive-month__body">
                               {monthVolumes.map((v) => (
                                 <article className="archive-issue" key={String(v.id ?? `${v.year}-${v.number}-${v.month ?? 'm'}`)}>
-                                  <a className="archive-issue__header" href={v.id != null ? `/archive/volumes/${v.id}` : '#'}><span className="archive-issue__label">Т. {v.number} № {v.number}</span><span className="archive-issue__date">{v.month ? monthNames[v.month] : ''} {v.year}</span><span className="archive-issue__count">{t.articleCount(v.articles?.length || 0)}</span></a>
+                                  <Link className="archive-issue__header" to={v.id != null ? localizedHref(`/archive/volumes/${v.id}`) : '#'}><span className="archive-issue__label">Т. {v.number} № {v.number}</span><span className="archive-issue__date">{v.month ? monthNames[v.month] : ''} {v.year}</span><span className="archive-issue__count">{t.articleCount(v.articles?.length || 0)}</span></Link>
                                   {v.articles?.length ? <ol className="archive-articles">
                                     {v.articles.map((article, index) => <li className="archive-article" key={article.id}>
                                       <span className="archive-article__number">{index + 1}</span>
-                                      <div className="archive-article__content"><a href={`/archive/volumes/${v.id}/articles/${article.id}`} className="archive-article__title">{articleTitle(article)}</a><p className="archive-article__authors">{articleAuthors(article) || '—'}</p><p className="archive-article__meta">{t.pages} {article.abstract ? '1–' : '—'} &nbsp;·&nbsp; DOI: {article.doi || '—'}</p></div>
-                                      {article.layout_file_url && <a className="archive-pdf" href={article.layout_file_url} target="_blank" rel="noreferrer">▱ {t.pdf}</a>}
+                                      <div className="archive-article__content"><Link to={localizedHref(`/archive/volumes/${v.id}/articles/${article.id}`)} className="archive-article__title">{articleTitle(article)}</Link><p className="archive-article__authors">{articleAuthors(article) || '—'}</p><p className="archive-article__meta">{t.pages} {article.abstract ? '1–' : '—'} &nbsp;·&nbsp; DOI: {article.doi || '—'}</p></div>
+                                      {article.layout_file_url && <a className="archive-pdf" href={toApiFilesUrl(article.layout_file_url)} target="_blank" rel="noreferrer">▱ {t.pdf}</a>}
                                     </li>)}
                                   </ol> : null}
                                 </article>
@@ -192,4 +195,3 @@ export function ArchivePage() {
     </div>
   )
 }
-
