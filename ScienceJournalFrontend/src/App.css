@@ -6588,6 +6588,7 @@
 .editorial-team-modal__group button.is-active { color: #fff; background: #8b1831; }
 
 .public-editorial__groups { display: grid; gap: 32px; margin-top: 26px; }
+.public-editorial__list { margin-top: 26px; }
 .public-editorial__group { display: grid; gap: 14px; }
 .public-editorial__group-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding-bottom: 11px; border-bottom: 1px solid #e8dadd; }
 .public-editorial__group-header h2 { margin: 6px 0 0; color: #34282c; font: 600 clamp(22px, 2.5vw, 29px)/1.15 Georgia, 'Times New Roman', serif; }
