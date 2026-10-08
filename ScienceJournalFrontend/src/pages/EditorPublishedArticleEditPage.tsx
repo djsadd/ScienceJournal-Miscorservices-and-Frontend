@@ -1316,151 +1316,54 @@ export default function EditorPublishedArticleEditPage() {
 
       {authorModalOpen ? (
         <div className="modal-backdrop" onClick={closeAuthorModal}>
-          <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal--wide editor-author-modal" role="dialog" aria-modal="true" aria-labelledby="editor-author-modal-title" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>{editingAuthorIndex !== null ? 'Редактировать автора' : 'Добавить автора'}</h3>
+              <div>
+                <p className="editor-author-modal__eyebrow">Сведения об авторе</p>
+                <h3 id="editor-author-modal-title">{editingAuthorIndex !== null ? 'Редактировать автора' : 'Новый автор'}</h3>
+                <p className="editor-author-modal__hint">Заполните основные данные. Поля со звёздочкой обязательны.</p>
+              </div>
               <button className="modal__close" onClick={closeAuthorModal} aria-label="Закрыть">
                 ×
               </button>
             </div>
-            <div className="modal__body author-grid">
-              <div className="form-field">
-                <label className="form-label">Email<RequiredMark /></label>
-                <input
-                  className="text-input"
-                  value={authorForm.email}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Префикс</label>
-                <input
-                  className="text-input"
-                  value={authorForm.prefix}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Имя<RequiredMark /></label>
-                <input
-                  className="text-input"
-                  value={authorForm.firstName}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Отчество</label>
-                <input
-                  className="text-input"
-                  value={authorForm.middleName}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Фамилия<RequiredMark /></label>
-                <input
-                  className="text-input"
-                  value={authorForm.lastName}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Телефон</label>
-                <input
-                  className="text-input"
-                  value={authorForm.phone}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))}
-                />
-              </div>
-              <div className="form-field form-field--span-2">
-                <label className="form-label">Адрес</label>
-                <input
-                  className="text-input"
-                  value={authorForm.address}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Страна<RequiredMark /></label>
-                <input
-                  className="text-input"
-                  value={authorForm.country}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))}
-                />
-              </div>
-
-              <div className="form-field">
-                <label className="form-label">Аффилиация 1<RequiredMark /></label>
-                <textarea
-                  className="text-input"
-                  rows={3}
-                  value={authorForm.affiliation1}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Аффилиация 2</label>
-                <textarea
-                  className="text-input"
-                  rows={3}
-                  value={authorForm.affiliation2}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Аффилиация 3</label>
-                <textarea
-                  className="text-input"
-                  rows={3}
-                  value={authorForm.affiliation3}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))}
-                />
-              </div>
-
-              <div className="form-field">
-                <label className="form-label">Соответствующий автор</label>
-                <div className="pill-list">
-                  <button
-                    type="button"
-                    className={`button button--ghost button--compact ${authorForm.isCorresponding ? 'button--active' : ''}`}
-                    onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: true }))}
-                  >
-                    Да
-                  </button>
-                  <button
-                    type="button"
-                    className={`button button--ghost button--compact ${!authorForm.isCorresponding ? 'button--active' : ''}`}
-                    onClick={() => setAuthorForm((p) => ({ ...p, isCorresponding: false }))}
-                  >
-                    Нет
-                  </button>
+            <div className="modal__body editor-author-modal__body">
+              <section className="editor-author-form-section">
+                <div className="editor-author-form-section__title"><span>01</span><div><h4>Основная информация</h4><p>Имя и контактные данные автора</p></div></div>
+                <div className="editor-author-form-grid editor-author-form-grid--name">
+                  <div className="form-field"><label className="form-label">Префикс</label><input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} placeholder="Д-р, проф." /></div>
+                  <div className="form-field"><label className="form-label">Имя<RequiredMark /></label><input className="text-input" autoFocus value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} placeholder="Имя" /></div>
+                  <div className="form-field"><label className="form-label">Отчество</label><input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} placeholder="Отчество" /></div>
+                  <div className="form-field"><label className="form-label">Фамилия<RequiredMark /></label><input className="text-input" value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} placeholder="Фамилия" /></div>
+                  <div className="form-field"><label className="form-label">Email<RequiredMark /></label><input className="text-input" type="email" value={authorForm.email} onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))} placeholder="name@example.com" /></div>
+                  <div className="form-field"><label className="form-label">Телефон</label><input className="text-input" type="tel" value={authorForm.phone} onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+7 700 000 00 00" /></div>
+                  <div className="form-field"><label className="form-label">Страна<RequiredMark /></label><input className="text-input" value={authorForm.country} onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))} placeholder="Казахстан" /></div>
+                  <div className="form-field editor-author-form-grid__wide"><label className="form-label">Адрес</label><input className="text-input" value={authorForm.address} onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))} placeholder="Город, улица, организация" /></div>
                 </div>
-              </div>
+              </section>
 
-              <div className="form-field">
-                <label className="form-label">ORCID</label>
-                <input
-                  className="text-input"
-                  value={authorForm.orcid}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, orcid: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Scopus Author ID</label>
-                <input
-                  className="text-input"
-                  value={authorForm.scopusId}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, scopusId: e.target.value }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label">Researcher ID</label>
-                <input
-                  className="text-input"
-                  value={authorForm.researcherId}
-                  onChange={(e) => setAuthorForm((p) => ({ ...p, researcherId: e.target.value }))}
-                />
-              </div>
+              <section className="editor-author-form-section">
+                <div className="editor-author-form-section__title"><span>02</span><div><h4>Место работы</h4><p>Основная организация обязательна, остальные — при необходимости</p></div></div>
+                <div className="editor-author-form-grid">
+                  <div className="form-field editor-author-form-grid__wide"><label className="form-label">Основная аффилиация<RequiredMark /></label><textarea className="text-input" rows={2} value={authorForm.affiliation1} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))} placeholder="Название университета, института или организации" /></div>
+                  <div className="form-field"><label className="form-label">Дополнительная аффилиация</label><textarea className="text-input" rows={2} value={authorForm.affiliation2} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))} placeholder="Необязательно" /></div>
+                  <div className="form-field"><label className="form-label">Ещё одна аффилиация</label><textarea className="text-input" rows={2} value={authorForm.affiliation3} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))} placeholder="Необязательно" /></div>
+                </div>
+              </section>
+
+              <section className="editor-author-form-section">
+                <div className="editor-author-form-section__title"><span>03</span><div><h4>Научные профили</h4><p>Идентификаторы можно заполнить позднее</p></div></div>
+                <div className="editor-author-form-grid editor-author-form-grid--three">
+                  <div className="form-field"><label className="form-label">ORCID</label><input className="text-input" value={authorForm.orcid} onChange={(e) => setAuthorForm((p) => ({ ...p, orcid: e.target.value }))} placeholder="0000-0000-0000-0000" /></div>
+                  <div className="form-field"><label className="form-label">Scopus Author ID</label><input className="text-input" value={authorForm.scopusId} onChange={(e) => setAuthorForm((p) => ({ ...p, scopusId: e.target.value }))} placeholder="Идентификатор Scopus" /></div>
+                  <div className="form-field"><label className="form-label">Researcher ID</label><input className="text-input" value={authorForm.researcherId} onChange={(e) => setAuthorForm((p) => ({ ...p, researcherId: e.target.value }))} placeholder="Например: A-1234-2026" /></div>
+                </div>
+              </section>
+
+              <label className="editor-author-corresponding">
+                <input type="checkbox" checked={authorForm.isCorresponding} onChange={(e) => setAuthorForm((p) => ({ ...p, isCorresponding: e.target.checked }))} />
+                <span><strong>Ответственный автор</strong><small>Будет основным контактом редакции по этой статье</small></span>
+              </label>
             </div>
             <div className="modal__footer">
               <button className="button button--ghost" type="button" onClick={closeAuthorModal}>
