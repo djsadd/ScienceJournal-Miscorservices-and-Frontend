@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 from enum import Enum
+from datetime import datetime
 
 
 class Language(str, Enum):
@@ -105,6 +106,47 @@ class RoleRequestOut(BaseModel):
     rejection_reason: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
+
+    class Config:
+        orm_mode = True
+
+
+class EditorialMemberBase(BaseModel):
+    group: str
+    full_name: str
+    status: str | None = None
+    workplace: str | None = None
+    citizenship: str | None = None
+    h_index_wos: int | None = None
+    h_index_scopus: int | None = None
+    orcid: str | None = None
+    scopus_author_id: str | None = None
+    researcher_id: str | None = None
+    sort_order: int = 0
+
+
+class EditorialMemberCreate(EditorialMemberBase):
+    pass
+
+
+class EditorialMemberUpdate(BaseModel):
+    group: str | None = None
+    full_name: str | None = None
+    status: str | None = None
+    workplace: str | None = None
+    citizenship: str | None = None
+    h_index_wos: int | None = None
+    h_index_scopus: int | None = None
+    orcid: str | None = None
+    scopus_author_id: str | None = None
+    researcher_id: str | None = None
+    sort_order: int | None = None
+
+
+class EditorialMemberOut(EditorialMemberBase):
+    id: int
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     class Config:
         orm_mode = True

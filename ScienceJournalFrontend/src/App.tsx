@@ -47,6 +47,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import QuickPublishPage from './pages/QuickPublishPage'
 import AdminUsersPage from './pages/AdminUsersPage'
+import EditorialTeamPage from './pages/EditorialTeamPage'
 import RoleRequestsPage from './pages/RoleRequestsPage'
 import AdminJournalSettingsPage from './pages/AdminJournalSettingsPage'
 import NotificationPreferencesPage from './pages/NotificationPreferencesPage'
@@ -283,6 +284,16 @@ function App() {
           <RequireAuth>
             <MainLayout>
               <AdminUsersPage />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/cabinet/admin/editorial-team"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <EditorialTeamPage />
             </MainLayout>
           </RequireAuth>
         }

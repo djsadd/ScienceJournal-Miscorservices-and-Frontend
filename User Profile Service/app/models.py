@@ -56,6 +56,25 @@ class RoleRequest(Base):
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class EditorialMember(Base):
+    __tablename__ = "editorial_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    group = Column(String, nullable=False, index=True)  # collegium | council
+    full_name = Column(String, nullable=False)
+    status = Column(String, nullable=True)
+    workplace = Column(String, nullable=True)
+    citizenship = Column(String, nullable=True)
+    h_index_wos = Column(Integer, nullable=True)
+    h_index_scopus = Column(Integer, nullable=True)
+    orcid = Column(String, nullable=True)
+    scopus_author_id = Column(String, nullable=True)
+    researcher_id = Column(String, nullable=True)
+    sort_order = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class ArticleLink(Base):
     __tablename__ = "user_articles"
     id = Column(Integer, primary_key=True, index=True)

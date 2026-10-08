@@ -32,6 +32,7 @@ ALLOWED_ACADEMIC_DEGREES = {
     "bachelor",
 }
 ALLOWED_REVIEW_LANGUAGES = {item.value for item in schemas.Language}
+ALLOWED_EDITORIAL_GROUPS = {"collegium", "council"}
 
 
 def normalize_preferred_language(value: str | list[str] | None) -> str | None:
@@ -111,6 +112,24 @@ def normalize_orcid(value: str | None) -> str | None:
     if not re.fullmatch(r"\d{4}-\d{4}-\d{4}-[\dX]{4}", normalized):
         raise HTTPException(status_code=400, detail="Invalid ORCID format")
     return normalized
+
+
+def require_editorial_manager(current: dict) -> None:
+    if not ({"editor", "admin"} & set(current.get("roles", []))):
+        raise HTTPException(status_code=403, detail="Editor or admin role required")
+
+
+def normalize_editorial_group(value: str) -> str:
+    group = (value or "").strip().lower()
+    if group not in ALLOWED_EDITORIAL_GROUPS:
+        raise HTTPException(status_code=400, detail="Invalid editorial group")
+    return group
+
+
+def clean_optional(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return value.strip() or None
 
 def get_db():
     db = database.SessionLocal()
@@ -665,6 +684,82 @@ async def update_reviewer_profile_as_admin(
     db.commit()
     db.refresh(profile)
     return profile
+
+
+@router.get("/editorial-members", response_model=list[schemas.EditorialMemberOut])
+async def list_editorial_members(
+    group: str | None = None,
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user),
+):
+    require_editorial_manager(current)
+    query = db.query(models.EditorialMember)
+    if group:
+        query = query.filter(models.EditorialMember.group == normalize_editorial_group(group))
+    return query.order_by(models.EditorialMember.sort_order, models.EditorialMember.full_name).all()
+
+
+@router.post("/editorial-members", response_model=schemas.EditorialMemberOut, status_code=201)
+async def create_editorial_member(
+    payload: schemas.EditorialMemberCreate,
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user),
+):
+    require_editorial_manager(current)
+    data = payload.dict()
+    data["group"] = normalize_editorial_group(payload.group)
+    data["full_name"] = payload.full_name.strip()
+    if not data["full_name"]:
+        raise HTTPException(status_code=400, detail="Full name is required")
+    for field in ("status", "workplace", "citizenship", "orcid", "scopus_author_id", "researcher_id"):
+        data[field] = clean_optional(data.get(field))
+    member = models.EditorialMember(**data)
+    db.add(member)
+    db.commit()
+    db.refresh(member)
+    return member
+
+
+@router.patch("/editorial-members/{member_id}", response_model=schemas.EditorialMemberOut)
+async def update_editorial_member(
+    member_id: int,
+    payload: schemas.EditorialMemberUpdate,
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user),
+):
+    require_editorial_manager(current)
+    member = db.query(models.EditorialMember).filter(models.EditorialMember.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Editorial member not found")
+    data = payload.dict(exclude_unset=True)
+    if "group" in data:
+        data["group"] = normalize_editorial_group(data["group"] or "")
+    if "full_name" in data:
+        data["full_name"] = (data["full_name"] or "").strip()
+        if not data["full_name"]:
+            raise HTTPException(status_code=400, detail="Full name is required")
+    for field in ("status", "workplace", "citizenship", "orcid", "scopus_author_id", "researcher_id"):
+        if field in data:
+            data[field] = clean_optional(data[field])
+    for field, value in data.items():
+        setattr(member, field, value)
+    db.commit()
+    db.refresh(member)
+    return member
+
+
+@router.delete("/editorial-members/{member_id}", status_code=204)
+async def delete_editorial_member(
+    member_id: int,
+    db: Session = Depends(get_db),
+    current=Depends(get_current_user),
+):
+    require_editorial_manager(current)
+    member = db.query(models.EditorialMember).filter(models.EditorialMember.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Editorial member not found")
+    db.delete(member)
+    db.commit()
 
 
 @router.get("/{user_id}", response_model=schemas.UserProfileOut)

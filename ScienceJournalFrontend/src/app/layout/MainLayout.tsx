@@ -136,7 +136,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Обзор', path: '/cabinet' },
             { label: 'Все рукописи', path: '/cabinet/editorial2' },
-            { label: 'Рецензенты', path: '/cabinet/admin/users' },
+            { label: 'Пользователи', path: '/cabinet/admin/users' },
+            { label: 'Состав редакции', path: '/cabinet/admin/editorial-team' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Уведомления', path: '/cabinet/notifications' },
             { label: 'Настройки уведомлений', path: '/cabinet/notification-settings' },
@@ -200,6 +201,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Администрирование',
           items: [
             { label: 'Пользователи', path: '/cabinet/admin/users' },
+            { label: 'Состав редакции', path: '/cabinet/admin/editorial-team' },
             { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Настройки журнала', path: '/cabinet/admin/journal-settings' },
             { label: 'Заявки на роли', path: '/cabinet/role-requests' },
@@ -279,7 +281,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Overview', path: '/cabinet' },
             { label: 'All manuscripts', path: '/cabinet/editorial2' },
-            { label: 'Reviewers', path: '/cabinet/admin/users' },
+            { label: 'Users', path: '/cabinet/admin/users' },
+            { label: 'Editorial team', path: '/cabinet/admin/editorial-team' },
             { label: 'Profile', path: '/cabinet/profile' },
             { label: 'Notifications', path: '/cabinet/notifications' },
             { label: 'Notification settings', path: '/cabinet/notification-settings' },
@@ -343,6 +346,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Administration',
           items: [
             { label: 'Users', path: '/cabinet/admin/users' },
+            { label: 'Editorial team', path: '/cabinet/admin/editorial-team' },
             { label: 'Analytics', path: '/cabinet/admin/analytics' },
             { label: 'Journal settings', path: '/cabinet/admin/journal-settings' },
             { label: 'Role requests', path: '/cabinet/role-requests' },
@@ -422,7 +426,8 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           items: [
             { label: 'Шолу', path: '/cabinet' },
             { label: 'Барлық қолжазбалар', path: '/cabinet/editorial2' },
-            { label: 'Рецензенттер', path: '/cabinet/admin/users' },
+            { label: 'Пайдаланушылар', path: '/cabinet/admin/users' },
+            { label: 'Редакция құрамы', path: '/cabinet/admin/editorial-team' },
             { label: 'Профиль', path: '/cabinet/profile' },
             { label: 'Хабарламалар', path: '/cabinet/notifications' },
             { label: 'Хабарлама баптаулары', path: '/cabinet/notification-settings' },
@@ -486,6 +491,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Әкімшілік',
           items: [
             { label: 'Пайдаланушылар', path: '/cabinet/admin/users' },
+            { label: 'Редакция құрамы', path: '/cabinet/admin/editorial-team' },
             { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Журнал баптаулары', path: '/cabinet/admin/journal-settings' },
             { label: 'Рөл өтінімдері', path: '/cabinet/role-requests' },
@@ -574,6 +580,10 @@ const NavIcon = ({ path }: { path?: string }) => {
         <path d="M17 8V14M14 11H20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
     )
+  }
+
+  if (path === '/cabinet/admin/editorial-team') {
+    return <svg {...common}><circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.6"/><circle cx="16" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.6"/><path d="M3.8 18C4.2 14.8 5.6 13.2 8 13.2C10.4 13.2 11.8 14.8 12.2 18M11.8 18C12.2 14.8 13.6 13.2 16 13.2C18.4 13.2 19.8 14.8 20.2 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
   }
 
   if (path === '/cabinet/volumes') {

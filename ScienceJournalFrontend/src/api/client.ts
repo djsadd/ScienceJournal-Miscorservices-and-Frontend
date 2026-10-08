@@ -413,6 +413,14 @@ export const api = {
     }),
   deleteAdminUser: <T>(userId: number | string) =>
     request<T>(`/auth/admin/users/${userId}`, 'DELETE'),
+  getEditorialMembers: <T>(group?: 'collegium' | 'council') =>
+    request<T>('/users/editorial-members', 'GET', { params: { group } }),
+  createEditorialMember: <T>(body: unknown) =>
+    request<T>('/users/editorial-members', 'POST', { json: body }),
+  updateEditorialMember: <T>(memberId: number | string, body: unknown) =>
+    request<T>(`/users/editorial-members/${memberId}`, 'PATCH', { json: body }),
+  deleteEditorialMember: <T>(memberId: number | string) =>
+    request<T>(`/users/editorial-members/${memberId}`, 'DELETE'),
   getJournalSettings: <T>() => request<T>('/publication/journal-settings', 'GET'),
   updateJournalSettings: <T>(body: {
     university_name_ru: string
