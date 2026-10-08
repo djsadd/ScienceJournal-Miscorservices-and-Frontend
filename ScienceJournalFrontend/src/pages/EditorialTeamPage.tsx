@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type DragEvent, type FormEvent } from 'react'
 import { api, ApiError } from '../api/client'
 import ConfirmModal from '../shared/components/ConfirmModal'
 
@@ -35,7 +35,6 @@ const emptyDraft = (group: EditorialGroup): MemberDraft => ({
 })
 
 export default function EditorialTeamPage() {
-  const [group, setGroup] = useState<EditorialGroup>('collegium')
   const [members, setMembers] = useState<EditorialMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -43,6 +42,9 @@ export default function EditorialTeamPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<EditorialMember | null>(null)
+  const [draggedId, setDraggedId] = useState<number | null>(null)
+  const [dragOverId, setDragOverId] = useState<number | null>(null)
+  const [reordering, setReordering] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -58,14 +60,42 @@ export default function EditorialTeamPage() {
 
   useEffect(() => { void load() }, [])
 
-  const visibleMembers = useMemo(() => members.filter((member) => member.group === group), [members, group])
-  const openCreate = () => { setEditingId(null); setDraft(emptyDraft(group)) }
+  const openCreate = () => { setEditingId(null); setDraft({ ...emptyDraft('collegium'), sort_order: members.length }) }
   const openEdit = (member: EditorialMember) => {
     setEditingId(member.id)
     setDraft({ ...member })
   }
   const update = <K extends keyof MemberDraft>(key: K, value: MemberDraft[K]) =>
     setDraft((current) => current ? { ...current, [key]: value } : current)
+
+  const dropMember = async (targetId: number) => {
+    if (draggedId == null || draggedId === targetId || reordering) return
+    const from = members.findIndex((member) => member.id === draggedId)
+    const to = members.findIndex((member) => member.id === targetId)
+    if (from < 0 || to < 0) return
+    const reordered = [...members]
+    const [moved] = reordered.splice(from, 1)
+    reordered.splice(to, 0, moved)
+    const normalized = reordered.map((member, index) => ({ ...member, sort_order: index }))
+    setMembers(normalized)
+    setDraggedId(null)
+    setDragOverId(null)
+    setReordering(true)
+    setError(null)
+    try {
+      await Promise.all(normalized.map((member) => api.updateEditorialMember(member.id, { sort_order: member.sort_order })))
+    } catch (reason) {
+      setError(reason instanceof ApiError ? `Не удалось сохранить порядок (${reason.status})` : 'Не удалось сохранить порядок участников')
+      await load()
+    } finally {
+      setReordering(false)
+    }
+  }
+
+  const startDrag = (event: DragEvent<HTMLButtonElement>, memberId: number) => {
+    event.dataTransfer.effectAllowed = 'move'
+    setDraggedId(memberId)
+  }
 
   const save = async (event: FormEvent) => {
     event.preventDefault()
@@ -113,19 +143,20 @@ export default function EditorialTeamPage() {
     </section>
 
     <section className="panel editorial-team__panel">
-      <div className="editorial-queue__filter editorial-team__tabs" role="tablist" aria-label="Раздел состава редакции">
-        <button type="button" className={`editorial-queue__filter-button ${group === 'collegium' ? 'editorial-queue__filter-button--active' : ''}`} onClick={() => setGroup('collegium')}>Редакционная коллегия: {members.filter((item) => item.group === 'collegium').length}</button>
-        <button type="button" className={`editorial-queue__filter-button ${group === 'council' ? 'editorial-queue__filter-button--active' : ''}`} onClick={() => setGroup('council')}>Редакционный совет: {members.filter((item) => item.group === 'council').length}</button>
+      <div className="editorial-team__summary">
+        <span className="editorial-team__membership editorial-team__membership--collegium">Члены редколлегии: {members.filter((item) => item.group === 'collegium').length}</span>
+        <span className="editorial-team__membership editorial-team__membership--council">Члены редсовета: {members.filter((item) => item.group === 'council').length}</span>
+        <small>{reordering ? 'Сохраняем порядок…' : 'Перетащите строки, чтобы изменить порядок'}</small>
       </div>
       {error ? <div className="table__empty editorial-team__error">{error}</div> : null}
       {loading ? <div className="table__empty">Загрузка состава…</div> : null}
-      {!loading && visibleMembers.length === 0 ? <div className="editorial-team__empty"><strong>В этом разделе пока никого нет</strong><span>Добавьте первого участника — аккаунт на сайте для этого не нужен.</span><button className="button button--ghost" type="button" onClick={openCreate}>Добавить участника</button></div> : null}
-      {!loading && visibleMembers.length > 0 ? <div className="editorial-team__table-wrap"><table className="editorial-team__table"><thead><tr><th>ФИО</th><th>Статус</th><th>Место работы</th><th>Гражданство</th><th>Индекс Хирша</th><th>Идентификаторы</th><th /></tr></thead><tbody>{visibleMembers.map((member) => <tr key={member.id}><td><strong>{member.full_name}</strong></td><td>{member.status || '—'}</td><td>{member.workplace || '—'}</td><td>{member.citizenship || '—'}</td><td><span>WoS: {member.h_index_wos ?? '—'}</span><span>Scopus: {member.h_index_scopus ?? '—'}</span></td><td><span>ORCID: {member.orcid || '—'}</span><span>Scopus: {member.scopus_author_id || '—'}</span><span>Researcher ID: {member.researcher_id || '—'}</span></td><td><div className="editorial-team__actions"><button className="button button--ghost button--compact" type="button" onClick={() => openEdit(member)}>Изменить</button><button className="editorial-team__delete" type="button" onClick={() => setDeleteTarget(member)} aria-label={`Удалить ${member.full_name}`}>×</button></div></td></tr>)}</tbody></table></div> : null}
+      {!loading && members.length === 0 ? <div className="editorial-team__empty"><strong>В составе редакции пока никого нет</strong><span>Добавьте первого участника — аккаунт на сайте для этого не нужен.</span><button className="button button--ghost" type="button" onClick={openCreate}>Добавить участника</button></div> : null}
+      {!loading && members.length > 0 ? <div className="editorial-team__table-wrap"><table className="editorial-team__table"><thead><tr><th className="editorial-team__drag-column" /><th>ФИО</th><th>Состав</th><th>Статус</th><th>Место работы</th><th>Гражданство</th><th>Индекс Хирша</th><th>Идентификаторы</th><th /></tr></thead><tbody>{members.map((member) => <tr key={member.id} className={`${draggedId === member.id ? 'is-dragging' : ''} ${dragOverId === member.id ? 'is-drag-over' : ''}`} onDragOver={(event) => { event.preventDefault(); if (draggedId !== member.id) setDragOverId(member.id) }} onDragLeave={() => setDragOverId((current) => current === member.id ? null : current)} onDrop={(event) => { event.preventDefault(); void dropMember(member.id) }}><td><button className="editorial-team__drag" type="button" draggable={!reordering} onDragStart={(event) => startDrag(event, member.id)} onDragEnd={() => { setDraggedId(null); setDragOverId(null) }} aria-label={`Изменить порядок: ${member.full_name}`} title="Перетащить">⠿</button></td><td><strong>{member.full_name}</strong></td><td><span className={`editorial-team__membership editorial-team__membership--${member.group}`}>{member.group === 'collegium' ? 'Член редколлегии' : 'Член редсовета'}</span></td><td>{member.status || '—'}</td><td>{member.workplace || '—'}</td><td>{member.citizenship || '—'}</td><td><span>WoS: {member.h_index_wos ?? '—'}</span><span>Scopus: {member.h_index_scopus ?? '—'}</span></td><td><span>ORCID: {member.orcid || '—'}</span><span>Scopus: {member.scopus_author_id || '—'}</span><span>Researcher ID: {member.researcher_id || '—'}</span></td><td><div className="editorial-team__actions"><button className="editorial-team__icon-button" type="button" onClick={() => openEdit(member)} aria-label={`Редактировать ${member.full_name}`} title="Редактировать"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg></button><button className="editorial-team__icon-button editorial-team__icon-button--danger" type="button" onClick={() => setDeleteTarget(member)} aria-label={`Удалить ${member.full_name}`} title="Удалить"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button></div></td></tr>)}</tbody></table></div> : null}
     </section>
 
     {draft ? <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setDraft(null) }}><form className="modal modal--wide editorial-team-modal" onSubmit={save}><header className="modal__header"><div><p className="eyebrow">{editingId ? 'Редактирование' : 'Новая запись'}</p><h2 className="modal__title">{editingId ? draft.full_name || 'Участник редакции' : 'Добавить участника'}</h2></div><button className="modal__close" type="button" onClick={() => setDraft(null)} aria-label="Закрыть">×</button></header><div className="modal__body editorial-team-modal__body">
-      <div className="editorial-team-modal__group"><button type="button" className={draft.group === 'collegium' ? 'is-active' : ''} onClick={() => update('group', 'collegium')}>Редакционная коллегия</button><button type="button" className={draft.group === 'council' ? 'is-active' : ''} onClick={() => update('group', 'council')}>Редакционный совет</button></div>
-      <div className="form-grid"><label className="form-label editorial-team-modal__wide">ФИО *<input className="text-input" autoFocus required value={draft.full_name} onChange={(e) => update('full_name', e.target.value)} placeholder="Фамилия Имя Отчество" /></label><label className="form-label">Статус<input className="text-input" value={draft.status || ''} onChange={(e) => update('status', e.target.value)} placeholder="Главный редактор, профессор…" /></label><label className="form-label">Гражданство<input className="text-input" value={draft.citizenship || ''} onChange={(e) => update('citizenship', e.target.value)} placeholder="Казахстан" /></label><label className="form-label editorial-team-modal__wide">Место работы<input className="text-input" value={draft.workplace || ''} onChange={(e) => update('workplace', e.target.value)} placeholder="Университет, организация" /></label><label className="form-label">Индекс Хирша (WoS)<input className="text-input" type="number" min="0" value={draft.h_index_wos ?? ''} onChange={(e) => update('h_index_wos', e.target.value === '' ? null : Number(e.target.value))} /></label><label className="form-label">Индекс Хирша (Scopus)<input className="text-input" type="number" min="0" value={draft.h_index_scopus ?? ''} onChange={(e) => update('h_index_scopus', e.target.value === '' ? null : Number(e.target.value))} /></label><label className="form-label">ORCID<input className="text-input" value={draft.orcid || ''} onChange={(e) => update('orcid', e.target.value)} placeholder="0000-0000-0000-0000" /></label><label className="form-label">Scopus Author ID<input className="text-input" value={draft.scopus_author_id || ''} onChange={(e) => update('scopus_author_id', e.target.value)} /></label><label className="form-label">Web of Science / Researcher ID<input className="text-input" value={draft.researcher_id || ''} onChange={(e) => update('researcher_id', e.target.value)} /></label><label className="form-label">Порядок отображения<input className="text-input" type="number" min="0" value={draft.sort_order} onChange={(e) => update('sort_order', Number(e.target.value))} /></label></div>
+      <div><span className="form-label">Состав редакции</span><div className="editorial-team-modal__group"><button type="button" className={draft.group === 'collegium' ? 'is-active' : ''} onClick={() => update('group', 'collegium')}>Член редколлегии</button><button type="button" className={draft.group === 'council' ? 'is-active' : ''} onClick={() => update('group', 'council')}>Член редсовета</button></div></div>
+      <div className="form-grid"><label className="form-label editorial-team-modal__wide">ФИО *<input className="text-input" autoFocus required value={draft.full_name} onChange={(e) => update('full_name', e.target.value)} placeholder="Фамилия Имя Отчество" /></label><label className="form-label">Статус<input className="text-input" value={draft.status || ''} onChange={(e) => update('status', e.target.value)} placeholder="Главный редактор, профессор…" /></label><label className="form-label">Гражданство<input className="text-input" value={draft.citizenship || ''} onChange={(e) => update('citizenship', e.target.value)} placeholder="Казахстан" /></label><label className="form-label editorial-team-modal__wide">Место работы<input className="text-input" value={draft.workplace || ''} onChange={(e) => update('workplace', e.target.value)} placeholder="Университет, организация" /></label><label className="form-label">Индекс Хирша (WoS)<input className="text-input" type="number" min="0" value={draft.h_index_wos ?? ''} onChange={(e) => update('h_index_wos', e.target.value === '' ? null : Number(e.target.value))} /></label><label className="form-label">Индекс Хирша (Scopus)<input className="text-input" type="number" min="0" value={draft.h_index_scopus ?? ''} onChange={(e) => update('h_index_scopus', e.target.value === '' ? null : Number(e.target.value))} /></label><label className="form-label">ORCID<input className="text-input" value={draft.orcid || ''} onChange={(e) => update('orcid', e.target.value)} placeholder="0000-0000-0000-0000" /></label><label className="form-label">Scopus Author ID<input className="text-input" value={draft.scopus_author_id || ''} onChange={(e) => update('scopus_author_id', e.target.value)} /></label><label className="form-label editorial-team-modal__wide">Web of Science / Researcher ID<input className="text-input" value={draft.researcher_id || ''} onChange={(e) => update('researcher_id', e.target.value)} /></label></div>
     </div><footer className="modal__footer"><button className="button button--ghost" type="button" disabled={saving} onClick={() => setDraft(null)}>Отмена</button><button className="button button--primary" type="submit" disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button></footer></form></div> : null}
     <ConfirmModal open={Boolean(deleteTarget)} title="Удалить участника?" message={deleteTarget ? `${deleteTarget.full_name} будет удалён из состава редакции.` : ''} confirmText={saving ? 'Удаление…' : 'Удалить'} cancelText="Отмена" onCancel={() => !saving && setDeleteTarget(null)} onConfirm={() => { if (!saving) void remove() }} />
   </div>
