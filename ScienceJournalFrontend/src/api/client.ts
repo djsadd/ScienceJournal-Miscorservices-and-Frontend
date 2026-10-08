@@ -322,6 +322,8 @@ export const api = {
     article_type: 'original' | 'review'
     article_language: string
     doi: string | null
+    created_at?: string | null
+    updated_at?: string | null
   }) => request<T>(`/articles/editor/${id}/metadata`, 'PATCH', { json: body }),
   getEditorArticleVersion: <T>(articleId: string | number, versionId: string | number) =>
     request<T>(`/articles/editor/${articleId}/versions/${versionId}`, 'GET'),

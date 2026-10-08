@@ -117,6 +117,8 @@ export default function EditorArticleDetailPage() {
   const [metadataStatus, setMetadataStatus] = useState('')
   const [metadataType, setMetadataType] = useState<'original' | 'review'>('original')
   const [metadataLanguage, setMetadataLanguage] = useState('ru')
+  const [metadataCreatedAt, setMetadataCreatedAt] = useState('')
+  const [metadataUpdatedAt, setMetadataUpdatedAt] = useState('')
   const [metadataSaving, setMetadataSaving] = useState(false)
   const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadataSaved, setMetadataSaved] = useState(false)
@@ -126,8 +128,10 @@ export default function EditorArticleDetailPage() {
     setMetadataStatus(data.status)
     setMetadataType(data.article_type === 'review' ? 'review' : 'original')
     setMetadataLanguage(data.article_language || 'ru')
+    setMetadataCreatedAt(data.created_at ? data.created_at.slice(0, 16) : '')
+    setMetadataUpdatedAt(data.updated_at ? data.updated_at.slice(0, 16) : '')
     setMetadataSaved(false)
-  }, [data?.id, data?.doi, data?.status, data?.article_type, data?.article_language])
+  }, [data?.id, data?.doi, data?.status, data?.article_type, data?.article_language, data?.created_at, data?.updated_at])
 
   const handleSaveMetadata = async () => {
     if (!data || !metadataStatus || !metadataLanguage) return
@@ -140,6 +144,8 @@ export default function EditorArticleDetailPage() {
         article_type: metadataType,
         article_language: metadataLanguage,
         doi: doiDraft.trim() || null,
+        created_at: metadataCreatedAt || null,
+        updated_at: metadataUpdatedAt || null,
       })
       setData(updated)
       setMetadataSaved(true)
@@ -896,6 +902,14 @@ export default function EditorArticleDetailPage() {
                     <label className="metadata-form__field">
                       <span>DOI</span>
                       <input className="text-input" value={doiDraft} onChange={(e) => { setDoiDraft(e.target.value); setMetadataSaved(false) }} placeholder="10.xxxx/xxxxx" />
+                    </label>
+                    <label className="metadata-form__field">
+                      <span>Дата загрузки / поступления</span>
+                      <input className="text-input" type="datetime-local" value={metadataCreatedAt} onChange={(e) => { setMetadataCreatedAt(e.target.value); setMetadataSaved(false) }} />
+                    </label>
+                    <label className="metadata-form__field">
+                      <span>Дата последнего изменения</span>
+                      <input className="text-input" type="datetime-local" value={metadataUpdatedAt} onChange={(e) => { setMetadataUpdatedAt(e.target.value); setMetadataSaved(false) }} />
                     </label>
                   </div>
                   <div className="metadata-form__actions">

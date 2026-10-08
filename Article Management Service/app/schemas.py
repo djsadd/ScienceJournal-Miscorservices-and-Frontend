@@ -32,6 +32,8 @@ class ArticleMetadataUpdate(BaseModel):
     article_type: ArticleType
     article_language: str = Field(..., min_length=2, max_length=10)
     doi: Optional[str] = Field(default=None, max_length=255)
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class KeywordCreate(BaseModel):

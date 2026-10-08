@@ -572,6 +572,10 @@ def update_article_metadata_for_editor(
     article.article_language = payload.article_language.strip().lower()
     normalized_doi = payload.doi.strip() if payload.doi else None
     article.doi = normalized_doi or None
+    if payload.created_at is not None:
+        article.created_at = payload.created_at
+    if payload.updated_at is not None:
+        article.updated_at = payload.updated_at
     if payload.status == models.ArticleStatus.editor_check:
         article.assigned_editor_id = int(current_user["user_id"])
 
