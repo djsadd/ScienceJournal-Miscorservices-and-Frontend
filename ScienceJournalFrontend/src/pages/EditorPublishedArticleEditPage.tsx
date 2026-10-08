@@ -108,6 +108,26 @@ interface StoredFileMeta {
 
 const RequiredMark = () => <span className="required-star" aria-hidden="true">{'\u00a0'}*</span>
 
+function IconButton({ label, icon, onClick }: { label: string; icon: 'edit' | 'trash'; onClick: () => void }) {
+  return (
+    <button type="button" className={`icon-button icon-button--${icon}`} onClick={onClick} aria-label={label} title={label}>
+      {icon === 'edit' ? (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5 16.9V19H7.1L17.3 8.8L15.2 6.7L5 16.9Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+          <path d="M14.5 7.4L16.1 5.8C16.55 5.35 17.28 5.35 17.73 5.8L18.2 6.27C18.65 6.72 18.65 7.45 18.2 7.9L16.6 9.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M8 9V18M12 9V18M16 9V18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M5 6H19" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M9 6L9.7 4.75H14.3L15 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M7 6L7.6 20H16.4L17 6" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
 const normalizeKeywordValue = (value: string) => value.trim()
 const articleTypeOptions: ArticleType[] = ['original', 'review']
 const articleStatusOptions = ['draft', 'submitted', 'editor_check', 'reviewer_check', 'under_review', 'review_completed', 'sent_for_revision', 'accepted', 'rejected', 'published', 'withdrawn'] as const
@@ -210,6 +230,8 @@ export default function EditorPublishedArticleEditPage() {
   const [selectedKeywords, setSelectedKeywords] = useState<Keyword[]>([])
   const [kwModalOpen, setKwModalOpen] = useState(false)
   const [newKeyword, setNewKeyword] = useState<Keyword>({ ru: '', kz: '', en: '' })
+  const [editingKeywordIndex, setEditingKeywordIndex] = useState<number | null>(null)
+  const [viewKeyword, setViewKeyword] = useState<Keyword | null>(null)
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [authorForm, setAuthorForm] = useState<AuthorForm>(createEmptyAuthorForm())
   const [authorList, setAuthorList] = useState<AuthorForm[]>([])
@@ -551,24 +573,46 @@ export default function EditorPublishedArticleEditPage() {
     setSelectedKeywords((prev) => prev.filter((s) => (s.id ?? s.ru) !== (kw.id ?? kw.ru)))
   }
 
-  const updateKeywordField = (index: number, field: keyof Omit<Keyword, 'id'>, value: string) => {
-    setSelectedKeywords((prev) =>
-      prev.map((keyword, keywordIndex) => (keywordIndex === index ? { ...keyword, [field]: value } : keyword)),
-    )
+  const openCreateKeywordModal = () => {
+    setEditingKeywordIndex(null)
+    setNewKeyword({ ru: '', kz: '', en: '' })
+    setKwModalOpen(true)
+  }
+
+  const openEditKeywordModal = (keyword: Keyword, index: number) => {
+    setEditingKeywordIndex(index)
+    setNewKeyword({ ...keyword })
+    setKwModalOpen(true)
+  }
+
+  const closeKeywordModal = () => {
+    setKwModalOpen(false)
+    setEditingKeywordIndex(null)
+    setNewKeyword({ ru: '', kz: '', en: '' })
   }
 
   const saveNewKeyword = async () => {
     if (!newKeyword.ru.trim() || !newKeyword.kz.trim() || !newKeyword.en.trim()) return
+    const normalized: Keyword = {
+      id: newKeyword.id,
+      ru: newKeyword.ru.trim(),
+      kz: newKeyword.kz.trim(),
+      en: newKeyword.en.trim(),
+    }
+    if (editingKeywordIndex !== null) {
+      setSelectedKeywords((prev) => prev.map((keyword, index) => (index === editingKeywordIndex ? normalized : keyword)))
+      closeKeywordModal()
+      return
+    }
     try {
       const created = await api.post<ApiKeyword>('/articles/keywords', {
-        title_ru: newKeyword.ru.trim(),
-        title_kz: newKeyword.kz.trim(),
-        title_en: newKeyword.en.trim(),
+        title_ru: normalized.ru,
+        title_kz: normalized.kz,
+        title_en: normalized.en,
       })
       const mapped: Keyword = { id: created.id, ru: created.title_ru, kz: created.title_kz, en: created.title_en }
       addKeyword(mapped)
-      setNewKeyword({ ru: '', kz: '', en: '' })
-      setKwModalOpen(false)
+      closeKeywordModal()
     } catch (err) {
       console.error('Не удалось создать ключевое слово', err)
     }
@@ -834,41 +878,16 @@ export default function EditorPublishedArticleEditPage() {
         {canEdit ? (
           <>
             {selectedKeywords.length > 0 ? (
-              <div className="manuscript-keyword-list">
+              <div className="editor-keyword-list">
                 {selectedKeywords.map((kw, index) => (
-                  <div key={`${kw.id ?? 'new'}-${index}`} className="manuscript-keyword-editor">
-                    <div className="manuscript-keyword-editor__head">
-                      <span>Ключевое слово {index + 1}</span>
-                      <button type="button" onClick={() => removeKeyword(kw)} aria-label="Удалить ключевое слово">×</button>
-                    </div>
-                    <div className="manuscript-keyword-editor__fields">
-                      <div className="form-field" style={{ marginBottom: 0 }}>
-                        <label className="form-label">RU<RequiredMark /></label>
-                        <input
-                          className={`text-input ${fieldErrors.keywords ? 'text-input--error' : ''}`}
-                          value={kw.ru}
-                          onChange={(e) => updateKeywordField(index, 'ru', e.target.value)}
-                          placeholder="Ключевое слово на русском"
-                        />
-                      </div>
-                      <div className="form-field" style={{ marginBottom: 0 }}>
-                        <label className="form-label">KZ<RequiredMark /></label>
-                        <input
-                          className={`text-input ${fieldErrors.keywords ? 'text-input--error' : ''}`}
-                          value={kw.kz}
-                          onChange={(e) => updateKeywordField(index, 'kz', e.target.value)}
-                          placeholder="Қазақ тіліндегі кілт сөз"
-                        />
-                      </div>
-                      <div className="form-field" style={{ marginBottom: 0 }}>
-                        <label className="form-label">EN<RequiredMark /></label>
-                        <input
-                          className={`text-input ${fieldErrors.keywords ? 'text-input--error' : ''}`}
-                          value={kw.en}
-                          onChange={(e) => updateKeywordField(index, 'en', e.target.value)}
-                          placeholder="Keyword in English"
-                        />
-                      </div>
+                  <div key={`${kw.id ?? 'new'}-${index}`} className="editor-keyword-row">
+                    <button type="button" className="editor-keyword-row__word" onClick={() => setViewKeyword(kw)} aria-label={`Показать переводы: ${kw.ru}`}>
+                      <span>{kw.ru}</span>
+                      <small>Показать переводы</small>
+                    </button>
+                    <div className="row-icon-actions">
+                      <IconButton label="Редактировать ключевое слово" icon="edit" onClick={() => openEditKeywordModal(kw, index)} />
+                      <IconButton label="Удалить ключевое слово" icon="trash" onClick={() => removeKeyword(kw)} />
                     </div>
                   </div>
                 ))}
@@ -876,8 +895,9 @@ export default function EditorPublishedArticleEditPage() {
             ) : (
               <div className="table__empty">Ключевые слова не выбраны.</div>
             )}
-            <button type="button" className="button button--ghost button--compact" onClick={() => setKwModalOpen(true)}>
-              Добавить ключевое слово
+            <button className="manuscript-author-add" type="button" onClick={openCreateKeywordModal}>
+              <span aria-hidden="true">+</span>
+              <b>Добавить ключевое слово</b>
             </button>
             {fieldErrors.keywords ? <span className="form-error-text">{fieldErrors.keywords}</span> : null}
           </>
@@ -1230,12 +1250,28 @@ export default function EditorPublishedArticleEditPage() {
         </div>
       )}
 
+      {viewKeyword ? (
+        <div className="modal-backdrop" onClick={() => setViewKeyword(null)}>
+          <div className="modal editor-keyword-view" role="dialog" aria-modal="true" aria-labelledby="keyword-view-title" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h3 id="keyword-view-title">Переводы ключевого слова</h3>
+              <button className="modal__close" onClick={() => setViewKeyword(null)} aria-label="Закрыть">×</button>
+            </div>
+            <div className="modal__body editor-keyword-view__translations">
+              <div><span>RU</span><strong>{viewKeyword.ru || '—'}</strong></div>
+              <div><span>KZ</span><strong>{viewKeyword.kz || '—'}</strong></div>
+              <div><span>EN</span><strong>{viewKeyword.en || '—'}</strong></div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {kwModalOpen ? (
-        <div className="modal-backdrop" onClick={() => setKwModalOpen(false)}>
+        <div className="modal-backdrop" onClick={closeKeywordModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Новое ключевое слово</h3>
-              <button className="modal__close" onClick={() => setKwModalOpen(false)} aria-label="Закрыть">×</button>
+              <h3>{editingKeywordIndex === null ? 'Новое ключевое слово' : 'Редактировать ключевое слово'}</h3>
+              <button className="modal__close" onClick={closeKeywordModal} aria-label="Закрыть">×</button>
             </div>
             <div className="modal__body">
               <div className="form-field">
@@ -1267,11 +1303,11 @@ export default function EditorPublishedArticleEditPage() {
               </div>
             </div>
             <div className="modal__footer">
-              <button className="button button--ghost" type="button" onClick={() => setKwModalOpen(false)}>
+              <button className="button button--ghost" type="button" onClick={closeKeywordModal}>
                 Отмена
               </button>
               <button className="button button--primary" type="button" onClick={saveNewKeyword} disabled={!newKeyword.ru.trim() || !newKeyword.kz.trim() || !newKeyword.en.trim()}>
-                Добавить
+                {editingKeywordIndex === null ? 'Добавить' : 'Сохранить'}
               </button>
             </div>
           </div>
