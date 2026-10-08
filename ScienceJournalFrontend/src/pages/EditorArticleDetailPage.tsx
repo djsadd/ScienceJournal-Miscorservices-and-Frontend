@@ -384,7 +384,7 @@ export default function EditorArticleDetailPage() {
     const ids = urls.map((url) => url.match(/\/files\/([^/]+)\//)?.[1]).filter((value): value is string => Boolean(value))
     if (!ids.length) return
     Promise.all(ids.map((fileId) => api.get<FileOut>(`/files/${fileId}`).catch(() => null)))
-      .then((items) => setStoredFileMeta(Object.fromEntries(items.filter((item): item is FileOut => Boolean(item)).map((item) => [item.id, item]))))
+      .then((items) => setStoredFileMeta((current) => ({ ...current, ...Object.fromEntries(items.filter((item): item is FileOut => Boolean(item)).map((item) => [item.id, item])) })))
   }, [data?.id, data?.manuscript_file_url, data?.antiplagiarism_file_url, data?.author_info_file_url, data?.cover_letter_file_url])
 
   const getStoredFileMeta = (url?: string | null) => {
@@ -462,6 +462,12 @@ export default function EditorArticleDetailPage() {
   const [layoutRecords, setLayoutRecords] = useState<LayoutRecordOut[]>([])
   const [layoutRecordsLoading, setLayoutRecordsLoading] = useState(false)
   const [layoutRecordsError, setLayoutRecordsError] = useState<string | null>(null)
+  useEffect(() => {
+    const ids = layoutRecords.map((record) => record.file_id).filter((value): value is string => Boolean(value))
+    if (!ids.length) return
+    Promise.all(ids.map((fileId) => api.get<FileOut>(`/files/${fileId}`).catch(() => null)))
+      .then((items) => setStoredFileMeta((current) => ({ ...current, ...Object.fromEntries(items.filter((item): item is FileOut => Boolean(item)).map((item) => [item.id, item])) })))
+  }, [layoutRecords])
   // Author details modal state
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorOut | null>(null)
@@ -1117,7 +1123,24 @@ export default function EditorArticleDetailPage() {
                 <p className="form-hint" style={{ marginTop: 0 }}>Поддерживаемые форматы: PDF, DOC, DOCX, ZIP. Максимум зависит от сервера.</p>
                 {layoutUploadError && <div className="alert error" style={{ marginBottom: '0.5rem' }}>Ошибка: {layoutUploadError}</div>}
                 {layoutUploadSuccess && <div className="alert" style={{ marginBottom: '0.5rem' }}>{layoutUploadSuccess}</div>}
+                {layoutRecords.length > 0 && <div className="manuscript-file-grid manuscript-layout-files">
+                  {layoutRecords.map((record, index) => {
+                    const meta = record.file_id ? storedFileMeta[record.file_id] : undefined
+                    const name = meta?.original_name || `Вёрстка ${index + 1}`
+                    const kind = getFileKind(name, meta?.content_type)
+                    const href = toApiFilesUrl(record.file_url || (record.file_id ? `/files/${record.file_id}/download` : undefined)) || '#'
+                    return <div className="manuscript-file-slot" key={record.id}>
+                      <div className="manuscript-file-slot__heading"><span>Вёрстка {layoutRecords.length > 1 ? index + 1 : ''}</span><small>Загружена</small></div>
+                      <div className="manuscript-file-card">
+                        <span className={`manuscript-file-card__type manuscript-file-card__type--${kind.toLowerCase()}`}>{kind}</span>
+                        <span className="manuscript-file-card__info"><strong title={name}>{name}</strong><small>{getFileSize(meta?.size_bytes) || 'Файл вёрстки'}</small></span>
+                        <a href={href} target="_blank" rel="noreferrer">Открыть</a>
+                      </div>
+                    </div>
+                  })}
+                </div>}
                 <div
+                  className={`manuscript-file-dropzone manuscript-layout-dropzone ${layoutDragActive ? 'is-active' : ''}`}
                   onDragOver={(e) => { e.preventDefault(); setLayoutDragActive(true) }}
                   onDragLeave={(e) => { e.preventDefault(); setLayoutDragActive(false) }}
                   onDrop={(e) => {
@@ -1128,17 +1151,10 @@ export default function EditorArticleDetailPage() {
                     const f = e.dataTransfer.files && e.dataTransfer.files[0] ? e.dataTransfer.files[0] : null
                     if (f) setLayoutFile(f)
                   }}
-                  style={{
-                    border: '2px dashed ' + (layoutDragActive ? '#4a90e2' : '#ccc'),
-                    borderRadius: 8,
-                    padding: '1rem',
-                    background: layoutDragActive ? 'rgba(74,144,226,0.06)' : '#fafafa',
-                    transition: 'all 0.15s ease',
-                    marginBottom: '0.75rem'
-                  }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                     <input
+                      className="manuscript-file-slot__input"
                       id="layout-file-input"
                       type="file"
                       accept="application/pdf,.pdf,.doc,.docx,.zip"
@@ -1149,8 +1165,7 @@ export default function EditorArticleDetailPage() {
                         setLayoutFile(f)
                       }}
                     />
-                    <label htmlFor="layout-file-input" className="button button--ghost button--compact">Выбрать файл</label>
-                    <span style={{ color: '#666' }}>или перетащите сюда</span>
+                    <label htmlFor="layout-file-input" className="manuscript-layout-dropzone__label"><span>+</span><strong>Добавить новую вёрстку</strong><small>Перетащите сюда или нажмите для выбора</small></label>
                   </div>
                   {layoutFile && (
                     <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
