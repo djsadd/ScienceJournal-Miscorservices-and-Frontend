@@ -758,18 +758,6 @@ export default function AdminUsersPage() {
         </section>
       ) : null}
 
-      {stats ? (
-        <section className="panel admin-users__roles">
-          <div className="actions">
-            {Object.entries(stats.by_role).map(([role, count]) => (
-              <span key={role} className="pill">
-                {roleText[role as AdminRole] ?? role}: {count}
-              </span>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <section className="panel">
         <div className="editorial-queue__filter admin-users__role-filter" aria-label={t.allRoles} role="group">
           <button
@@ -778,7 +766,7 @@ export default function AdminUsersPage() {
             aria-pressed={roleFilter === 'all'}
             onClick={() => setRoleFilter('all')}
           >
-            {t.allRoles}
+            {t.allRoles}{stats ? `: ${stats.total}` : ''}
           </button>
           {roleOptions.map((role) => (
             <button
@@ -788,7 +776,7 @@ export default function AdminUsersPage() {
               aria-pressed={roleFilter === role}
               onClick={() => setRoleFilter(role)}
             >
-              {roleText[role]}
+              {roleText[role]}{stats ? `: ${stats.by_role[role] ?? 0}` : ''}
             </button>
           ))}
         </div>

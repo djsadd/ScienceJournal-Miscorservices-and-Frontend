@@ -6540,10 +6540,6 @@
   margin-bottom: 0.8rem;
 }
 
-.admin-users__roles {
-  margin-bottom: 0.8rem;
-}
-
 .admin-users__filters {
   display: grid;
   grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr);
