@@ -686,6 +686,15 @@ async def update_reviewer_profile_as_admin(
     return profile
 
 
+@router.get("/editorial-members/public", response_model=list[schemas.EditorialMemberOut])
+async def list_public_editorial_members(db: Session = Depends(get_db)):
+    return db.query(models.EditorialMember).order_by(
+        models.EditorialMember.group,
+        models.EditorialMember.sort_order,
+        models.EditorialMember.full_name,
+    ).all()
+
+
 @router.get("/editorial-members", response_model=list[schemas.EditorialMemberOut])
 async def list_editorial_members(
     group: str | None = None,

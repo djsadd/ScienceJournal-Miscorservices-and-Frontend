@@ -415,6 +415,7 @@ export const api = {
     request<T>(`/auth/admin/users/${userId}`, 'DELETE'),
   getEditorialMembers: <T>(group?: 'collegium' | 'council') =>
     request<T>('/users/editorial-members', 'GET', { params: { group } }),
+  getPublicEditorialMembers: <T>() => request<T>('/users/editorial-members/public', 'GET'),
   createEditorialMember: <T>(body: unknown) =>
     request<T>('/users/editorial-members', 'POST', { json: body }),
   updateEditorialMember: <T>(memberId: number | string, body: unknown) =>

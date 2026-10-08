@@ -6,6 +6,11 @@ from app.security import get_current_user
 router = APIRouter(prefix="/users")
 
 
+@router.get("/editorial-members/public")
+async def public_editorial_members(request: Request):
+    return await proxy_request(SERVICE_URLS["users"], request)
+
+
 @router.api_route(
     "/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

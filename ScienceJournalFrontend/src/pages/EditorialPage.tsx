@@ -1,117 +1,38 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../api/client'
 import { useLanguage } from '../shared/LanguageContext'
 
-type Filter = 'board' | 'council'
+type Group = 'collegium' | 'council'
+type Member = { id:number; group:Group; full_name:string; status?:string|null; workplace?:string|null; citizenship?:string|null; h_index_wos?:number|null; h_index_scopus?:number|null; orcid?:string|null; scopus_author_id?:string|null; researcher_id?:string|null }
+
+const copy = {
+  ru:{eyebrow:'Редакция',title:'Состав редакции',subtitle:'Редакционная коллегия и редакционный совет журнала.',collegium:'Редакционная коллегия',council:'Редакционный совет',collegiumMember:'Член редколлегии',councilMember:'Член редсовета',empty:'Состав пока не опубликован',loading:'Загрузка состава…',workplace:'Место работы',citizenship:'Гражданство',hIndex:'Индекс Хирша',ids:'Научные идентификаторы'},
+  en:{eyebrow:'Editorial',title:'Editorial team',subtitle:'The journal’s editorial board and editorial council.',collegium:'Editorial board',council:'Editorial council',collegiumMember:'Editorial board member',councilMember:'Editorial council member',empty:'The team has not been published yet',loading:'Loading editorial team…',workplace:'Affiliation',citizenship:'Citizenship',hIndex:'H-index',ids:'Research identifiers'},
+  kz:{eyebrow:'Редакция',title:'Редакция құрамы',subtitle:'Журналдың редакциялық алқасы мен редакциялық кеңесі.',collegium:'Редакциялық алқа',council:'Редакциялық кеңес',collegiumMember:'Редакциялық алқа мүшесі',councilMember:'Редакциялық кеңес мүшесі',empty:'Құрам әлі жарияланбаған',loading:'Құрам жүктелуде…',workplace:'Жұмыс орны',citizenship:'Азаматтығы',hIndex:'Хирш индексі',ids:'Ғылыми идентификаторлар'},
+} as const
 
 export function EditorialPage() {
   const { lang } = useLanguage()
-  const t = {
-    ru: {
-      eyebrow: 'редакция',
-      title: 'Редакционная коллегия и совет',
-      subtitle: 'Состав редколлегии и редсовета журнала «Известия университета Туран-Астана».',
-      boardBtn: 'Редакционная коллегия',
-      councilBtn: 'Редакционный совет',
-      secretary: 'Ответственный секретарь: Нурманов А. М.',
-      councilTitle: 'Редакционный совет',
-      councilText: 'Состав редсовета публикуется в ближайшем обновлении.',
-    },
-    en: {
-      eyebrow: 'editorial',
-      title: 'Editorial board and council',
-      subtitle: 'Members of the editorial board and council of “Turan-Astana University news”.',
-      boardBtn: 'Editorial board',
-      councilBtn: 'Editorial council',
-      secretary: 'Managing secretary: Nurmanov A. M.',
-      councilTitle: 'Editorial council',
-      councilText: 'Council members will be published in the next update.',
-    },
-    kz: {
-      eyebrow: 'редакция',
-      title: 'Редакциялық алқа және кеңес',
-      subtitle: '«Туран-Астана университетінің хабарлары» редакциялық алқасы мен кеңесі.',
-      boardBtn: 'Редакциялық алқа',
-      councilBtn: 'Редакциялық кеңес',
-      secretary: 'Жауапты хатшы: Нурманов А. М.',
-      councilTitle: 'Редакциялық кеңес',
-      councilText: 'Кеңес құрамы келесі жаңартуда жарияланады.',
-    },
-  }[lang]
-  const [filter, setFilter] = useState<Filter>('board')
+  const locale = lang === 'en' || lang === 'kz' ? lang : 'ru'
+  const t = copy[locale]
+  const [members,setMembers] = useState<Member[]>([])
+  const [loading,setLoading] = useState(true)
 
-  const board = [
-    { name: 'Джапарова Г. А.', role: 'Главный редактор', note: 'к. э. н., профессор' },
-    { name: 'Смоилов С. Ж.', role: 'Заместитель главного редактора', note: 'PhD', link: { href: 'https://www.scopus.com/authid/detail.uri?authorId=56530669600&origin=resultslist#', label: 'Scopus' } },
-    { name: 'Алиев У. Ж.', role: 'Редакционная коллегия', note: 'д. э. н., профессор (Казахстан)', link: { href: 'https://www.scopus.com/authid/detail.uri?authorId=57949136300&origin=recordpage', label: 'Scopus' } },
-    { name: 'Аубакиров Т. О.', role: 'Редакционная коллегия', note: 'д. т. н., профессор (Казахстан)' },
-    { name: 'Тасбулатов А. Б.', role: 'Редакционная коллегия', note: 'д. и. н., профессор (Казахстан)' },
-    { name: 'Даубаев К. Ж.', role: 'Редакционная коллегия', note: 'д. э. н., профессор (Казахстан)', link: { href: 'https://www.scopus.com/authid/detail.uri?authorId=57197799392&origin=resultslist', label: 'Scopus' } },
-    { name: 'Попова М. С.', role: 'Редакционная коллегия', note: 'PhD, профессор (Болгария)', link: { href: 'https://www.scopus.com/authid/detail.uri?authorId=57542934300&origin=resultslist', label: 'Scopus' } },
-    { name: 'Тунч М. Д.', role: 'Редакционная коллегия', note: 'PhD, профессор (Турция)', link: { href: 'https://scholar.google.com.tr/citations?user=znyiDk4AAAAJ&hl=tr', label: 'Google Scholar' } },
-    { name: 'Антонио А. М.', role: 'Редакционная коллегия', note: 'PhD, профессор (Испания)', link: { href: 'https://www.scopus.com/authid/detail.uri?authorId=55583872800', label: 'Scopus' } },
-    { name: 'Ильина И. Н.', role: 'Редакционная коллегия', note: 'д. э. н., профессор (Россия)' },
-    { name: 'Чекмарев В. В.', role: 'Редакционная коллегия', note: 'д. э. н., профессор (Россия)' },
-    { name: 'Лемешенко П. С.', role: 'Редакционная коллегия', note: 'д. э. н., профессор (Белоруссия)' },
-    { name: 'Тарасевич В. Н.', role: 'Редакционная коллегия', note: 'д. э. н., профессор (Украина)' },
-    { name: 'Абишева К. М.', role: 'Редакционная коллегия', note: 'д. ф. н., профессор (Казахстан)', link: { href: 'https://www.scopus.com/authid/detail.uri?authorId=55964132200', label: 'Scopus' } },
-    { name: 'Нагымжанова К. М.', role: 'Редакционная коллегия', note: 'д. п. н., профессор (Казахстан)', link: { href: 'https://www.scopus.com/authid/detail.uri?authorId=55964960000', label: 'Scopus' } },
-    { name: 'Сман А. С.', role: 'Редакционная коллегия', note: 'д. ю. н., профессор (Казахстан)' },
-    { name: 'Мырзаханова Н. М.', role: 'Редакционная коллегия', note: 'д. б. н., профессор (Казахстан)' },
-    { name: 'Никитинский Е. С.', role: 'Редакционная коллегия', note: 'д. п. н., профессор (Казахстан)' },
-    { name: 'Капсалямов К. Ж.', role: 'Редакционная коллегия', note: 'к. ю. н., профессор (Казахстан)' },
-    { name: 'Есымханова З. К.', role: 'Редакционная коллегия', note: 'к. э. н., профессор (Казахстан)' },
-    { name: 'Каменова М. Ж.', role: 'Редакционная коллегия', note: 'э. ғ. к., профессор' },
-  ]
+  useEffect(()=>{let active=true;api.getPublicEditorialMembers<Member[]>().then(data=>{if(active)setMembers(data)}).catch(()=>{if(active)setMembers([])}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[])
 
-  return (
-    <div className="public-container">
-      <div className="section public-section">
-        <p className="eyebrow">{t.eyebrow}</p>
-        <h1 className="hero__title">{t.title}</h1>
-        <p className="subtitle">{t.subtitle}</p>
+  const renderGroup=(group:Group)=>{
+    const list=members.filter(member=>member.group===group)
+    const title=group==='collegium'?t.collegium:t.council
+    const label=group==='collegium'?t.collegiumMember:t.councilMember
+    return <section className="public-editorial__group" aria-labelledby={`editorial-${group}`}>
+      <header className="public-editorial__group-header"><div><span className={`public-editorial__badge public-editorial__badge--${group}`}>{label}</span><h2 id={`editorial-${group}`}>{title}</h2></div><strong>{list.length}</strong></header>
+      {!list.length?<div className="public-editorial__empty">{t.empty}</div>:<div className="public-editorial__grid">{list.map(member=><article className="panel public-editorial-card" key={member.id}>
+        <div className="public-editorial-card__top"><div className="public-editorial-card__avatar" aria-hidden="true">{member.full_name.split(/\s+/).slice(0,2).map(part=>part[0]).join('')}</div><div><span className={`public-editorial__badge public-editorial__badge--${member.group}`}>{label}</span><h3>{member.full_name}</h3>{member.status?<p>{member.status}</p>:null}</div></div>
+        <dl className="public-editorial-card__details">{member.workplace?<div><dt>{t.workplace}</dt><dd>{member.workplace}</dd></div>:null}{member.citizenship?<div><dt>{t.citizenship}</dt><dd>{member.citizenship}</dd></div>:null}{member.h_index_wos!=null||member.h_index_scopus!=null?<div><dt>{t.hIndex}</dt><dd>{member.h_index_wos!=null?`WoS: ${member.h_index_wos}`:''}{member.h_index_wos!=null&&member.h_index_scopus!=null?' · ':''}{member.h_index_scopus!=null?`Scopus: ${member.h_index_scopus}`:''}</dd></div>:null}</dl>
+        {member.orcid||member.scopus_author_id||member.researcher_id?<div className="public-editorial-card__ids"><span>{t.ids}</span><div>{member.orcid?<a href={`https://orcid.org/${member.orcid}`} target="_blank" rel="noreferrer">ORCID</a>:null}{member.scopus_author_id?<span>Scopus ID: {member.scopus_author_id}</span>:null}{member.researcher_id?<span>Researcher ID: {member.researcher_id}</span>:null}</div></div>:null}
+      </article>)}</div>}
+    </section>
+  }
 
-        <div className="filter-bar">
-          <button
-            className={`filter-chip ${filter === 'board' ? 'filter-chip--active' : ''}`}
-            onClick={() => setFilter('board')}
-          >
-            {t.boardBtn}
-          </button>
-          <button
-            className={`filter-chip ${filter === 'council' ? 'filter-chip--active' : ''}`}
-            onClick={() => setFilter('council')}
-          >
-            {t.councilBtn}
-          </button>
-        </div>
-
-        {filter === 'board' && (
-          <>
-            <div className="grid grid-3">
-              {board.map((m) => (
-                <div className="panel person-card" key={m.name}>
-                  <div className="panel-title">{m.name}</div>
-                  <p className="subtitle">{m.role}</p>
-                  <p className="meta-label">{m.note}</p>
-                  {m.link && (
-                    <a className="button button--ghost" href={m.link.href} target="_blank" rel="noreferrer">{m.link.label}</a>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="meta-label" style={{ marginTop: 16 }}>{t.secretary}</div>
-          </>
-        )}
-
-        {filter === 'council' && (
-          <>
-            <div className="panel">
-              <div className="panel-title">{t.councilTitle}</div>
-              <p className="subtitle">{t.councilText}</p>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  )
+  return <div className="public-container"><section className="section public-section public-editorial"><p className="eyebrow">{t.eyebrow}</p><h1 className="hero__title">{t.title}</h1><p className="subtitle">{t.subtitle}</p>{loading?<div className="public-editorial__empty">{t.loading}</div>:<div className="public-editorial__groups">{renderGroup('collegium')}{renderGroup('council')}</div>}</section></div>
 }
