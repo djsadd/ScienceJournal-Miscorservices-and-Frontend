@@ -99,6 +99,13 @@ interface ArticleUpdatePayload {
   created_at?: string
 }
 
+interface StoredFileMeta {
+  id: string
+  original_name: string
+  content_type?: string | null
+  size_bytes?: number
+}
+
 const RequiredMark = () => <span className="required-star" aria-hidden="true">{'\u00a0'}*</span>
 
 const normalizeKeywordValue = (value: string) => value.trim()
@@ -213,6 +220,7 @@ export default function EditorPublishedArticleEditPage() {
   const [fileAntiplagiarism, setFileAntiplagiarism] = useState<File | null>(null)
   const [fileAuthorInfo, setFileAuthorInfo] = useState<File | null>(null)
   const [fileCoverLetter, setFileCoverLetter] = useState<File | null>(null)
+  const [storedFileMeta, setStoredFileMeta] = useState<Record<string, StoredFileMeta>>({})
   const [activeEditSection, setActiveEditSection] = useState<'main' | 'content' | 'keywords' | 'authors' | 'files'>('main')
 
   useEffect(() => {
@@ -237,6 +245,15 @@ export default function EditorPublishedArticleEditPage() {
       })
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    if (!article) return
+    const urls = [article.manuscript_file_url, article.antiplagiarism_file_url, article.author_info_file_url, article.cover_letter_file_url].filter(Boolean) as string[]
+    const ids = urls.map((url) => url.match(/\/files\/([^/]+)\//)?.[1]).filter((value): value is string => Boolean(value))
+    if (!ids.length) return
+    Promise.all(ids.map((fileId) => api.get<StoredFileMeta>(`/files/${fileId}`).catch(() => null)))
+      .then((items) => setStoredFileMeta(Object.fromEntries(items.filter((item): item is StoredFileMeta => Boolean(item)).map((item) => [item.id, item]))))
+  }, [article?.id, article?.manuscript_file_url, article?.antiplagiarism_file_url, article?.author_info_file_url, article?.cover_letter_file_url])
 
   const openCreateAuthorModal = () => {
     setEditingAuthorIndex(null)
@@ -555,6 +572,24 @@ export default function EditorPublishedArticleEditPage() {
     } catch (err) {
       console.error('Не удалось создать ключевое слово', err)
     }
+  }
+
+  const getStoredMeta = (url: string | null) => {
+    const fileId = url?.match(/\/files\/([^/]+)\//)?.[1]
+    return fileId ? storedFileMeta[fileId] : undefined
+  }
+
+  const fileKind = (name: string, contentType?: string | null) => {
+    const extension = name.split('.').pop()?.toUpperCase()
+    if (extension && extension !== name.toUpperCase()) return extension
+    if (contentType?.includes('pdf')) return 'PDF'
+    if (contentType?.includes('word')) return 'DOCX'
+    return 'FILE'
+  }
+
+  const fileSize = (size?: number) => {
+    if (!size) return null
+    return size >= 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} МБ` : `${Math.ceil(size / 1024)} КБ`
   }
 
   return (
@@ -1016,149 +1051,35 @@ export default function EditorPublishedArticleEditPage() {
 
       <div className="panel" id="edit-files" hidden={activeEditSection !== 'files'}>
         <p className="eyebrow">Файлы</p>
-        <div className="grid grid-3">
-          <div className="form-field">
-            <div className="form-label" data-error-key="manuscript">Рукопись{canEdit ? <RequiredMark /> : null}</div>
-            {myFiles.find((f) => f.kind === 'manuscript') ? (
-              (() => {
-                const f = myFiles.find((file) => file.kind === 'manuscript') as ApiMyFile
-                const url = toApiFilesUrl(f.download_url)
-                return (
-                  <div className="form-hint">
-                    <a className="link" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'Скачать рукопись'}
-                    </a>
-                  </div>
-                )
-              })()
-            ) : article.manuscript_file_url ? (
-              <a
-                className="link"
-                href={toApiFilesUrl(article.manuscript_file_url)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Скачать
-              </a>
-            ) : (
-              <div className="form-hint">Не загружено</div>
-            )}
-            {canEdit ? (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input
-                  type="file"
-                  className={`file-input ${fieldErrors.manuscript ? 'file-input--error' : ''}`}
-                  onChange={(e) => setFileManuscript(e.target.files?.[0] ?? null)}
-                />
-                {fileManuscript ? <div className="form-hint">Новый файл: {fileManuscript.name}</div> : null}
-                {fieldErrors.manuscript ? <span className="form-error-text">{fieldErrors.manuscript}</span> : null}
-              </div>
-            ) : null}
-          </div>
-          <div className="form-field">
-            <div className="form-label">Антиплагиат</div>
-            {myFiles.find((f) => f.kind === 'antiplagiarism') ? (
-              (() => {
-                const f = myFiles.find((file) => file.kind === 'antiplagiarism') as ApiMyFile
-                const url = toApiFilesUrl(f.download_url)
-                return (
-                  <div className="form-hint">
-                    <a className="link" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'Скачать файл'}
-                    </a>
-                  </div>
-                )
-              })()
-            ) : article.antiplagiarism_file_url ? (
-              <a
-                className="link"
-                href={toApiFilesUrl(article.antiplagiarism_file_url)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Скачать
-              </a>
-            ) : (
-              <div className="form-hint">Не загружено</div>
-            )}
-            {canEdit ? (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input type="file" className="file-input" onChange={(e) => setFileAntiplagiarism(e.target.files?.[0] ?? null)} />
-                {fileAntiplagiarism ? <div className="form-hint">Новый файл: {fileAntiplagiarism.name}</div> : null}
-              </div>
-            ) : null}
-          </div>
-          <div className="form-field">
-            <div className="form-label" data-error-key="authorInfo">Данные автора{canEdit ? <RequiredMark /> : null}</div>
-            {myFiles.find((f) => f.kind === 'author_info') ? (
-              (() => {
-                const f = myFiles.find((file) => file.kind === 'author_info') as ApiMyFile
-                const url = toApiFilesUrl(f.download_url)
-                return (
-                  <div className="form-hint">
-                    <a className="link" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'Скачать файл'}
-                    </a>
-                  </div>
-                )
-              })()
-            ) : article.author_info_file_url ? (
-              <a
-                className="link"
-                href={toApiFilesUrl(article.author_info_file_url)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Скачать
-              </a>
-            ) : (
-              <div className="form-hint">Не загружено</div>
-            )}
-            {canEdit ? (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input
-                  type="file"
-                  className={`file-input ${fieldErrors.authorInfo ? 'file-input--error' : ''}`}
-                  onChange={(e) => setFileAuthorInfo(e.target.files?.[0] ?? null)}
-                />
-                {fileAuthorInfo ? <div className="form-hint">Новый файл: {fileAuthorInfo.name}</div> : null}
-                {fieldErrors.authorInfo ? <span className="form-error-text">{fieldErrors.authorInfo}</span> : null}
-              </div>
-            ) : null}
-          </div>
-          <div className="form-field">
-            <div className="form-label">Сопроводительное письмо</div>
-            {myFiles.find((f) => f.kind === 'cover_letter') ? (
-              (() => {
-                const f = myFiles.find((file) => file.kind === 'cover_letter') as ApiMyFile
-                const url = toApiFilesUrl(f.download_url)
-                return (
-                  <div className="form-hint">
-                    <a className="link" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'Скачать файл'}
-                    </a>
-                  </div>
-                )
-              })()
-            ) : article.cover_letter_file_url ? (
-              <a
-                className="link"
-                href={toApiFilesUrl(article.cover_letter_file_url)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Скачать
-              </a>
-            ) : (
-              <div className="form-hint">Не загружено</div>
-            )}
-            {canEdit ? (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input type="file" className="file-input" onChange={(e) => setFileCoverLetter(e.target.files?.[0] ?? null)} />
-                {fileCoverLetter ? <div className="form-hint">Новый файл: {fileCoverLetter.name}</div> : null}
-              </div>
-            ) : null}
-          </div>
+        <div className="manuscript-file-grid">
+          {([
+            ['manuscript', 'Рукопись', article.manuscript_file_url, fileManuscript, setFileManuscript, true, 'manuscript'],
+            ['antiplagiarism', 'Антиплагиат', article.antiplagiarism_file_url, fileAntiplagiarism, setFileAntiplagiarism, false, ''],
+            ['author-info', 'Сведения об авторах', article.author_info_file_url, fileAuthorInfo, setFileAuthorInfo, true, 'authorInfo'],
+            ['cover-letter', 'Сопроводительное письмо', article.cover_letter_file_url, fileCoverLetter, setFileCoverLetter, false, ''],
+          ] as const).map(([key, label, currentUrl, selectedFile, setSelectedFile, required, errorKey]) => {
+            const meta = getStoredMeta(currentUrl)
+            const displayName = selectedFile?.name || meta?.original_name || (currentUrl ? 'Загруженный файл' : '')
+            const kind = fileKind(displayName, selectedFile?.type || meta?.content_type)
+            const size = selectedFile?.size || meta?.size_bytes
+            const inputId = `article-file-${key}`
+            return <div className={`manuscript-file-slot ${fieldErrors[errorKey] ? 'is-error' : ''}`} key={key} data-error-key={errorKey || undefined}>
+              <div className="manuscript-file-slot__heading"><span>{label}{required ? <RequiredMark /> : null}</span><small>{currentUrl ? 'Загружен' : 'Нет файла'}</small></div>
+              {displayName ? <div className="manuscript-file-card">
+                <span className={`manuscript-file-card__type manuscript-file-card__type--${kind.toLowerCase()}`}>{kind}</span>
+                <span className="manuscript-file-card__info"><strong title={displayName}>{displayName}</strong><small>{selectedFile ? 'Новый файл · сохранится вместе со статьёй' : 'Текущий файл'}{fileSize(size) ? ` · ${fileSize(size)}` : ''}</small></span>
+                {currentUrl && !selectedFile ? <a href={toApiFilesUrl(currentUrl)} target="_blank" rel="noreferrer">Открыть</a> : null}
+              </div> : <label className="manuscript-file-dropzone" htmlFor={inputId} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setSelectedFile(e.dataTransfer.files?.[0] ?? null) }}>
+                <span>+</span><strong>Добавить файл</strong><small>Перетащите сюда или нажмите для выбора</small>
+              </label>}
+              <input id={inputId} className="manuscript-file-slot__input" type="file" accept=".pdf,.doc,.docx,.odt,.zip" onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)} />
+              {displayName ? <div className="manuscript-file-slot__actions">
+                <label className="button button--ghost button--compact" htmlFor={inputId}>{selectedFile ? 'Выбрать другой' : 'Заменить файл'}</label>
+                {selectedFile ? <button type="button" className="button button--ghost button--compact" onClick={() => setSelectedFile(null)}>Отмена</button> : null}
+              </div> : null}
+              {fieldErrors[errorKey] ? <span className="form-error-text">{fieldErrors[errorKey]}</span> : null}
+            </div>
+          })}
         </div>
       </div>
 
