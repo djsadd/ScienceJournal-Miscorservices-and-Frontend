@@ -1242,9 +1242,6 @@ export function AuthorsSubmissionPage() {
             <p className="eyebrow">{t.authors.eyebrow}</p>
             <h2 className="panel-title" data-error-key="authorList">{t.authors.title}<RequiredMark /></h2>
           </div>
-          <button className="button button--primary button--compact" type="button" onClick={() => setAuthorModalOpen(true)}>
-            {t.authors.add}
-          </button>
         </div>
         {authorList.length === 0 ? (
           <div className="table__empty">{t.authors.empty}</div>
@@ -1282,6 +1279,10 @@ export function AuthorsSubmissionPage() {
             </div>
           </div>
         )}
+        <button className="manuscript-author-add" type="button" onClick={() => setAuthorModalOpen(true)}>
+          <span aria-hidden="true">+</span>
+          <b>{t.authors.add}</b>
+        </button>
       </div>
       {errors.authorList ? (<p className="form-hint" style={{ color: 'red' }}>{errors.authorList}</p>) : null}
 

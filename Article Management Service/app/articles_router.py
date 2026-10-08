@@ -28,19 +28,27 @@ def _prefer_url(file_id: str | None, file_url: str | None):
     return file_url
 
 
-def _get_or_create_keyword(db: Session, kw: schemas.KeywordCreate) -> models.Keyword:
+def _get_or_create_keyword(db: Session, kw: schemas.KeywordCreate | dict) -> models.Keyword:
+    # Payloads nested in ArticleUpdate become plain dictionaries after
+    # Pydantic's .dict() conversion, while create endpoints pass the model.
+    # Normalize both forms before reading their fields.
+    normalized = schemas.KeywordCreate(**kw) if isinstance(kw, dict) else kw
     existing = (
         db.query(models.Keyword)
         .filter(
-            models.Keyword.title_kz == kw.title_kz,
-            models.Keyword.title_en == kw.title_en,
-            models.Keyword.title_ru == kw.title_ru,
+            models.Keyword.title_kz == normalized.title_kz,
+            models.Keyword.title_en == normalized.title_en,
+            models.Keyword.title_ru == normalized.title_ru,
         )
         .first()
     )
     if existing:
         return existing
-    new_kw = models.Keyword(title_kz=kw.title_kz, title_en=kw.title_en, title_ru=kw.title_ru)
+    new_kw = models.Keyword(
+        title_kz=normalized.title_kz,
+        title_en=normalized.title_en,
+        title_ru=normalized.title_ru,
+    )
     db.add(new_kw)
     db.flush()
     return new_kw
@@ -391,9 +399,9 @@ def get_article_detail_for_editor(
 
 
 @router.put("/editor/{article_id}", response_model=schemas.ArticleOut)
-def update_published_article_for_editor(
+def update_article_for_editor(
     article_id: int,
-    article: schemas.ArticleUpdate,
+    article: schemas.EditorArticleUpdate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -421,10 +429,8 @@ def update_published_article_for_editor(
     if not existing_article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    if existing_article.status != models.ArticleStatus.published:
-        raise HTTPException(status_code=409, detail="Only published articles can be edited via this endpoint")
-
     update_data = article.dict(exclude_unset=True)
+    include_in_history = update_data.pop("include_in_history", True)
 
     # file_id -> file_url conversion (same behavior as author update)
     if "antiplagiarism_file_id" in update_data:
@@ -476,23 +482,23 @@ def update_published_article_for_editor(
     db.flush()
     db.expire(existing_article, ["authors", "keywords"])
 
-    # Create a new version snapshot and keep article status published
-    max_version = (
-        db.query(models.ArticleVersion)
-        .filter(models.ArticleVersion.article_id == article_id)
-        .order_by(models.ArticleVersion.version_number.desc())
-        .first()
-    )
-    version_number = max_version.version_number + 1 if max_version else 1
-    version_code = f"TAU-V{version_number}"
+    if include_in_history:
+        max_version = (
+            db.query(models.ArticleVersion)
+            .filter(models.ArticleVersion.article_id == article_id)
+            .order_by(models.ArticleVersion.version_number.desc())
+            .first()
+        )
+        version_number = max_version.version_number + 1 if max_version else 1
+        version_code = f"TAU-V{version_number}"
 
-    new_version = _create_article_version_snapshot(
-        db=db,
-        article=existing_article,
-        version_number=version_number,
-        version_code=version_code,
-    )
-    existing_article.current_version_id = new_version.id
+        new_version = _create_article_version_snapshot(
+            db=db,
+            article=existing_article,
+            version_number=version_number,
+            version_code=version_code,
+        )
+        existing_article.current_version_id = new_version.id
 
     db.commit()
     db.refresh(existing_article)

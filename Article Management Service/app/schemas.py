@@ -262,6 +262,13 @@ class ArticleUpdate(BaseModel):
     author_ids: Optional[List[int]] = None
 
 
+class EditorArticleUpdate(ArticleUpdate):
+    """Article fields editable by an editor plus version-history behavior."""
+    include_in_history: bool = True
+    status: Optional[ArticleStatus] = None
+    created_at: Optional[datetime] = None
+
+
 class ArticleOut(BaseModel):
     id: int
     title_kz: str

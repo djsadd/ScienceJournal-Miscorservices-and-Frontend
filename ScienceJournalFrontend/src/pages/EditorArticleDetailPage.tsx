@@ -339,15 +339,9 @@ export default function EditorArticleDetailPage() {
 
     return fields.length > 0 ? fields.join(', ') : 'Пусто'
   }
-  // Current user info for role-based gating
-  const [me, setMe] = useState<{ role?: string; roles?: string[] } | null>(null)
-  useEffect(() => {
-    // Silent fetch of /auth/me for role gating; errors are ignored
-    api.get<{ role?: string; roles?: string[] }>('/auth/me')
-      .then(setMe)
-      .catch(() => {})
-  }, [])
-  const isEditor = (me?.role === 'editor') || (me?.roles?.includes('editor'))
+  // Article data is loaded through an editor-only endpoint. Using that result
+  // avoids hiding controls when a redundant /auth/me request fails or is slow.
+  const isEditor = Boolean(data)
   const assignedReviewerIds = useMemo(() => new Set(reviewList.map((item) => item.reviewer_id)), [reviewList])
 
   // Upload layout states (editor-only UI)
@@ -374,6 +368,7 @@ export default function EditorArticleDetailPage() {
   type EditableArticleFile = 'manuscript_file_id' | 'author_info_file_id' | 'cover_letter_file_id'
   const [editorFileDrafts, setEditorFileDrafts] = useState<Partial<Record<EditableArticleFile, File>>>({})
   const [editorFileSaving, setEditorFileSaving] = useState<EditableArticleFile | null>(null)
+  const [editorFilesSavingAll, setEditorFilesSavingAll] = useState(false)
   const [editorFileError, setEditorFileError] = useState<string | null>(null)
 
   const saveEditorFile = async (field: EditableArticleFile) => {
@@ -396,6 +391,30 @@ export default function EditorArticleDetailPage() {
       setEditorFileError(String(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить файл'))
     } finally {
       setEditorFileSaving(null)
+    }
+  }
+
+  const saveAllEditorFiles = async () => {
+    if (!data) return
+    const entries = Object.entries(editorFileDrafts) as Array<[EditableArticleFile, File]>
+    if (!entries.length) return
+    setEditorFilesSavingAll(true)
+    setEditorFileError(null)
+    try {
+      const fileUpdates: Partial<Record<EditableArticleFile, string>> = {}
+      for (const [field, file] of entries) {
+        const uploaded = await api.uploadFile<FileOut>(file)
+        fileUpdates[field] = uploaded.id
+      }
+      const updated = await api.updateEditorArticleFiles<ArticleOut>(data.id, fileUpdates)
+      setData(updated)
+      setEditorFileDrafts({})
+      setToastMessage(entries.length === 1 ? 'Файл сохранён' : 'Файлы сохранены')
+      setToastOpen(true)
+    } catch (e: any) {
+      setEditorFileError(String(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить файлы'))
+    } finally {
+      setEditorFilesSavingAll(false)
     }
   }
 
@@ -774,7 +793,7 @@ export default function EditorArticleDetailPage() {
               <div className="manuscript-hero__heading">
                 <h1>{title}</h1>
               </div>
-              {data.status === 'published' && isEditor && (
+              {isEditor && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <a className="button button--primary" href={`/cabinet/editorial2/${data.id}/edit`}>Редактировать</a>
                 </div>
@@ -1017,8 +1036,8 @@ export default function EditorArticleDetailPage() {
                           {selected && <strong className="editor-article-file-dropzone__name">{selected.name}</strong>}
                         </div>
                         <div className="actions editor-article-file-manager__actions">
-                          <button className="button button--primary" type="button" disabled={!selected || saving} onClick={() => saveEditorFile(field)}>
-                            {saving ? 'Сохранение…' : currentUrl ? 'Заменить файл' : 'Загрузить файл'}
+                          <button className="button button--primary" type="button" disabled={!selected || saving || editorFilesSavingAll} onClick={() => saveEditorFile(field)}>
+                            {saving ? 'Сохранение…' : 'Сохранить файл'}
                           </button>
                           <button className="button button--ghost" type="button" disabled={!selected || saving} onClick={() => setEditorFileDrafts((current) => {
                             const next = { ...current }
@@ -1029,6 +1048,18 @@ export default function EditorArticleDetailPage() {
                       </div>
                     )
                   })}
+                </div>
+                <div className="actions" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
+                  <button
+                    className="button button--primary"
+                    type="button"
+                    disabled={!Object.keys(editorFileDrafts).length || editorFileSaving !== null || editorFilesSavingAll}
+                    onClick={saveAllEditorFiles}
+                  >
+                    {editorFilesSavingAll
+                      ? 'Сохранение файлов…'
+                      : `Сохранить выбранные файлы${Object.keys(editorFileDrafts).length ? ` (${Object.keys(editorFileDrafts).length})` : ''}`}
+                  </button>
                 </div>
               </div>
             </>
