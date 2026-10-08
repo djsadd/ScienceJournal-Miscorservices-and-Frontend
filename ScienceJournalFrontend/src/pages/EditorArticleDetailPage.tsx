@@ -371,11 +371,36 @@ export default function EditorArticleDetailPage() {
     url?: string
     created_at?: string
   }
-  type EditableArticleFile = 'manuscript_file_id' | 'author_info_file_id' | 'cover_letter_file_id'
+  type EditableArticleFile = 'manuscript_file_id' | 'antiplagiarism_file_id' | 'author_info_file_id' | 'cover_letter_file_id'
   const [editorFileDrafts, setEditorFileDrafts] = useState<Partial<Record<EditableArticleFile, File>>>({})
   const [editorFileSaving, setEditorFileSaving] = useState<EditableArticleFile | null>(null)
   const [editorFilesSavingAll, setEditorFilesSavingAll] = useState(false)
   const [editorFileError, setEditorFileError] = useState<string | null>(null)
+  const [storedFileMeta, setStoredFileMeta] = useState<Record<string, FileOut>>({})
+
+  useEffect(() => {
+    if (!data) return
+    const urls = [data.manuscript_file_url, data.antiplagiarism_file_url, data.author_info_file_url, data.cover_letter_file_url].filter(Boolean) as string[]
+    const ids = urls.map((url) => url.match(/\/files\/([^/]+)\//)?.[1]).filter((value): value is string => Boolean(value))
+    if (!ids.length) return
+    Promise.all(ids.map((fileId) => api.get<FileOut>(`/files/${fileId}`).catch(() => null)))
+      .then((items) => setStoredFileMeta(Object.fromEntries(items.filter((item): item is FileOut => Boolean(item)).map((item) => [item.id, item]))))
+  }, [data?.id, data?.manuscript_file_url, data?.antiplagiarism_file_url, data?.author_info_file_url, data?.cover_letter_file_url])
+
+  const getStoredFileMeta = (url?: string | null) => {
+    const fileId = url?.match(/\/files\/([^/]+)\//)?.[1]
+    return fileId ? storedFileMeta[fileId] : undefined
+  }
+
+  const getFileKind = (name: string, contentType?: string | null) => {
+    const extension = name.split('.').pop()?.toUpperCase()
+    if (extension && extension !== name.toUpperCase()) return extension
+    if (contentType?.includes('pdf')) return 'PDF'
+    if (contentType?.includes('word')) return 'DOCX'
+    return 'FILE'
+  }
+
+  const getFileSize = (size?: number) => size ? (size >= 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} МБ` : `${Math.ceil(size / 1024)} КБ`) : null
 
   const saveEditorFile = async (field: EditableArticleFile) => {
     const file = editorFileDrafts[field]
@@ -1013,20 +1038,30 @@ export default function EditorArticleDetailPage() {
                 <h4 style={{ margin: 0, marginBottom: '0.35rem' }}>Управление файлами статьи</h4>
                 <p className="form-hint" style={{ marginTop: 0 }}>Добавьте отсутствующий файл или выберите новый, чтобы заменить текущий.</p>
                 {editorFileError && <div className="alert error" style={{ marginBottom: '0.75rem' }}>{editorFileError}</div>}
-                <div className="editor-article-file-manager">
+                <div className="editor-article-file-manager manuscript-file-grid">
                   {([
                     ['manuscript_file_id', 'Рукопись', data.manuscript_file_url, '.pdf,.doc,.docx,.odt'] as const,
+                    ['antiplagiarism_file_id', 'Антиплагиат', data.antiplagiarism_file_url, '.pdf,.doc,.docx,.zip'] as const,
                     ['author_info_file_id', 'Сведения об авторах', data.author_info_file_url, '.pdf,.doc,.docx,.odt'] as const,
                     ['cover_letter_file_id', 'Сопроводительное письмо', data.cover_letter_file_url, '.pdf,.doc,.docx,.odt'] as const,
                   ]).map(([field, label, currentUrl, accept]) => {
                     const selected = editorFileDrafts[field]
                     const saving = editorFileSaving === field
+                    const meta = getStoredFileMeta(currentUrl)
+                    const displayName = selected?.name || meta?.original_name || (currentUrl ? 'Загруженный файл' : '')
+                    const kind = getFileKind(displayName, selected?.type || meta?.content_type)
+                    const size = selected?.size || meta?.size_bytes
                     return (
-                      <div key={field} className="editor-article-file-manager__item">
-                        <h4>{currentUrl ? `Замена файла: ${label}` : `Загрузка файла: ${label}`}</h4>
-                        <p className="form-hint">Поддерживаемые форматы: PDF, DOC, DOCX, ODT. {currentUrl ? 'Новый файл заменит текущий.' : 'Файл будет привязан к статье.'}</p>
-                        <div
-                          className="editor-article-file-dropzone"
+                      <div key={field} className="editor-article-file-manager__item manuscript-file-slot">
+                        <div className="manuscript-file-slot__heading"><span>{label}</span><small>{currentUrl ? 'Загружен' : 'Нет файла'}</small></div>
+                        {displayName && <div className="manuscript-file-card">
+                          <span className={`manuscript-file-card__type manuscript-file-card__type--${kind.toLowerCase()}`}>{kind}</span>
+                          <span className="manuscript-file-card__info"><strong title={displayName}>{displayName}</strong><small>{selected ? 'Новый файл' : 'Текущий файл'}{getFileSize(size) ? ` · ${getFileSize(size)}` : ''}</small></span>
+                          {currentUrl && !selected && <a href={toApiFilesUrl(currentUrl)} target="_blank" rel="noreferrer">Открыть</a>}
+                        </div>}
+                        {!currentUrl || selected ? <label
+                          className="manuscript-file-dropzone"
+                          htmlFor={`editor-${field}`}
                           onDragOver={(event) => event.preventDefault()}
                           onDrop={(event) => {
                             event.preventDefault()
@@ -1034,7 +1069,7 @@ export default function EditorArticleDetailPage() {
                             if (file) setEditorFileDrafts((current) => ({ ...current, [field]: file }))
                           }}
                         >
-                          <input
+                          <input className="manuscript-file-slot__input"
                             id={`editor-${field}`}
                             type="file"
                             accept={accept}
@@ -1045,11 +1080,9 @@ export default function EditorArticleDetailPage() {
                               setEditorFileError(null)
                             }}
                           />
-                          <label htmlFor={`editor-${field}`} className="button button--ghost">Выбрать файл</label>
-                          <span>или перетащите сюда</span>
-                          {selected && <strong className="editor-article-file-dropzone__name">{selected.name}</strong>}
-                        </div>
-                        <div className="actions editor-article-file-manager__actions">
+                          <span>+</span><strong>{selected ? 'Выбрать другой файл' : 'Добавить файл'}</strong><small>Перетащите сюда или нажмите для выбора</small>
+                        </label> : <><input className="manuscript-file-slot__input" id={`editor-${field}`} type="file" accept={accept} disabled={saving} onChange={(event) => { const file = event.target.files?.[0]; setEditorFileDrafts((current) => ({ ...current, [field]: file })); setEditorFileError(null) }} /><label htmlFor={`editor-${field}`} className="button button--ghost button--compact manuscript-file-replace">Заменить файл</label></>}
+                        <div className="actions editor-article-file-manager__actions manuscript-file-slot__actions">
                           <button className="button button--primary" type="button" disabled={!selected || saving || editorFilesSavingAll} onClick={() => saveEditorFile(field)}>
                             {saving ? 'Сохранение…' : 'Сохранить файл'}
                           </button>
@@ -1173,7 +1206,7 @@ export default function EditorArticleDetailPage() {
             )}
 
             {isEditor && (
-              <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+              <div className="legacy-antiplagiarism-upload" style={{ display: 'none' }}>
                 <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>Загрузка файла антиплагиата</h4>
                 <p className="form-hint" style={{ marginTop: 0 }}>Поддерживаемые форматы: PDF, DOC, DOCX, ZIP. Файл будет привязан к статье.</p>
                 {antiError && <div className="alert error" style={{ marginBottom: '0.5rem' }}>Ошибка: {antiError}</div>}
