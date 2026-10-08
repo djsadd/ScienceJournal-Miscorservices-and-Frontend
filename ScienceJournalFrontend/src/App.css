@@ -6546,9 +6546,13 @@
 
 .admin-users__filters {
   display: grid;
-  grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr) minmax(180px, 1fr);
+  grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr);
   gap: 0.8rem;
   margin-bottom: 1rem;
+}
+
+.admin-users__role-filter {
+  margin-bottom: 0.8rem;
 }
 
 .admin-users__actions {

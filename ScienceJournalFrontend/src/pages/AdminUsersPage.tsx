@@ -771,20 +771,29 @@ export default function AdminUsersPage() {
       ) : null}
 
       <section className="panel">
+        <div className="editorial-queue__filter admin-users__role-filter" aria-label={t.allRoles} role="group">
+          <button
+            type="button"
+            className={`editorial-queue__filter-button ${roleFilter === 'all' ? 'editorial-queue__filter-button--active' : ''}`}
+            aria-pressed={roleFilter === 'all'}
+            onClick={() => setRoleFilter('all')}
+          >
+            {t.allRoles}
+          </button>
+          {roleOptions.map((role) => (
+            <button
+              type="button"
+              key={role}
+              className={`editorial-queue__filter-button ${roleFilter === role ? 'editorial-queue__filter-button--active' : ''}`}
+              aria-pressed={roleFilter === role}
+              onClick={() => setRoleFilter(role)}
+            >
+              {roleText[role]}
+            </button>
+          ))}
+        </div>
         <div className="admin-users__filters">
           <input className="text-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t.search} />
-          <select
-            className="text-input"
-            value={roleFilter}
-            onChange={(event) => setRoleFilter(event.target.value as 'all' | AdminRole)}
-          >
-            <option value="all">{t.allRoles}</option>
-            {roleOptions.map((role) => (
-              <option key={role} value={role}>
-                {roleText[role]}
-              </option>
-            ))}
-          </select>
           <select
             className="text-input"
             value={statusFilter}
