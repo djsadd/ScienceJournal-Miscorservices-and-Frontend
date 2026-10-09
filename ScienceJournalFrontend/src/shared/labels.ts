@@ -68,22 +68,22 @@ const statusMap = {
 
 const reviewRecommendationMap = {
   ru: {
-    accept: 'Рекомендуется к публикации',
-    minor_revision: 'Возвратить с замечаниями на доработку',
-    major_revision: 'Возвратить с замечаниями на доработку',
-    reject: 'Отклонить',
+    accept: 'Статья рекомендуется к публикации.',
+    minor_revision: 'Рекомендуется направить статью на доработку.',
+    major_revision: 'Рекомендуется направить статью на доработку.',
+    reject: 'Рекомендуется отклонить статью.',
   },
   en: {
-    accept: 'Recommend for publication',
-    minor_revision: 'Return for revision with comments',
-    major_revision: 'Return for revision with comments',
-    reject: 'Reject',
+    accept: 'The article is recommended for publication.',
+    minor_revision: 'It is recommended to send the article for revision.',
+    major_revision: 'It is recommended to send the article for revision.',
+    reject: 'It is recommended to reject the article.',
   },
   kz: {
-    accept: 'Жариялауға ұсыну',
-    minor_revision: 'Ескертулермен пысықтауға қайтару',
-    major_revision: 'Ескертулермен пысықтауға қайтару',
-    reject: 'Қабылдамау',
+    accept: 'Мақаланы жариялау ұсынылады.',
+    minor_revision: 'Мақаланы түзетуге жіберу ұсынылады.',
+    major_revision: 'Мақаланы түзетуге жіберу ұсынылады.',
+    reject: 'Мақаланы қабылдамау ұсынылады.',
   },
 } as const
 

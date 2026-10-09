@@ -5,7 +5,7 @@ import type { ReviewDetail } from '../shared/types'
 import Alert from '../shared/components/Alert'
 import Toast from '../shared/components/Toast'
 import { toApiFilesUrl } from '../shared/url'
-import { formatArticleStatus, formatArticleType } from '../shared/labels'
+import { formatArticleStatus, formatArticleType, formatReviewRecommendation } from '../shared/labels'
 
 type ReviewCriterionKey =
   | 'importance_applicability' | 'novelty_application' | 'originality' | 'innovation_product'
@@ -29,6 +29,31 @@ const assistantCriterionLabels: Record<ReviewCriterionKey, string> = {
 }
 
 const assistantCriterionKeys = Object.keys(assistantCriterionLabels) as ReviewCriterionKey[]
+
+const reviewCriterionLabels: Record<'ru' | 'en', Record<ReviewCriterionKey, string>> = {
+  ru: {
+    importance_applicability: 'Важность, полезность и/или применимость идей, методов, технологий:',
+    novelty_application: 'Новое освещение, применение в той или иной отрасли:',
+    originality: 'Идеи, методы, способы, решения и результаты поставленных задач исследования ранее не были известны или апробированы:',
+    innovation_product: 'Новый процесс, услуга, продукт, основанные на новых, неизвестных технологиях, методах или методологиях, определение новых для потребителей услуг:',
+    results_significance: 'Изложение результатов, теоретическая и практическая значимость, выводы, научно-практическое значение:',
+    coherence: 'Логичность, последовательность, связность изложения:',
+    style_quality: 'Коммуникативная ценность, соответствие научному стилю, языковым и стилистическим нормам:',
+    editorial_compliance: 'Соответствие требованиям редакции, использование терминологической лексики. Наличие аннотаций, пристатейного аппарата, ключевых слов, соблюдение определенных параметров страницы, библиографического списка:',
+  },
+  en: {
+    importance_applicability: 'The importance, usefulness and / or applicability of ideas, methods and technologies:',
+    novelty_application: 'New coverage and use in a particular field:',
+    originality: 'Ideas, methods, techniques, solutions and results of the research tasks were not known or tested before:',
+    innovation_product: 'The new process, service, product, based on new, unknown technologies, methods or methodologies, the definition of new services for consumers:',
+    results_significance: 'Presentation of the results, the theoretical and practical significance of the findings, scientific and practical significance:',
+    coherence: 'Logic, consistency, coherence:',
+    style_quality: 'Communicative value, compliance with the scientific style, linguistic and stylistic norms:',
+    editorial_compliance: 'Compliance with editorial requirements and use of appropriate terminology. Inclusion of abstract, metadata, and keywords; adherence to specified page formatting and bibliographic reference standards:',
+  },
+}
+
+const recommendationOptions = ['accept', 'major_revision', 'reject'] as const
 
 export default function ReviewDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -382,60 +407,25 @@ export default function ReviewDetailsPage() {
               {isReadOnly && (
                 <div className="review-result" style={{ gridColumn: '1 / -1' }}>
                   <span className="form-label">Итоговая рекомендация</span>
-                  <strong>{draft.recommendation === 'accept' ? 'Рекомендуется к публикации' : draft.recommendation === 'major_revision' ? 'Возвратить с замечаниями на доработку' : draft.recommendation === 'reject' ? 'Отклонить' : '—'}</strong>
+                  <strong>{formatReviewRecommendation(draft.recommendation, lang)}</strong>
                 </div>
               )}
 
               <div className="form-field" style={{ gridColumn: '1 / -1' }}>
-                <label className="form-label">Комментарии</label>
+                <label className="form-label">{lang === 'en' ? 'Comments' : 'Комментарии'}</label>
                 <textarea
                   className="text-input"
                   rows={3}
-                  placeholder="Введите комментарии к рецензии"
+                  placeholder={lang === 'en' ? 'Enter review comments' : 'Введите комментарии к рецензии'}
                   value={draft.comments}
                   onChange={(e) => onChange('comments', e.target.value)}
                   disabled={isReadOnly}
                 />
               </div>
 
-              {(
-                [
-                  [
-                    'importance_applicability',
-                    'Важность, полезность и/или применимость идей, методов, технологий:',
-                  ],
-                  [
-                    'novelty_application',
-                    'Новое освещение, применение в той или иной отрасли:',
-                  ],
-                  [
-                    'originality',
-                    'Идеи, методы, способы, решения и результаты поставленных задач исследования ранее не были известны или апробированы:',
-                  ],
-                  [
-                    'innovation_product',
-                    'Новый процесс, услуга, продукт, основанные на новых, неизвестных технологиях, методах или методологиях, определение новых для потребителей услуг:',
-                  ],
-                  [
-                    'results_significance',
-                    'Изложение результатов, теоретическая и практическая значимость, выводы, научно-практическое значение:',
-                  ],
-                  [
-                    'coherence',
-                    'Логичность, последовательность, связность изложения:',
-                  ],
-                  [
-                    'style_quality',
-                    'Коммуникативная ценность, соответствие научному стилю, языковым и стилистическим нормам:',
-                  ],
-                  [
-                    'editorial_compliance',
-                    'Соответствие требованиям редакции, использование терминологической лексики. Наличие аннотаций, пристатейного аппарата, ключевых слов, соблюдение определенных параметров страницы, библиографического списка:',
-                  ],
-                ] as const
-              ).map(([key, label]) => (
+              {(Object.keys(reviewCriterionLabels.ru) as ReviewCriterionKey[]).map((key) => (
                 <div className="form-field" key={key} style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">{label}</label>
+                  <label className="form-label">{reviewCriterionLabels[lang === 'en' ? 'en' : 'ru'][key]}</label>
                   <textarea
                     className="text-input"
                     rows={3}
@@ -494,18 +484,14 @@ export default function ReviewDetailsPage() {
                   </div>
 
                   <div className="assistant-recommendations" aria-label="Три варианта итоговой рекомендации">
-                    {([
-                      ['accept', 'Рекомендовать к публикации'],
-                      ['major_revision', 'Вернуть на доработку'],
-                      ['reject', 'Отклонить'],
-                    ] as const).map(([value, label]) => (
+                    {recommendationOptions.map((value) => (
                       <button
                         className={`assistant-recommendation assistant-recommendation--${value}${assistantResult.recommendation === value ? ' assistant-recommendation--suggested' : ''}${draft.recommendation === value ? ' assistant-recommendation--selected' : ''}`}
                         key={value}
                         type="button"
                         onClick={() => onChange('recommendation', value)}
                       >
-                        <span>{label}</span>
+                        <span>{formatReviewRecommendation(value, lang)}</span>
                         {assistantResult.recommendation === value && <strong>Рекомендация ИИ</strong>}
                         {draft.recommendation === value && <small>Выбрано вами</small>}
                       </button>
@@ -560,9 +546,7 @@ export default function ReviewDetailsPage() {
                       autoFocus
                     >
                       <option value="" disabled>Выберите рекомендацию</option>
-                      <option value="accept">Рекомендуется к публикации</option>
-                      <option value="major_revision">Возвратить с замечаниями на доработку</option>
-                      <option value="reject">Отклонить</option>
+                      {recommendationOptions.map(value => <option value={value} key={value}>{formatReviewRecommendation(value, lang)}</option>)}
                     </select>
                     {!hasValidRecommendation && <span className="form-error-text">Выберите один из трёх вариантов.</span>}
                   </label>
