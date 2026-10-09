@@ -6588,9 +6588,13 @@
 .editorial-team-modal { padding: 0; gap: 0; overflow: hidden; }
 .editorial-team-modal .modal__header, .editorial-team-modal .modal__footer { padding: 20px 24px; }
 .editorial-team-modal__body { padding: 20px 24px; overflow-y: auto; background: #fffdfd; }
-.editorial-team-modal__translations { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
-.editorial-team-modal__translations .settings-language { display: grid; align-content: start; gap: 12px; }
-.editorial-team-modal__translations .settings-language h3 { margin: 0; }
+.editorial-team-modal__languageBlock { margin-top: 18px; }
+.editorial-team-modal__group--languages { grid-template-columns: repeat(3, 1fr); }
+.editorial-team-modal__group--languages button { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.editorial-team-modal__group--languages button span { display: inline-grid; width: 18px; height: 18px; place-items: center; border-radius: 50%; background: #e8f4ec; color: #277143; font-size: 11px; }
+.editorial-team-modal__group--languages button.is-active span { background: rgba(255,255,255,.2); color: #fff; }
+.editorial-team-modal__translation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; margin-top: 14px; }
+.editorial-team-modal__translation h3 { grid-column: 1 / -1; margin: 0; }
 .editorial-team-modal__metrics { margin-top: 18px; padding-top: 18px; border-top: 1px solid #eadfe2; }
 .editorial-team-modal__wide { grid-column: 1 / -1; }
 .editorial-team-modal__group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; border: 1px solid #e4cfd6; border-radius: 9px; background: #fcf8f9; }
@@ -7803,7 +7807,9 @@
 .editor-author-modal > .modal__footer { flex: 0 0 auto; padding: 16px 26px; border-top: 1px solid #eee3e5; background: #fff; }
 
 @media (max-width: 760px) {
-  .editorial-team-modal__translations { grid-template-columns: 1fr; }
+  .editorial-team-modal__translation { grid-template-columns: 1fr; }
+  .editorial-team-modal__translation h3 { grid-column: auto; }
+  .editorial-team-modal__group--languages { grid-template-columns: 1fr; }
   .editor-author-modal { width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
   .editor-author-modal > .modal__header, .editor-author-modal__body, .editor-author-modal > .modal__footer { padding-left: 16px; padding-right: 16px; }
   .editor-author-form-section { grid-template-columns: 1fr; gap: 12px; }

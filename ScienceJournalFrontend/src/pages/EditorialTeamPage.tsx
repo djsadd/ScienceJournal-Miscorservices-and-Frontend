@@ -3,6 +3,7 @@ import { api, ApiError } from '../api/client'
 import ConfirmModal from '../shared/components/ConfirmModal'
 
 type EditorialGroup = 'collegium' | 'council'
+type EditorialLanguage = 'ru' | 'kz' | 'en'
 type EditorialMember = {
   id: number
   group: EditorialGroup
@@ -52,6 +53,7 @@ const emptyDraft = (group: EditorialGroup): MemberDraft => ({
 
 export default function EditorialTeamPage() {
   const [group, setGroup] = useState<EditorialGroup>('collegium')
+  const [draftLanguage, setDraftLanguage] = useState<EditorialLanguage>('ru')
   const [members, setMembers] = useState<EditorialMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -78,9 +80,10 @@ export default function EditorialTeamPage() {
   useEffect(() => { void load() }, [])
 
   const visibleMembers = useMemo(() => members.filter((member) => member.group === group), [members, group])
-  const openCreate = () => { setEditingId(null); setDraft({ ...emptyDraft(group), sort_order: visibleMembers.length }) }
+  const openCreate = () => { setEditingId(null); setDraftLanguage('ru'); setDraft({ ...emptyDraft(group), sort_order: visibleMembers.length }) }
   const openEdit = (member: EditorialMember) => {
     setEditingId(member.id)
+    setDraftLanguage('ru')
     setDraft({
       ...member,
       full_name_ru: member.full_name_ru || member.full_name,
@@ -130,15 +133,20 @@ export default function EditorialTeamPage() {
 
   const save = async (event: FormEvent) => {
     event.preventDefault()
-    if (!draft?.full_name_ru?.trim() || !draft.full_name_kz?.trim() || !draft.full_name_en?.trim()) return
+    if (!draft) return
+    const missingLanguage = (['ru', 'kz', 'en'] as EditorialLanguage[]).find(language => !draft[`full_name_${language}`]?.trim())
+    if (missingLanguage) { setDraftLanguage(missingLanguage); return }
+    const fullNameRu = draft.full_name_ru!.trim()
+    const fullNameKz = draft.full_name_kz!.trim()
+    const fullNameEn = draft.full_name_en!.trim()
     setSaving(true)
     setError(null)
     const payload = {
       ...draft,
-      full_name: draft.full_name_ru.trim(),
-      full_name_ru: draft.full_name_ru.trim(),
-      full_name_kz: draft.full_name_kz.trim(),
-      full_name_en: draft.full_name_en.trim(),
+      full_name: fullNameRu,
+      full_name_ru: fullNameRu,
+      full_name_kz: fullNameKz,
+      full_name_en: fullNameEn,
       status: draft.status_ru?.trim() || null,
       workplace: draft.workplace_ru?.trim() || null,
       citizenship: draft.citizenship_ru?.trim() || null,
@@ -195,7 +203,8 @@ export default function EditorialTeamPage() {
 
     {draft ? <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setDraft(null) }}><form className="modal modal--wide editorial-team-modal" onSubmit={save}><header className="modal__header"><div><p className="eyebrow">{editingId ? 'Редактирование' : 'Новая запись'}</p><h2 className="modal__title">{editingId ? draft.full_name_ru || 'Участник редакции' : 'Добавить участника'}</h2></div><button className="modal__close" type="button" onClick={() => setDraft(null)} aria-label="Закрыть">×</button></header><div className="modal__body editorial-team-modal__body">
       <div><span className="form-label">Состав редакции</span><div className="editorial-team-modal__group"><button type="button" className={draft.group === 'collegium' ? 'is-active' : ''} onClick={() => update('group', 'collegium')}>Член редколлегии</button><button type="button" className={draft.group === 'council' ? 'is-active' : ''} onClick={() => update('group', 'council')}>Член редсовета</button></div></div>
-      <div className="editorial-team-modal__translations">{(['ru', 'kz', 'en'] as const).map((language, index) => <section className="settings-language" key={language}><h3>{language === 'ru' ? 'Русский' : language === 'kz' ? 'Қазақша' : 'English'}</h3><label className="form-label">ФИО *<input className="text-input" autoFocus={index === 0} required value={draft[`full_name_${language}`] || ''} onChange={(e) => update(`full_name_${language}`, e.target.value)} placeholder="Фамилия Имя Отчество" /></label><label className="form-label">Статус / должность<input className="text-input" value={draft[`status_${language}`] || ''} onChange={(e) => update(`status_${language}`, e.target.value)} placeholder="Главный редактор, профессор…" /></label><label className="form-label">Гражданство<input className="text-input" value={draft[`citizenship_${language}`] || ''} onChange={(e) => update(`citizenship_${language}`, e.target.value)} placeholder="Казахстан" /></label><label className="form-label">Место работы<input className="text-input" value={draft[`workplace_${language}`] || ''} onChange={(e) => update(`workplace_${language}`, e.target.value)} placeholder="Университет, организация" /></label></section>)}</div>
+      <div className="editorial-team-modal__languageBlock"><span className="form-label">Язык данных</span><div className="editorial-team-modal__group editorial-team-modal__group--languages">{(['ru', 'kz', 'en'] as EditorialLanguage[]).map(language => <button type="button" key={language} className={draftLanguage === language ? 'is-active' : ''} onClick={() => setDraftLanguage(language)}>{language === 'ru' ? 'Русский' : language === 'kz' ? 'Қазақша' : 'English'}{draft[`full_name_${language}`]?.trim() ? <span aria-label="Заполнено">✓</span> : null}</button>)}</div></div>
+      <section className="settings-language editorial-team-modal__translation"><h3>{draftLanguage === 'ru' ? 'Данные на русском' : draftLanguage === 'kz' ? 'Қазақ тіліндегі деректер' : 'Data in English'}</h3><label className="form-label">ФИО *<input className="text-input" autoFocus required value={draft[`full_name_${draftLanguage}`] || ''} onChange={(e) => update(`full_name_${draftLanguage}`, e.target.value)} placeholder="Фамилия Имя Отчество" /></label><label className="form-label">Статус / должность<input className="text-input" value={draft[`status_${draftLanguage}`] || ''} onChange={(e) => update(`status_${draftLanguage}`, e.target.value)} placeholder="Главный редактор, профессор…" /></label><label className="form-label">Гражданство<input className="text-input" value={draft[`citizenship_${draftLanguage}`] || ''} onChange={(e) => update(`citizenship_${draftLanguage}`, e.target.value)} placeholder="Казахстан" /></label><label className="form-label">Место работы<input className="text-input" value={draft[`workplace_${draftLanguage}`] || ''} onChange={(e) => update(`workplace_${draftLanguage}`, e.target.value)} placeholder="Университет, организация" /></label></section>
       <div className="form-grid editorial-team-modal__metrics"><label className="form-label">Индекс Хирша (WoS)<input className="text-input" type="number" min="0" value={draft.h_index_wos ?? ''} onChange={(e) => update('h_index_wos', e.target.value === '' ? null : Number(e.target.value))} /></label><label className="form-label">Индекс Хирша (Scopus)<input className="text-input" type="number" min="0" value={draft.h_index_scopus ?? ''} onChange={(e) => update('h_index_scopus', e.target.value === '' ? null : Number(e.target.value))} /></label><label className="form-label">ORCID<input className="text-input" value={draft.orcid || ''} onChange={(e) => update('orcid', e.target.value)} placeholder="0000-0000-0000-0000" /></label><label className="form-label">Scopus Author ID<input className="text-input" value={draft.scopus_author_id || ''} onChange={(e) => update('scopus_author_id', e.target.value)} /></label><label className="form-label editorial-team-modal__wide">Web of Science / Researcher ID<input className="text-input" value={draft.researcher_id || ''} onChange={(e) => update('researcher_id', e.target.value)} /></label></div>
     </div><footer className="modal__footer"><button className="button button--ghost" type="button" disabled={saving} onClick={() => setDraft(null)}>Отмена</button><button className="button button--primary" type="submit" disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button></footer></form></div> : null}
     <ConfirmModal open={Boolean(deleteTarget)} title="Удалить участника?" message={deleteTarget ? `${deleteTarget.full_name} будет удалён из состава редакции.` : ''} confirmText={saving ? 'Удаление…' : 'Удалить'} cancelText="Отмена" onCancel={() => !saving && setDeleteTarget(null)} onConfirm={() => { if (!saving) void remove() }} />
