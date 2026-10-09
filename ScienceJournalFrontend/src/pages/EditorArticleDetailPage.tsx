@@ -425,6 +425,27 @@ export default function EditorArticleDetailPage() {
     }
   }
 
+  const deleteEditorFile = async (field: EditableArticleFile) => {
+    if (!data) return
+    setEditorFileSaving(field)
+    setEditorFileError(null)
+    try {
+      const updated = await api.updateEditorArticleFiles<ArticleOut>(data.id, { [field]: null })
+      setData(updated)
+      setEditorFileDrafts((current) => {
+        const next = { ...current }
+        delete next[field]
+        return next
+      })
+      setToastMessage('Файл удалён')
+      setToastOpen(true)
+    } catch (e: any) {
+      setEditorFileError(String(e?.bodyJson?.detail || e?.message || 'Не удалось удалить файл'))
+    } finally {
+      setEditorFileSaving(null)
+    }
+  }
+
   const saveAllEditorFiles = async () => {
     if (!data) return
     const entries = Object.entries(editorFileDrafts) as Array<[EditableArticleFile, File]>
@@ -1063,7 +1084,11 @@ export default function EditorArticleDetailPage() {
                         {displayName && <div className="manuscript-file-card">
                           <span className={`manuscript-file-card__type manuscript-file-card__type--${kind.toLowerCase()}`}>{kind}</span>
                           <span className="manuscript-file-card__info"><strong title={displayName}>{displayName}</strong><small>{selected ? 'Новый файл' : 'Текущий файл'}{getFileSize(size) ? ` · ${getFileSize(size)}` : ''}</small></span>
-                          {currentUrl && !selected && <a href={toApiFilesUrl(currentUrl)} target="_blank" rel="noreferrer">Открыть</a>}
+                          <span className="manuscript-file-card__tools">
+                            {currentUrl && <a className="file-icon-action" href={toApiFilesUrl(currentUrl)} download target="_blank" rel="noreferrer" title="Скачать файл" aria-label="Скачать файл">↓</a>}
+                            <label className="file-icon-action" htmlFor={`editor-${field}`} title="Заменить файл" aria-label="Заменить файл">✎</label>
+                            <button className="file-icon-action file-icon-action--danger" type="button" disabled={saving} title={selected ? 'Отменить выбор' : 'Удалить файл'} aria-label={selected ? 'Отменить выбор' : 'Удалить файл'} onClick={() => selected ? setEditorFileDrafts((current) => { const next = { ...current }; delete next[field]; return next }) : void deleteEditorFile(field)}>🗑</button>
+                          </span>
                         </div>}
                         {!currentUrl || selected ? <label
                           className="manuscript-file-dropzone"
@@ -1087,7 +1112,7 @@ export default function EditorArticleDetailPage() {
                             }}
                           />
                           <span>+</span><strong>{selected ? 'Выбрать другой файл' : 'Добавить файл'}</strong><small>Перетащите сюда или нажмите для выбора</small>
-                        </label> : <><input className="manuscript-file-slot__input" id={`editor-${field}`} type="file" accept={accept} disabled={saving} onChange={(event) => { const file = event.target.files?.[0]; setEditorFileDrafts((current) => ({ ...current, [field]: file })); setEditorFileError(null) }} /><label htmlFor={`editor-${field}`} className="button button--ghost button--compact manuscript-file-replace">Заменить файл</label></>}
+                        </label> : <input className="manuscript-file-slot__input" id={`editor-${field}`} type="file" accept={accept} disabled={saving} onChange={(event) => { const file = event.target.files?.[0]; setEditorFileDrafts((current) => ({ ...current, [field]: file })); setEditorFileError(null) }} />}
                         <div className="actions editor-article-file-manager__actions manuscript-file-slot__actions">
                           <button className="button button--primary" type="button" disabled={!selected || saving || editorFilesSavingAll} onClick={() => saveEditorFile(field)}>
                             {saving ? 'Сохранение…' : 'Сохранить файл'}

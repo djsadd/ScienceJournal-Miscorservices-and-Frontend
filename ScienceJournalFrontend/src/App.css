@@ -4834,6 +4834,12 @@
 .manuscript-file-card__info small { color: #8b777c; font-size: 11px; }
 .manuscript-file-card > a { color: #8b1e32; font-size: 12px; font-weight: 700; text-decoration: none; }
 .manuscript-file-card > a:hover { text-decoration: underline; }
+.manuscript-file-card__tools { display: inline-flex; align-items: center; gap: 5px; }
+.file-icon-action { display: inline-grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid #e2d6d9; border-radius: 7px; background: #fff; color: #70434d; font: 700 16px/1 inherit; text-decoration: none; cursor: pointer; transition: border-color .16s, background .16s, color .16s, transform .16s; }
+.file-icon-action:hover { transform: translateY(-1px); border-color: #a95869; background: #fff6f8; color: #8b1e32; text-decoration: none; }
+.file-icon-action--danger { color: #a33a48; font-size: 14px; }
+.file-icon-action--danger:hover { border-color: #c94d5c; background: #fff1f2; color: #b42335; }
+.file-icon-action:disabled { opacity: .45; cursor: wait; transform: none; }
 .manuscript-file-dropzone { display: grid; place-items: center; min-height: 116px; padding: 16px; border: 1px dashed #cfb9bf; background: #fffafb; color: #806b70; text-align: center; cursor: pointer; transition: border-color .2s, background .2s, color .2s; }
 .manuscript-file-dropzone > span { display: grid; place-items: center; width: 30px; height: 30px; margin-bottom: 6px; border-radius: 50%; background: #f3e3e7; color: #8b1e32; font-size: 23px; transition: transform .2s, background .2s, color .2s; }
 .manuscript-file-dropzone strong { font-size: 13px; }

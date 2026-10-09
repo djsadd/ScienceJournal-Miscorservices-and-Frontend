@@ -52,6 +52,7 @@ export default function VolumeEditPage() {
   const [fileCompleteIssue, setFileCompleteIssue] = useState<File | null>(null)
   const [fileCover, setFileCover] = useState<File | null>(null)
   const [fileContents, setFileContents] = useState<File | null>(null)
+  const [fileDeleting, setFileDeleting] = useState<string | null>(null)
 
   const [search, setSearch] = useState('')
   const [authorName, setAuthorName] = useState('')
@@ -184,6 +185,21 @@ export default function VolumeEditPage() {
     }
   }
 
+  const deleteVolumeFile = async (field: 'complete_issue_file_id' | 'cover_file_id' | 'contents_file_id', clearDraft: () => void) => {
+    if (!id) return
+    setFileDeleting(field)
+    setError(null)
+    try {
+      const updated = await api.updateVolume<Volume>(id, { [field]: null })
+      setVolume(updated)
+      clearDraft()
+    } catch (e: any) {
+      setError(e?.bodyJson?.detail || e?.message || 'Не удалось удалить файл')
+    } finally {
+      setFileDeleting(null)
+    }
+  }
+
   const selectedCount = form.article_ids?.length ?? 0
 
   return (
@@ -199,13 +215,9 @@ export default function VolumeEditPage() {
           )}
         </div>
         <div className="section-actions volume-edit__actions">
-          <span className="badge badge--info volume-edit__badge">{t.selected}: {selectedCount}</span>
           <Link className="button button--ghost" to="/cabinet/volumes">
             ← {t.back}
           </Link>
-          <button className="button button--primary" onClick={save} disabled={saving || loading}>
-            {saving ? t.saving : t.save}
-          </button>
         </div>
       </section>
 
@@ -218,7 +230,6 @@ export default function VolumeEditPage() {
             <div className="panel volume-edit__panel">
               <div className="volume-edit__panelHeader">
                 <div className="panel-title">{t.basic}</div>
-                <div className="volume-edit__panelHint meta-label">ID: {id || '—'}</div>
               </div>
 
               <div className="volume-edit__fields volume-edit__fields--basic">
@@ -315,68 +326,32 @@ export default function VolumeEditPage() {
               <div className="volume-edit__files">
                 <div className="volume-edit__sectionTitle"><div><div className="panel-title">{t.files}</div><p>{t.filesHint}</p></div></div>
                 <div className="volume-edit__fields volume-edit__fields--files">
-                  <label className="form-field volume-edit__fileCard">
-                    <span className="volume-edit__fileIcon">PDF</span>
-                    <span className="form-label">{t.completeIssue}</span>
-                    <input
-                      type="file"
-                      className="file-input"
-                      accept=".pdf"
-                      onChange={(e) => setFileCompleteIssue(e.target.files?.[0] || null)}
-                    />
-                    <div className="meta-label">
-                      {volume?.complete_issue_file_url ? (
-                        <a href={toApiFilesUrl(volume.complete_issue_file_url)} target="_blank" rel="noreferrer">{t.currentFile}</a>
-                      ) : (
-                        t.noFile
-                      )}
+                  {([
+                    ['complete', 'complete_issue_file_id', t.completeIssue, 'PDF', '.pdf', volume?.complete_issue_file_url, fileCompleteIssue, setFileCompleteIssue],
+                    ['cover', 'cover_file_id', t.cover, 'IMG', 'image/*', volume?.cover_file_url, fileCover, setFileCover],
+                    ['contents', 'contents_file_id', t.contentsFile, 'PDF', '.pdf', volume?.contents_file_url, fileContents, setFileContents],
+                  ] as const).map(([key, field, label, kind, accept, currentUrl, selectedFile, setSelectedFile]) => {
+                    const inputId = `volume-file-${key}`
+                    const hasFile = Boolean(currentUrl || selectedFile)
+                    return <div className={`volume-edit__fileCard manuscript-file-slot ${hasFile ? 'volume-edit__fileCard--uploaded' : ''}`} key={key}>
+                      <div className="manuscript-file-slot__heading"><span>{label}</span><small>{selectedFile ? 'Новый файл' : currentUrl ? 'Загружен' : 'Нет файла'}</small></div>
+                      {hasFile && <div className="manuscript-file-card">
+                        <span className={`manuscript-file-card__type manuscript-file-card__type--${kind.toLowerCase()}`}>{kind}</span>
+                        <span className="manuscript-file-card__info"><strong title={selectedFile?.name || label}>{selectedFile?.name || label}</strong><small>{selectedFile ? 'Сохранится вместе с выпуском' : t.currentFile}</small></span>
+                        <span className="manuscript-file-card__tools">
+                          {currentUrl && <a className="file-icon-action" href={toApiFilesUrl(currentUrl)} download target="_blank" rel="noreferrer" title="Скачать файл" aria-label="Скачать файл">↓</a>}
+                          <label className="file-icon-action" htmlFor={inputId} title="Заменить файл" aria-label="Заменить файл">✎</label>
+                          <button className="file-icon-action file-icon-action--danger" type="button" disabled={fileDeleting === field} title={selectedFile ? 'Отменить выбор' : 'Удалить файл'} aria-label={selectedFile ? 'Отменить выбор' : 'Удалить файл'} onClick={() => selectedFile ? setSelectedFile(null) : void deleteVolumeFile(field, () => setSelectedFile(null))}>🗑</button>
+                        </span>
+                      </div>}
+                      <input id={inputId} className="manuscript-file-slot__input" type="file" accept={accept} onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                      {!hasFile && <label className="manuscript-file-dropzone" htmlFor={inputId}><span>+</span><strong>Добавить файл</strong><small>Нажмите для выбора</small></label>}
+                      {key === 'cover' && (() => {
+                        const src = selectedFile ? URL.createObjectURL(selectedFile) : currentUrl ? toApiFilesUrl(currentUrl) : null
+                        return src ? <div className="volume-edit__coverPreview"><img src={src} alt="Обложка выпуска" /></div> : null
+                      })()}
                     </div>
-                  </label>
-                  <label className="form-field volume-edit__fileCard volume-edit__fileCard--cover">
-                    <span className="volume-edit__fileIcon volume-edit__fileIcon--image">IMG</span>
-                    <span className="form-label">{t.cover}</span>
-                    <input
-                      type="file"
-                      className="file-input"
-                      accept="image/*"
-                      onChange={(e) => setFileCover(e.target.files?.[0] || null)}
-                    />
-                    <div className="meta-label">
-                      {volume?.cover_file_url ? (
-                        <a href={toApiFilesUrl(volume.cover_file_url)} target="_blank" rel="noreferrer">{t.openCover}</a>
-                      ) : (
-                        t.noFile
-                      )}
-                    </div>
-                    {(() => {
-                      const existing = volume?.cover_file_url ? toApiFilesUrl(volume.cover_file_url) : null
-                      const selected = fileCover ? URL.createObjectURL(fileCover) : null
-                      const src = selected || existing
-                      if (!src) return null
-                      return (
-                        <div className="volume-edit__coverPreview">
-                          <img src={src} alt="Обложка выпуска" />
-                        </div>
-                      )
-                    })()}
-                  </label>
-                  <label className="form-field volume-edit__fileCard">
-                    <span className="volume-edit__fileIcon">PDF</span>
-                    <span className="form-label">{t.contentsFile}</span>
-                    <input
-                      type="file"
-                      className="file-input"
-                      accept=".pdf"
-                      onChange={(e) => setFileContents(e.target.files?.[0] || null)}
-                    />
-                    <div className="meta-label">
-                      {volume?.contents_file_url ? (
-                        <a href={toApiFilesUrl(volume.contents_file_url)} target="_blank" rel="noreferrer">{t.currentFile}</a>
-                      ) : (
-                        t.noFile
-                      )}
-                    </div>
-                  </label>
+                  })}
                 </div>
               </div>
             </div>
@@ -388,7 +363,6 @@ export default function VolumeEditPage() {
           <div className="volume-edit__panelHeader volume-edit__panelHeader--tight">
             <div>
               <div className="panel-title">{t.articles}</div>
-              <div className="meta-label">{t.selected}: {selectedCount}</div>
             </div>
             <button className="button button--primary" type="button" onClick={() => { setArticlePickerOpen(true); if (!results) void doSearch({ resetPage: true }) }}>+ {t.addArticle}</button>
           </div>
@@ -444,6 +418,13 @@ export default function VolumeEditPage() {
           ) : (
             <div className="volume-edit__empty"><strong>{t.noArticles}</strong><button className="button button--primary" type="button" onClick={() => { setArticlePickerOpen(true); if (!results) void doSearch({ resetPage: true }) }}>+ {t.addArticle}</button></div>
           )}
+        </div>
+
+        <div className="volume-edit__saveBar">
+          <Link className="button button--ghost" to="/cabinet/volumes">← {t.back}</Link>
+          <button className="button button--primary" type="button" onClick={save} disabled={saving || loading}>
+            {saving ? t.saving : t.save}
+          </button>
         </div>
 
         {articlePickerOpen && <div className="volume-edit__modal" role="dialog" aria-modal="true" onMouseDown={(e) => { if (e.target === e.currentTarget) setArticlePickerOpen(false) }}><div className="panel volume-edit__panel volume-edit__picker">

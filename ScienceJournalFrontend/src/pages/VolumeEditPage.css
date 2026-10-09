@@ -108,13 +108,21 @@
 
 .volume-edit__fileCard {
   position: relative;
+  display: grid;
   align-content: start;
+  gap: 10px;
   min-height: 190px;
   padding: 18px;
   border: 1px solid #e1e4eb;
   border-radius: 15px;
   background: linear-gradient(145deg, #fafbfc, #fff);
   transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.volume-edit__fileCard--uploaded {
+  border-color: #d8bfc5;
+  background: linear-gradient(145deg, #fffafb, #fff);
+  box-shadow: inset 3px 0 0 #8b1d35;
 }
 
 .volume-edit__fileCard:hover {
@@ -278,6 +286,19 @@
   background: #fafbfc;
 }
 
+.volume-edit__saveBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 1rem;
+  padding: 18px 20px;
+  border: 1px solid #e6e8ee;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(27, 31, 43, .06);
+}
+
 .volume-edit__modal {
   position: fixed;
   inset: 0;
@@ -350,6 +371,16 @@
     bottom: -18px;
     margin: 18px -18px -18px;
     padding: 14px 18px;
+  }
+
+  .volume-edit__saveBar {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .volume-edit__saveBar .button {
+    justify-content: center;
+    width: 100%;
   }
 }
 

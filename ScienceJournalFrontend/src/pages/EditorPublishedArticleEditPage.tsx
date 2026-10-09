@@ -242,6 +242,7 @@ export default function EditorPublishedArticleEditPage() {
   const [fileAntiplagiarism, setFileAntiplagiarism] = useState<File | null>(null)
   const [fileAuthorInfo, setFileAuthorInfo] = useState<File | null>(null)
   const [fileCoverLetter, setFileCoverLetter] = useState<File | null>(null)
+  const [fileDeleting, setFileDeleting] = useState<string | null>(null)
   const [storedFileMeta, setStoredFileMeta] = useState<Record<string, StoredFileMeta>>({})
   const [activeEditSection, setActiveEditSection] = useState<'main' | 'content' | 'keywords' | 'authors' | 'files'>('main')
 
@@ -405,6 +406,31 @@ export default function EditorPublishedArticleEditPage() {
 
   const hasStoredFile = (kind: ApiMyFile['kind'], fileUrl: string | null) =>
     Boolean(fileUrl || myFiles.some((file) => file.kind === kind))
+
+  const deleteArticleFile = async (
+    field: 'manuscript_file_id' | 'antiplagiarism_file_id' | 'author_info_file_id' | 'cover_letter_file_id',
+    urlField: 'manuscript_file_url' | 'antiplagiarism_file_url' | 'author_info_file_url' | 'cover_letter_file_url',
+    clearDraft: () => void,
+  ) => {
+    if (!article) return
+    setFileDeleting(field)
+    setSubmitError(null)
+    try {
+      const updated = await api.updateEditorArticleFiles<ApiArticle>(article.id, { [field]: null })
+      setArticle(updated)
+      clearDraft()
+      setFieldErrors((current) => {
+        const next = { ...current }
+        if (urlField === 'manuscript_file_url') delete next.manuscript
+        if (urlField === 'author_info_file_url') delete next.authorInfo
+        return next
+      })
+    } catch (e: any) {
+      setSubmitError(String(e?.bodyJson?.detail || e?.message || 'Не удалось удалить файл'))
+    } finally {
+      setFileDeleting(null)
+    }
+  }
 
   const scrollToFirstError = (errors: Record<string, string>) => {
     const firstErrorKey = Object.keys(errors)[0]
@@ -1073,11 +1099,11 @@ export default function EditorPublishedArticleEditPage() {
         <p className="eyebrow">Файлы</p>
         <div className="manuscript-file-grid">
           {([
-            ['manuscript', 'Рукопись', article.manuscript_file_url, fileManuscript, setFileManuscript, true, 'manuscript'],
-            ['antiplagiarism', 'Антиплагиат', article.antiplagiarism_file_url, fileAntiplagiarism, setFileAntiplagiarism, false, ''],
-            ['author-info', 'Сведения об авторах', article.author_info_file_url, fileAuthorInfo, setFileAuthorInfo, true, 'authorInfo'],
-            ['cover-letter', 'Сопроводительное письмо', article.cover_letter_file_url, fileCoverLetter, setFileCoverLetter, false, ''],
-          ] as const).map(([key, label, currentUrl, selectedFile, setSelectedFile, required, errorKey]) => {
+            ['manuscript', 'manuscript_file_id', 'manuscript_file_url', 'Рукопись', article.manuscript_file_url, fileManuscript, setFileManuscript, true, 'manuscript'],
+            ['antiplagiarism', 'antiplagiarism_file_id', 'antiplagiarism_file_url', 'Антиплагиат', article.antiplagiarism_file_url, fileAntiplagiarism, setFileAntiplagiarism, false, ''],
+            ['author-info', 'author_info_file_id', 'author_info_file_url', 'Сведения об авторах', article.author_info_file_url, fileAuthorInfo, setFileAuthorInfo, true, 'authorInfo'],
+            ['cover-letter', 'cover_letter_file_id', 'cover_letter_file_url', 'Сопроводительное письмо', article.cover_letter_file_url, fileCoverLetter, setFileCoverLetter, false, ''],
+          ] as const).map(([key, field, urlField, label, currentUrl, selectedFile, setSelectedFile, required, errorKey]) => {
             const meta = getStoredMeta(currentUrl)
             const displayName = selectedFile?.name || meta?.original_name || (currentUrl ? 'Загруженный файл' : '')
             const kind = fileKind(displayName, selectedFile?.type || meta?.content_type)
@@ -1088,15 +1114,15 @@ export default function EditorPublishedArticleEditPage() {
               {displayName ? <div className="manuscript-file-card">
                 <span className={`manuscript-file-card__type manuscript-file-card__type--${kind.toLowerCase()}`}>{kind}</span>
                 <span className="manuscript-file-card__info"><strong title={displayName}>{displayName}</strong><small>{selectedFile ? 'Новый файл · сохранится вместе со статьёй' : 'Текущий файл'}{fileSize(size) ? ` · ${fileSize(size)}` : ''}</small></span>
-                {currentUrl && !selectedFile ? <a href={toApiFilesUrl(currentUrl)} target="_blank" rel="noreferrer">Открыть</a> : null}
+                <span className="manuscript-file-card__tools">
+                  {currentUrl ? <a className="file-icon-action" href={toApiFilesUrl(currentUrl)} download target="_blank" rel="noreferrer" title="Скачать файл" aria-label="Скачать файл">↓</a> : null}
+                  <label className="file-icon-action" htmlFor={inputId} title="Заменить файл" aria-label="Заменить файл">✎</label>
+                  <button className="file-icon-action file-icon-action--danger" type="button" disabled={fileDeleting === field} title={selectedFile ? 'Отменить выбор' : 'Удалить файл'} aria-label={selectedFile ? 'Отменить выбор' : 'Удалить файл'} onClick={() => selectedFile ? setSelectedFile(null) : void deleteArticleFile(field, urlField, () => setSelectedFile(null))}>🗑</button>
+                </span>
               </div> : <label className="manuscript-file-dropzone" htmlFor={inputId} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); setSelectedFile(e.dataTransfer.files?.[0] ?? null) }}>
                 <span>+</span><strong>Добавить файл</strong><small>Перетащите сюда или нажмите для выбора</small>
               </label>}
               <input id={inputId} className="manuscript-file-slot__input" type="file" accept=".pdf,.doc,.docx,.odt,.zip" onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)} />
-              {displayName ? <div className="manuscript-file-slot__actions">
-                <label className="button button--ghost button--compact" htmlFor={inputId}>{selectedFile ? 'Выбрать другой' : 'Заменить файл'}</label>
-                {selectedFile ? <button type="button" className="button button--ghost button--compact" onClick={() => setSelectedFile(null)}>Отмена</button> : null}
-              </div> : null}
               {fieldErrors[errorKey] ? <span className="form-error-text">{fieldErrors[errorKey]}</span> : null}
             </div>
           })}
