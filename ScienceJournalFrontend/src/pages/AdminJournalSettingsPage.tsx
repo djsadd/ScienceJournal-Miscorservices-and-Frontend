@@ -7,14 +7,22 @@ type Lang = 'ru' | 'kz' | 'en'
 type Settings = {
   university_name_ru: string; university_name_kz: string; university_name_en: string
   journal_name_ru: string; journal_name_kz: string; journal_name_en: string
-  editor_name: string; editor_email: string; phone: string; address: string; contact_email: string
+  editor_name_ru: string; editor_name_kz: string; editor_name_en: string
+  editor_email_ru: string; editor_email_kz: string; editor_email_en: string
+  phone_ru: string; phone_kz: string; phone_en: string
+  address_ru: string; address_kz: string; address_en: string
+  contact_email_ru: string; contact_email_kz: string; contact_email_en: string
   logo_available: boolean; logo_url: string | null; logo_version: number | null; requirements: Record<Lang, boolean>
 }
 
 const emptySettings: Settings = {
   university_name_ru: '', university_name_kz: '', university_name_en: '',
   journal_name_ru: '', journal_name_kz: '', journal_name_en: '',
-  editor_name: '', editor_email: '', phone: '', address: '', contact_email: '',
+  editor_name_ru: '', editor_name_kz: '', editor_name_en: '',
+  editor_email_ru: '', editor_email_kz: '', editor_email_en: '',
+  phone_ru: '', phone_kz: '', phone_en: '',
+  address_ru: '', address_kz: '', address_en: '',
+  contact_email_ru: '', contact_email_kz: '', contact_email_en: '',
   logo_available: false, logo_url: null, logo_version: null, requirements: { ru: false, kz: false, en: false },
 }
 const languageNames: Record<Lang, string> = { ru: 'Русский', kz: 'Қазақша', en: 'English' }
@@ -87,12 +95,15 @@ export default function AdminJournalSettingsPage() {
       </section>
       <section className="panel settings-section">
         <h2>{labels.contacts}</h2>
-        <div className="settings-form">
-          <label><span className="form-label">{labels.name}</span><input className="text-input" required value={settings.editor_name} onChange={e => setSettings({ ...settings, editor_name: e.target.value })} /></label>
-          <label><span className="form-label">{labels.editorEmail}</span><input className="text-input" type="email" required value={settings.editor_email} onChange={e => setSettings({ ...settings, editor_email: e.target.value })} /></label>
-          <label><span className="form-label">{labels.phone}</span><input className="text-input" required value={settings.phone} onChange={e => setSettings({ ...settings, phone: e.target.value })} /></label>
-          <label><span className="form-label">{labels.email}</span><input className="text-input" type="email" required value={settings.contact_email} onChange={e => setSettings({ ...settings, contact_email: e.target.value })} /></label>
-          <label className="settings-form__wide"><span className="form-label">{labels.address}</span><textarea className="text-input" required rows={3} value={settings.address} onChange={e => setSettings({ ...settings, address: e.target.value })} /></label>
+        <div className="settings-form settings-form--identity">
+          {(['ru', 'kz', 'en'] as Lang[]).map(language => <div className="settings-language" key={language}>
+            <h3>{languageNames[language]}</h3>
+            <label><span className="form-label">{labels.name}</span><input className="text-input" required value={settings[`editor_name_${language}`]} onChange={e => setSettings({ ...settings, [`editor_name_${language}`]: e.target.value })} /></label>
+            <label><span className="form-label">{labels.editorEmail}</span><input className="text-input" type="email" required value={settings[`editor_email_${language}`]} onChange={e => setSettings({ ...settings, [`editor_email_${language}`]: e.target.value })} /></label>
+            <label><span className="form-label">{labels.phone}</span><input className="text-input" required value={settings[`phone_${language}`]} onChange={e => setSettings({ ...settings, [`phone_${language}`]: e.target.value })} /></label>
+            <label><span className="form-label">{labels.email}</span><input className="text-input" type="email" required value={settings[`contact_email_${language}`]} onChange={e => setSettings({ ...settings, [`contact_email_${language}`]: e.target.value })} /></label>
+            <label><span className="form-label">{labels.address}</span><textarea className="text-input" required rows={3} value={settings[`address_${language}`]} onChange={e => setSettings({ ...settings, [`address_${language}`]: e.target.value })} /></label>
+          </div>)}
         </div>
       </section>
       <button className="button settings-save" disabled={saving}>{labels.save}</button>

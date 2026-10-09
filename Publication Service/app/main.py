@@ -25,11 +25,21 @@ DEFAULT_SETTINGS = {
     "journal_name_ru": "Известия университета «Туран-Астана»",
     "journal_name_kz": "«Тұран-Астана» университетінің хабарлары",
     "journal_name_en": "Turan-Astana University News",
-    "editor_name": "Доценко А.Н.",
-    "editor_email": "zharshy@tau-edu.kz",
-    "phone": "+7 (7172) 64-43-10",
-    "address": "г. Астана, пр. Ықылас Дүкенұлы, 29, Университет Туран-Астана",
-    "contact_email": "zharshy@tau-edu.kz",
+    "editor_name_ru": "Доценко А.Н.",
+    "editor_name_kz": "Доценко А.Н.",
+    "editor_name_en": "Dotsenko A.N.",
+    "editor_email_ru": "zharshy@tau-edu.kz",
+    "editor_email_kz": "zharshy@tau-edu.kz",
+    "editor_email_en": "zharshy@tau-edu.kz",
+    "phone_ru": "+7 (7172) 64-43-10",
+    "phone_kz": "+7 (7172) 64-43-10",
+    "phone_en": "+7 (7172) 64-43-10",
+    "address_ru": "г. Астана, пр. Ықылас Дүкенұлы, 29, Университет Туран-Астана",
+    "address_kz": "Астана қ., Ықылас Дүкенұлы даңғ., 29, Тұран-Астана университеті",
+    "address_en": "29 Ykylas Dukenuly Ave., Astana, Turan-Astana University",
+    "contact_email_ru": "zharshy@tau-edu.kz",
+    "contact_email_kz": "zharshy@tau-edu.kz",
+    "contact_email_en": "zharshy@tau-edu.kz",
 }
 
 
@@ -40,11 +50,21 @@ class JournalSettings(BaseModel):
     journal_name_ru: str = Field(min_length=1, max_length=200)
     journal_name_kz: str = Field(min_length=1, max_length=200)
     journal_name_en: str = Field(min_length=1, max_length=200)
-    editor_name: str
-    editor_email: EmailStr
-    phone: str
-    address: str
-    contact_email: EmailStr
+    editor_name_ru: str
+    editor_name_kz: str
+    editor_name_en: str
+    editor_email_ru: EmailStr
+    editor_email_kz: EmailStr
+    editor_email_en: EmailStr
+    phone_ru: str
+    phone_kz: str
+    phone_en: str
+    address_ru: str
+    address_kz: str
+    address_en: str
+    contact_email_ru: EmailStr
+    contact_email_kz: EmailStr
+    contact_email_en: EmailStr
 
 
 def ensure_storage() -> None:
@@ -56,7 +76,12 @@ def read_settings() -> dict:
     if not SETTINGS_FILE.exists():
         return DEFAULT_SETTINGS.copy()
     try:
-        return {**DEFAULT_SETTINGS, **json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))}
+        stored = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        for field in ("editor_name", "editor_email", "phone", "address", "contact_email"):
+            if field in stored:
+                for lang in LANGUAGES:
+                    stored.setdefault(f"{field}_{lang}", stored[field])
+        return {**DEFAULT_SETTINGS, **stored}
     except (OSError, ValueError, TypeError):
         return DEFAULT_SETTINGS.copy()
 

@@ -430,11 +430,21 @@ export const api = {
     journal_name_ru: string
     journal_name_kz: string
     journal_name_en: string
-    editor_name: string
-    editor_email: string
-    phone: string
-    address: string
-    contact_email: string
+    editor_name_ru: string
+    editor_name_kz: string
+    editor_name_en: string
+    editor_email_ru: string
+    editor_email_kz: string
+    editor_email_en: string
+    phone_ru: string
+    phone_kz: string
+    phone_en: string
+    address_ru: string
+    address_kz: string
+    address_en: string
+    contact_email_ru: string
+    contact_email_kz: string
+    contact_email_en: string
   }) => request<T>('/publication/journal-settings', 'PUT', { json: body }),
   uploadJournalLogo: <T>(file: File) => {
     const form = new FormData()
