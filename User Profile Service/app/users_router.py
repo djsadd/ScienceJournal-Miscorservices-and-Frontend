@@ -717,9 +717,14 @@ async def create_editorial_member(
     require_editorial_manager(current)
     data = payload.dict()
     data["group"] = normalize_editorial_group(payload.group)
-    data["full_name"] = payload.full_name.strip()
+    data["full_name_ru"] = (payload.full_name_ru or payload.full_name).strip()
+    data["full_name"] = data["full_name_ru"]
     if not data["full_name"]:
         raise HTTPException(status_code=400, detail="Full name is required")
+    for base in ("full_name", "status", "workplace", "citizenship"):
+        for lang in ("ru", "kz", "en"):
+            field = f"{base}_{lang}"
+            data[field] = clean_optional(data.get(field)) or clean_optional(data.get(base))
     for field in ("status", "workplace", "citizenship", "orcid", "scopus_author_id", "researcher_id"):
         data[field] = clean_optional(data.get(field))
     member = models.EditorialMember(**data)
@@ -743,11 +748,14 @@ async def update_editorial_member(
     data = payload.dict(exclude_unset=True)
     if "group" in data:
         data["group"] = normalize_editorial_group(data["group"] or "")
+    if "full_name_ru" in data:
+        data["full_name"] = (data["full_name_ru"] or "").strip()
     if "full_name" in data:
         data["full_name"] = (data["full_name"] or "").strip()
         if not data["full_name"]:
             raise HTTPException(status_code=400, detail="Full name is required")
-    for field in ("status", "workplace", "citizenship", "orcid", "scopus_author_id", "researcher_id"):
+    localized_fields = tuple(f"{base}_{lang}" for base in ("full_name", "status", "workplace", "citizenship") for lang in ("ru", "kz", "en"))
+    for field in ("status", "workplace", "citizenship", "orcid", "scopus_author_id", "researcher_id", *localized_fields):
         if field in data:
             data[field] = clean_optional(data[field])
     for field, value in data.items():

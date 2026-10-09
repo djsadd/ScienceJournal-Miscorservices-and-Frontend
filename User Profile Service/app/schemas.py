@@ -114,9 +114,21 @@ class RoleRequestOut(BaseModel):
 class EditorialMemberBase(BaseModel):
     group: str
     full_name: str
+    full_name_ru: str | None = None
+    full_name_kz: str | None = None
+    full_name_en: str | None = None
     status: str | None = None
+    status_ru: str | None = None
+    status_kz: str | None = None
+    status_en: str | None = None
     workplace: str | None = None
+    workplace_ru: str | None = None
+    workplace_kz: str | None = None
+    workplace_en: str | None = None
     citizenship: str | None = None
+    citizenship_ru: str | None = None
+    citizenship_kz: str | None = None
+    citizenship_en: str | None = None
     h_index_wos: int | None = None
     h_index_scopus: int | None = None
     orcid: str | None = None
@@ -132,9 +144,21 @@ class EditorialMemberCreate(EditorialMemberBase):
 class EditorialMemberUpdate(BaseModel):
     group: str | None = None
     full_name: str | None = None
+    full_name_ru: str | None = None
+    full_name_kz: str | None = None
+    full_name_en: str | None = None
     status: str | None = None
+    status_ru: str | None = None
+    status_kz: str | None = None
+    status_en: str | None = None
     workplace: str | None = None
+    workplace_ru: str | None = None
+    workplace_kz: str | None = None
+    workplace_en: str | None = None
     citizenship: str | None = None
+    citizenship_ru: str | None = None
+    citizenship_kz: str | None = None
+    citizenship_en: str | None = None
     h_index_wos: int | None = None
     h_index_scopus: int | None = None
     orcid: str | None = None
