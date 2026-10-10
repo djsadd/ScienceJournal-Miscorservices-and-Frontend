@@ -17,7 +17,7 @@ async def get_article_reviewers(article_id: int, request: Request):
 
     # Authorization: allow editors; else verify responsible author via Articles service
     roles = current.get("roles") or []
-    if "editor" not in roles and "admin" not in roles:
+    if not ({"editor", "admin", "commission"} & set(roles)):
         # Verify author access by calling Article Service's /my/{article_id}
         auth_header = request.headers.get("Authorization")
         if not auth_header:

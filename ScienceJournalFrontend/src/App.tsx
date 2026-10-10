@@ -30,7 +30,7 @@ import { RegisterPage } from './pages/RegisterPage'
 import { journalData } from './data/mockData'
 import { LayoutBoard } from './features/designers/LayoutBoard'
 import { api } from './api/client'
-import type { ReactElement } from 'react'
+import { useEffect, useState, type ReactElement } from 'react'
 import EditorialUnassignedPage from './pages/EditorialUnassignedPage'
 import EditorialPortfolioPage from './pages/EditorialPortfolioPage'
 import EditorArticleDetailPage from './pages/EditorArticleDetailPage'
@@ -61,6 +61,26 @@ function RequireAuth({ children }: { children: ReactElement }) {
   if (!tokens?.accessToken) {
     return <Navigate to="/login" replace />
   }
+  return children
+}
+
+function RequireRoles({ children, allowed, deniedTo = '/cabinet' }: { children: ReactElement; allowed: string[]; deniedTo?: string }) {
+  const [state, setState] = useState<'loading' | 'allowed' | 'denied'>('loading')
+  useEffect(() => {
+    let active = true
+    api.get<{ roles: string[] }>('/users/me/roles')
+      .then(({ roles = [] }) => {
+        if (!active) return
+        const activeRole = window.localStorage.getItem('activeRole')
+        const commissionDenied = roles.includes('commission') && !allowed.includes('commission')
+        const activeRoleDenied = activeRole === 'commission' && !allowed.includes('commission')
+        setState(!commissionDenied && !activeRoleDenied && roles.some((role) => allowed.includes(role)) ? 'allowed' : 'denied')
+      })
+      .catch(() => { if (active) setState('denied') })
+    return () => { active = false }
+  }, [allowed.join('|')])
+  if (state === 'loading') return <div className="loading">Загрузка...</div>
+  if (state === 'denied') return <Navigate to={deniedTo} replace />
   return children
 }
 
@@ -167,9 +187,11 @@ function App() {
         path="/cabinet/editorial2"
         element={
           <RequireAuth>
-            <MainLayout>
-              <EditorialPortfolioPage />
-            </MainLayout>
+            <RequireRoles allowed={['editor', 'admin', 'commission']}>
+              <MainLayout>
+                <EditorialPortfolioPage />
+              </MainLayout>
+            </RequireRoles>
           </RequireAuth>
         }
       />
@@ -177,9 +199,11 @@ function App() {
         path="/cabinet/editorial2/:id"
         element={
           <RequireAuth>
-            <MainLayout>
-              <EditorArticleDetailPage />
-            </MainLayout>
+            <RequireRoles allowed={['editor', 'admin', 'commission']}>
+              <MainLayout>
+                <EditorArticleDetailPage />
+              </MainLayout>
+            </RequireRoles>
           </RequireAuth>
         }
       />
@@ -197,9 +221,11 @@ function App() {
         path="/cabinet/editorial2/:id/edit"
         element={
           <RequireAuth>
-            <MainLayout>
-              <EditorPublishedArticleEditPage />
-            </MainLayout>
+            <RequireRoles allowed={['editor', 'admin']} deniedTo="/cabinet/editorial2">
+              <MainLayout>
+                <EditorPublishedArticleEditPage />
+              </MainLayout>
+            </RequireRoles>
           </RequireAuth>
         }
       />
@@ -207,9 +233,11 @@ function App() {
         path="/cabinet/editorial2/:id/versions/:versionId"
         element={
           <RequireAuth>
-            <MainLayout>
-              <EditorArticleVersionPage />
-            </MainLayout>
+            <RequireRoles allowed={['editor', 'admin', 'commission']}>
+              <MainLayout>
+                <EditorArticleVersionPage />
+              </MainLayout>
+            </RequireRoles>
           </RequireAuth>
         }
       />

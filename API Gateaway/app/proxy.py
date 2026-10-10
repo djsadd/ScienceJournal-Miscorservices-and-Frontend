@@ -1,8 +1,9 @@
 import httpx
-from fastapi import Request, Response
+from fastapi import HTTPException, Request, Response
+from jose import JWTError, jwt
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
-from app.config import API_PREFIX
+from app.config import ALGORITHM, API_PREFIX, SECRET_KEY
 
 # Remove hop-by-hop headers so we do not forward connection-specific metadata
 HOP_BY_HOP_HEADERS = {
@@ -38,6 +39,28 @@ def _strip_api_prefix(path: str) -> str:
 
 
 async def proxy_request(service_url: str, request: Request) -> Response:
+    # The selected commission workspace is always read-only. Validate that the
+    # selected role actually belongs to the authenticated token before using it.
+    active_role = (request.headers.get("X-Active-Role") or "").strip().lower()
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header:
+        try:
+            scheme, token = auth_header.split(" ", 1)
+            if scheme.lower() != "bearer":
+                raise ValueError
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            token_roles = payload.get("roles") or []
+            if isinstance(token_roles, str):
+                token_roles = [token_roles]
+            if active_role and active_role not in token_roles:
+                active_role = ""
+        except HTTPException:
+            raise
+        except (JWTError, ValueError):
+            raise HTTPException(status_code=401, detail="Invalid token")
+        if "commission" in token_roles and request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
+            raise HTTPException(status_code=403, detail="Commission role is read-only")
+
     # Start with client headers minus hop-by-hop ones
     headers = dict(_filter_headers(request.headers))
 

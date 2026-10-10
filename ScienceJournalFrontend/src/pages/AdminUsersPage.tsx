@@ -4,7 +4,7 @@ import { api, ApiError } from '../api/client'
 import { useLanguage } from '../shared/LanguageContext'
 import ConfirmModal from '../shared/components/ConfirmModal'
 
-type AdminRole = 'author' | 'reviewer' | 'editor' | 'layout' | 'admin'
+type AdminRole = 'author' | 'reviewer' | 'editor' | 'layout' | 'commission' | 'admin'
 type ReviewerScienceField =
   | 'economics'
   | 'politology'
@@ -68,9 +68,15 @@ type UserEditDraft = {
   phone: string
 }
 
+type NewUserDraft = UserEditDraft & {
+  password: string
+  roles: AdminRole[]
+  is_active: boolean
+}
+
 type LangKey = 'ru' | 'en' | 'kz'
 
-const roleOptions: AdminRole[] = ['author', 'reviewer', 'editor', 'layout', 'admin']
+const roleOptions: AdminRole[] = ['author', 'reviewer', 'editor', 'layout', 'commission', 'admin']
 const PAGE_SIZE = 10
 const orcidPattern = /^(\d{4}-){3}[\dX]{4}$/i
 const reviewerScienceFieldOptions: ReviewerScienceField[] = [
@@ -102,6 +108,7 @@ const roleLabels: Record<LangKey, Record<AdminRole, string>> = {
     reviewer: 'Рецензент',
     editor: 'Редактор',
     layout: 'Верстальщик',
+    commission: 'Комиссия',
     admin: 'Администратор',
   },
   en: {
@@ -109,6 +116,7 @@ const roleLabels: Record<LangKey, Record<AdminRole, string>> = {
     reviewer: 'Reviewer',
     editor: 'Editor',
     layout: 'Layout',
+    commission: 'Commission',
     admin: 'Administrator',
   },
   kz: {
@@ -116,6 +124,7 @@ const roleLabels: Record<LangKey, Record<AdminRole, string>> = {
     reviewer: 'Рецензент',
     editor: 'Редактор',
     layout: 'Беттеуші',
+    commission: 'Комиссия',
     admin: 'Әкімші',
   },
 }
@@ -472,6 +481,11 @@ const getUserEditDraft = (user: AdminUser): UserEditDraft => ({
   phone: user.phone || '',
 })
 
+const emptyNewUserDraft = (): NewUserDraft => ({
+  username: '', email: '', password: '', first_name: '', last_name: '',
+  organization: '', institution: '', phone: '', roles: ['author'], is_active: true,
+})
+
 export default function AdminUsersPage() {
   const { lang } = useLanguage()
   const locale = (lang === 'en' || lang === 'kz' ? lang : 'ru') as LangKey
@@ -494,7 +508,6 @@ export default function AdminUsersPage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
 
   const [savingKey, setSavingKey] = useState<string | null>(null)
-  const [draftRoles, setDraftRoles] = useState<Record<number, AdminRole>>({})
   const [passwordDrafts, setPasswordDrafts] = useState<Record<number, string>>({})
   const [passwordResults, setPasswordResults] = useState<Record<number, string>>({})
   const [reviewerOrcid, setReviewerOrcid] = useState('')
@@ -506,6 +519,10 @@ export default function AdminUsersPage() {
   const [userEditDraft, setUserEditDraft] = useState<UserEditDraft | null>(null)
   const [profileMessage, setProfileMessage] = useState<string | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
+  const [roleSelections, setRoleSelections] = useState<AdminRole[]>([])
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [newUser, setNewUser] = useState<NewUserDraft>(emptyNewUserDraft)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -517,7 +534,6 @@ export default function AdminUsersPage() {
       ])
       setUsers(usersData)
       setStats(statsData)
-      setDraftRoles(Object.fromEntries(usersData.map((user) => [user.id, user.role])))
       setSelectedUser((prev) => (prev ? usersData.find((user) => user.id === prev.id) ?? prev : prev))
     } catch (err) {
       console.error(err)
@@ -533,11 +549,11 @@ export default function AdminUsersPage() {
     try {
       const data = await api.getAdminUserDetail<AdminUser>(userId)
       setSelectedUser(data)
-      setDraftRoles((prev) => ({ ...prev, [data.id]: data.role }))
       setReviewerOrcid(data.orcid || '')
       setReviewerScienceFields(data.reviewer_science_fields || [])
       setReviewerScienceOther(data.reviewer_science_other || '')
       setUserEditDraft(getUserEditDraft(data))
+      setRoleSelections(getUserRoles(data).filter((role): role is AdminRole => roleOptions.includes(role as AdminRole)))
     } catch (err) {
       console.error(err)
       setDetailError(err instanceof ApiError ? `${t.detailError}: ${err.status}` : t.detailError)
@@ -612,13 +628,43 @@ export default function AdminUsersPage() {
     setUserEditDraft(user ? getUserEditDraft(user) : null)
   }
 
-  const handleRoleUpdate = async (userId: number) => {
-    const role = draftRoles[userId]
-    if (!role) return
-    setSavingKey(`role-${userId}`)
+  const handleRolesUpdate = async (userId: number) => {
+    if (!roleSelections.length) return
+    setSavingKey(`roles-${userId}`)
     try {
-      await api.updateAdminUserRole(userId, role)
+      await api.updateAdminUserRoles(userId, roleSelections)
       await Promise.all([load(), loadUserDetails(userId)])
+    } finally {
+      setSavingKey(null)
+    }
+  }
+
+  const toggleRoleSelection = (role: AdminRole) => {
+    setRoleSelections((current) => current.includes(role)
+      ? (current.length > 1 ? current.filter((item) => item !== role) : current)
+      : [...current, role])
+  }
+
+  const handleCreateUser = async () => {
+    setCreateError(null)
+    if (!newUser.username.trim() || !newUser.email.trim() || newUser.password.length < 8 || !newUser.roles.length) {
+      setCreateError('Заполните логин, email, пароль от 8 символов и выберите роль')
+      return
+    }
+    setSavingKey('create-user')
+    try {
+      await api.createAdminUser<AdminUser>({
+        ...newUser,
+        username: newUser.username.trim(), email: newUser.email.trim(),
+        first_name: newUser.first_name.trim() || null, last_name: newUser.last_name.trim() || null,
+        organization: newUser.organization.trim() || null, institution: newUser.institution.trim() || null,
+        phone: newUser.phone.trim() || null,
+      })
+      setNewUser(emptyNewUserDraft())
+      setIsCreateOpen(false)
+      await load()
+    } catch (err) {
+      setCreateError(err instanceof ApiError ? `Не удалось создать пользователя: ${err.status}` : 'Не удалось создать пользователя')
     } finally {
       setSavingKey(null)
     }
@@ -732,9 +778,14 @@ export default function AdminUsersPage() {
           <h1 className="page-title">{t.title}</h1>
           <p className="subtitle">{t.subtitle}</p>
         </div>
-        <button type="button" className="button button--ghost" onClick={load} disabled={loading}>
-          {t.refresh}
-        </button>
+        <div className="admin-user-modal__toolbar">
+          <button type="button" className="button button--primary" onClick={() => { setCreateError(null); setIsCreateOpen(true) }}>
+            Добавить пользователя
+          </button>
+          <button type="button" className="button button--ghost" onClick={load} disabled={loading}>
+            {t.refresh}
+          </button>
+        </div>
       </section>
 
       {stats ? (
@@ -879,6 +930,44 @@ export default function AdminUsersPage() {
           </div>
         ) : null}
       </section>
+
+      {isCreateOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsCreateOpen(false) }}>
+          <div className="modal admin-user-modal" role="dialog" aria-modal="true" aria-label="Добавление пользователя">
+            <div className="modal__header">
+              <div>
+                <div className="modal__title">Добавить пользователя</div>
+                <div className="modal__subtitle">Создайте учётную запись и сразу назначьте нужные роли.</div>
+              </div>
+              <button className="modal__close" type="button" onClick={() => setIsCreateOpen(false)}>×</button>
+            </div>
+            <div className="modal__body">
+              <div className="form-grid form-grid--two">
+                <label><span className="form-label">Логин *</span><input className="text-input" value={newUser.username} onChange={(e) => setNewUser((v) => ({ ...v, username: e.target.value }))} /></label>
+                <label><span className="form-label">Email *</span><input className="text-input" type="email" value={newUser.email} onChange={(e) => setNewUser((v) => ({ ...v, email: e.target.value }))} /></label>
+                <label><span className="form-label">Пароль *</span><input className="text-input" type="password" minLength={8} value={newUser.password} onChange={(e) => setNewUser((v) => ({ ...v, password: e.target.value }))} /></label>
+                <label><span className="form-label">Имя</span><input className="text-input" value={newUser.first_name} onChange={(e) => setNewUser((v) => ({ ...v, first_name: e.target.value }))} /></label>
+                <label><span className="form-label">Фамилия</span><input className="text-input" value={newUser.last_name} onChange={(e) => setNewUser((v) => ({ ...v, last_name: e.target.value }))} /></label>
+                <label><span className="form-label">Телефон</span><input className="text-input" value={newUser.phone} onChange={(e) => setNewUser((v) => ({ ...v, phone: e.target.value }))} /></label>
+                <label><span className="form-label">Организация</span><input className="text-input" value={newUser.organization} onChange={(e) => setNewUser((v) => ({ ...v, organization: e.target.value }))} /></label>
+                <label><span className="form-label">Учреждение</span><input className="text-input" value={newUser.institution} onChange={(e) => setNewUser((v) => ({ ...v, institution: e.target.value }))} /></label>
+              </div>
+              <section className="panel admin-user-modal__controls">
+                <div className="admin-user-modal__section-title">Роли *</div>
+                <div className="admin-user-modal__toolbar" style={{ flexWrap: 'wrap' }}>
+                  {roleOptions.map((role) => <label className="checkbox-line" key={role}><input type="checkbox" checked={newUser.roles.includes(role)} onChange={() => setNewUser((value) => ({ ...value, roles: value.roles.includes(role) ? (value.roles.length > 1 ? value.roles.filter((item) => item !== role) : value.roles) : [...value.roles, role] }))} /><span>{roleText[role]}</span></label>)}
+                </div>
+                <label className="checkbox-line"><input type="checkbox" checked={newUser.is_active} onChange={(e) => setNewUser((v) => ({ ...v, is_active: e.target.checked }))} /><span>Аккаунт активен</span></label>
+              </section>
+              {createError ? <div className="alert error">{createError}</div> : null}
+            </div>
+            <div className="modal__footer">
+              <button type="button" className="button button--ghost" onClick={() => setIsCreateOpen(false)}>Отмена</button>
+              <button type="button" className="button button--primary" disabled={savingKey === 'create-user'} onClick={handleCreateUser}>{savingKey === 'create-user' ? 'Создание…' : 'Создать пользователя'}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {selectedUserId != null ? (
         <div className="modal-backdrop" onClick={closeModal}>
@@ -1107,28 +1196,24 @@ export default function AdminUsersPage() {
                   </section>
 
                   <section className="panel admin-user-modal__controls">
-                    <div className="admin-user-modal__section-title">{t.role}</div>
-                    <div className="admin-user-modal__toolbar">
-                      <select
-                        className="text-input"
-                        value={draftRoles[modalUser.id] ?? modalUser.role}
-                        onChange={(event) => setDraftRoles((prev) => ({ ...prev, [modalUser.id]: event.target.value as AdminRole }))}
-                      >
-                        {roleOptions.map((role) => (
-                          <option key={role} value={role}>
-                            {roleText[role]}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="button button--ghost button--compact"
-                        disabled={savingKey === `role-${modalUser.id}`}
-                        onClick={() => handleRoleUpdate(modalUser.id)}
-                      >
-                        {t.saveRole}
-                      </button>
+                    <div className="admin-user-modal__section-title">Редактор ролей</div>
+                    <p className="form-hint">Выберите одну или несколько ролей пользователя. Роль комиссии доступна только здесь, в админке.</p>
+                    <div className="admin-user-modal__toolbar" style={{ flexWrap: 'wrap' }}>
+                      {roleOptions.map((role) => (
+                        <label className="checkbox-line" key={role}>
+                          <input type="checkbox" checked={roleSelections.includes(role)} onChange={() => toggleRoleSelection(role)} />
+                          <span>{roleText[role]}</span>
+                        </label>
+                      ))}
                     </div>
+                    <button
+                      type="button"
+                      className="button button--primary button--compact"
+                      disabled={!roleSelections.length || savingKey === `roles-${modalUser.id}`}
+                      onClick={() => handleRolesUpdate(modalUser.id)}
+                    >
+                      {savingKey === `roles-${modalUser.id}` ? 'Сохранение…' : 'Сохранить роли'}
+                    </button>
                   </section>
 
                   <section className="panel admin-user-modal__controls">

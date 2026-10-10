@@ -9,6 +9,7 @@ const title = (a: Article) => a.title_ru || a.title_kz || a.title_en || `Ста�
 const authors = (a: Article) => Array.isArray(a.authors) && a.authors.length ? a.authors.map((x:any) => [x.last_name,x.first_name].filter(Boolean).join(' ')).join(', ') : 'Авторы не указаны'
 
 export default function VolumesPage() {
+  const [readOnly,setReadOnly] = useState(true)
   const [volumes,setVolumes] = useState<Volume[]>([])
   const [selectedId,setSelectedId] = useState<number>()
   const [loading,setLoading] = useState(true)
@@ -20,7 +21,10 @@ export default function VolumesPage() {
   const [creating,setCreating] = useState(false)
   const [form,setForm] = useState({year:String(new Date().getFullYear()),number:'',month:'',planned_publication_date:'',target_article_count:'',title_ru:'',description:'',is_active:true})
 
-  useEffect(() => { api.getVolumes<Volume[]>({active_only:false}).then(data => { setVolumes(data); setSelectedId(data[0]?.id) }).catch((e:any) => setError(e?.message || 'Не удалось загрузить выпуски')).finally(() => setLoading(false)) },[])
+  useEffect(() => {
+    api.get<{roles:string[]}>('/users/me/roles').then(({roles=[]}) => setReadOnly(roles.includes('commission'))).catch(() => setReadOnly(true))
+    api.getVolumes<Volume[]>({active_only:false}).then(data => { setVolumes(data); setSelectedId(data[0]?.id) }).catch((e:any) => setError(e?.message || 'Не удалось загрузить выпуски')).finally(() => setLoading(false))
+  },[])
   const selected = useMemo(() => volumes.find(v => v.id === selectedId) || volumes[0],[volumes,selectedId])
   const articles = selected?.articles || []
 
@@ -51,22 +55,22 @@ export default function VolumesPage() {
     <header className="volumes-heading"><h1>Выпуски</h1><p>Редакционная рабочая область журнала</p></header>
     {error && <div className="volumes-message volumes-message--error">{error}</div>}
     {loading && !volumes.length && <div className="volumes-message">Загрузка выпусков…</div>}
-    {!loading && !volumes.length && <div className="volumes-message volumes-empty"><span>Выпусков пока нет</span><button className="v-button v-button--primary" onClick={() => setCreating(true)}>Создать выпуск</button></div>}
+    {!loading && !volumes.length && <div className="volumes-message volumes-empty"><span>Выпусков пока нет</span>{!readOnly && <button className="v-button v-button--primary" onClick={() => setCreating(true)}>Создать выпуск</button>}</div>}
     {selected && <div className="volumes-layout">
       <aside className="volumes-nav">
-        <div className="volumes-nav__head"><div><strong>Выпуски</strong><span>Архив и план публикаций</span></div><button onClick={() => setCreating(true)} aria-label="Создать выпуск">+</button></div>
+        <div className="volumes-nav__head"><div><strong>Выпуски</strong><span>{readOnly ? 'Просмотр выпусков' : 'Архив и план публикаций'}</span></div>{!readOnly && <button onClick={() => setCreating(true)} aria-label="Создать выпуск">+</button>}</div>
         {volumes.map(v => { const count=v.articles?.length||0; const done=v.articles?.filter(a=>a.doi).length||0; return <button key={v.id ?? `${v.year}-${v.number}`} className={`volume-tab ${v.id===selected.id?'volume-tab--active':''}`} onClick={() => {setSelectedId(v.id);setShowAll(false)}}>
           <span className="volume-tab__top"><strong>№ {v.number}, {v.year}</strong><em className={v.is_active?'published':'in-progress'}>{v.is_active?'Активен':'Неактивен'}</em></span>
-          <small>{v.planned_publication_date ? new Date(`${v.planned_publication_date}T00:00:00`).toLocaleDateString('ru-RU') : `${v.month?months[v.month-1]+' ':''}${v.year}`} · {count}{v.target_article_count ? ` из ${v.target_article_count}` : ''} статей</small><i><span style={{width:`${v.target_article_count?Math.min(count/v.target_article_count*100,100):(count?done/count*100:8)}%`}} /></i>
+          <small>{v.planned_publication_date ? new Date(`${v.planned_publication_date}T00:00:00`).toLocaleDateString('ru-RU') : `${v.month?months[v.month-1]+' ':''}${v.year}`} · {count}{!readOnly && v.target_article_count ? ` из ${v.target_article_count}` : ''} статей</small>{!readOnly && <i><span style={{width:`${v.target_article_count?Math.min(count/v.target_article_count*100,100):(count?done/count*100:8)}%`}} /></i>}
         </button>})}
       </aside>
       <main className="volume-main">
         <section className="volume-hero">
-          <div className="volume-hero__top"><div><span className="volume-kicker">НАУЧНЫЙ ЖУРНАЛ · ВЫПУСК</span><h2>№ {selected.number}, {selected.year}</h2>{selected.title_ru && <p>{selected.title_ru}</p>}</div><div className="volume-actions"><Link className="v-button" to={`/archive/volumes/${selected.id}`}>Предпросмотр</Link><Link className="v-button v-button--primary" to={`/cabinet/volumes/${selected.id}/edit`}>Настроить выпуск</Link></div></div>
+          <div className="volume-hero__top"><div><span className="volume-kicker">НАУЧНЫЙ ЖУРНАЛ · ВЫПУСК</span><h2>№ {selected.number}, {selected.year}</h2>{selected.title_ru && <p>{selected.title_ru}</p>}</div><div className="volume-actions"><Link className="v-button" to={`/archive/volumes/${selected.id}`}>Предпросмотр</Link>{!readOnly && <Link className="v-button v-button--primary" to={`/cabinet/volumes/${selected.id}/edit`}>Настроить выпуск</Link>}</div></div>
         </section>
         <section className="volume-content">
-          <div className="volume-content__head"><div><h3>Содержание выпуска</h3><p>Порядок материалов и готовность к публикации</p></div><Link className="v-button" to={`/cabinet/volumes/${selected.id}/edit`}>+ Добавить статью</Link></div>
-          {!articles.length ? <div className="volume-content__empty">В выпуске пока нет статей. Добавьте первый материал через настройки.</div> : <div>{(showAll?articles:articles.slice(0,4)).map((a,index) => { const progress=a.doi?100:a.layout_file_url?75:a.manuscript_file_url?50:25; return <div className={`volume-article ${draggedId===a.id?'volume-article--dragging':''} ${dragOverId===a.id?'volume-article--drag-over':''}`} key={a.id} onDragOver={e=>{e.preventDefault();setDragOverId(a.id)}} onDragLeave={()=>setDragOverId(id=>id===a.id?null:id)} onDrop={e=>{e.preventDefault();void dropArticle(a.id)}}><span className="grip" draggable={!reordering} title="Перетащите, чтобы изменить порядок" onDragStart={e=>{e.dataTransfer.effectAllowed='move';setDraggedId(a.id)}} onDragEnd={()=>{setDraggedId(null);setDragOverId(null)}}>⠿</span><span className="article-no">{String(index+1).padStart(2,'0')}</span><div className="article-info"><strong>{title(a)}</strong><span>{authors(a)}{a.article_type?` · ${a.article_type}`:''}</span></div><div className="article-progress"><span>Готовность <b>{progress}%</b></span><i><em style={{width:`${progress}%`}} /></i></div><Link className="article-menu" to={`/cabinet/editorial2/${a.id}`}>•••</Link></div>})}{articles.length>4&&<button className="show-all" onClick={() => setShowAll(v=>!v)}>{showAll?'Свернуть список':`Показать все ${articles.length} материалов`}</button>}</div>}
+          <div className="volume-content__head"><div><h3>Содержание выпуска</h3><p>{readOnly ? 'Материалы выпуска' : 'Порядок материалов и готовность к публикации'}</p></div>{!readOnly && <Link className="v-button" to={`/cabinet/volumes/${selected.id}/edit`}>+ Добавить статью</Link>}</div>
+          {!articles.length ? <div className="volume-content__empty">В выпуске пока нет статей.{!readOnly ? ' Добавьте первый материал через настройки.' : ''}</div> : <div>{(showAll?articles:articles.slice(0,4)).map((a,index) => { const progress=a.doi?100:a.layout_file_url?75:a.manuscript_file_url?50:25; return <div className={`volume-article ${draggedId===a.id?'volume-article--dragging':''} ${dragOverId===a.id?'volume-article--drag-over':''}`} key={a.id} onDragOver={e=>{if(!readOnly){e.preventDefault();setDragOverId(a.id)}}} onDragLeave={()=>{if(!readOnly)setDragOverId(id=>id===a.id?null:id)}} onDrop={e=>{if(!readOnly){e.preventDefault();void dropArticle(a.id)}}}>{!readOnly && <span className="grip" draggable={!reordering} title="Перетащите, чтобы изменить порядок" onDragStart={e=>{e.dataTransfer.effectAllowed='move';setDraggedId(a.id)}} onDragEnd={()=>{setDraggedId(null);setDragOverId(null)}}>⠿</span>}<span className="article-no">{String(index+1).padStart(2,'0')}</span><div className="article-info"><strong>{title(a)}</strong><span>{authors(a)}{a.article_type?` · ${a.article_type}`:''}</span></div>{!readOnly && <div className="article-progress"><span>Готовность <b>{progress}%</b></span><i><em style={{width:`${progress}%`}} /></i></div>}<Link className="article-menu" to={`/cabinet/editorial2/${a.id}`}>•••</Link></div>})}{articles.length>4&&<button className="show-all" onClick={() => setShowAll(v=>!v)}>{showAll?'Свернуть список':`Показать все ${articles.length} материалов`}</button>}</div>}
         </section>
       </main>
     </div>}

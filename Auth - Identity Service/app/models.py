@@ -16,7 +16,7 @@ class User(Base):
     institution = Column(String, nullable=True)  # университет/лаборатория/институт
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, default="author")  # author, editor, reviewer, layout, admin
+    role = Column(String, default="author")  # author, editor, reviewer, layout, commission, admin
     is_active = Column(Boolean, default=True)
     is_hidden = Column(Boolean, default=False, nullable=False)
     accept_terms = Column(Boolean, default=False)

@@ -89,6 +89,15 @@ def ensure_editor(user):
         raise HTTPException(status_code=403, detail="Editor role required")
 
 
+def ensure_editorial_viewer(user):
+    """Grant full-manuscript read access without granting mutation rights."""
+    roles = user.get("roles", [])
+    if isinstance(roles, str):
+        roles = [roles]
+    if not ({"editor", "admin", "commission"} & set(roles)):
+        raise HTTPException(status_code=403, detail="Editorial viewer role required")
+
+
 def has_any_role(user, allowed_roles: set[str]) -> bool:
     roles = user.get("roles", [])
     if isinstance(roles, str):
@@ -218,9 +227,9 @@ def list_unassigned_articles(
     - page_size: Количество элементов на странице (по умолчанию 10)
     
     Возвращает статьи со статусом 'submitted' по умолчанию.
-    Доступно только для пользователей с ролью 'editor'.
+    Доступно редакторам, администраторам и комиссии в режиме просмотра.
     """
-    ensure_editor(current_user)
+    ensure_editorial_viewer(current_user)
     
     from sqlalchemy.orm import joinedload
     from sqlalchemy import extract, or_, and_
@@ -360,7 +369,7 @@ def list_article_statuses(
     """
     # Require auth; editors will be the primary consumers but other authed pages may re-use it.
     if scope == "unassigned":
-        ensure_editor(current_user)
+        ensure_editorial_viewer(current_user)
         rows = db.query(models.Article.status).distinct().order_by(models.Article.status).all()
         return [status.value if hasattr(status, "value") else str(status) for (status,) in rows if status]
 
@@ -375,10 +384,10 @@ def get_article_detail_for_editor(
 ):
     """
     Детальная страница рукописи для редактора.
-    Доступна только пользователям с ролью 'editor'.
+    Доступна редакторам, администраторам и комиссии в режиме просмотра.
     Возвращает полную информацию о статье, включая авторов, ключевые слова и версии.
     """
-    ensure_editor(current_user)
+    ensure_editorial_viewer(current_user)
     
     from sqlalchemy.orm import joinedload
     article = (
@@ -593,10 +602,10 @@ def get_article_version_detail_for_editor(
 ):
     """
     Детальная страница версии рукописи для редактора.
-    Поведение аналогично основной статье: доступ только для роли 'editor'.
+    Поведение аналогично основной статье: комиссия также имеет доступ на просмотр.
     Возвращает полную информацию о версии, включая авторов и ключевые слова.
     """
-    ensure_editor(current_user)
+    ensure_editorial_viewer(current_user)
     from sqlalchemy.orm import joinedload
     version = (
         db.query(models.ArticleVersion)

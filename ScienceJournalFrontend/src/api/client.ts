@@ -170,6 +170,9 @@ const request = async <T>(path: string, method: HttpMethod = 'GET', options: Req
       ...(json && !isFormData ? { 'Content-Type': 'application/json' } : {}),
       Accept: 'application/json',
       ...(currentTokens?.accessToken ? { Authorization: `Bearer ${currentTokens.accessToken}` } : {}),
+      ...(currentTokens?.accessToken && typeof window !== 'undefined' && window.localStorage.getItem('activeRole')
+        ? { 'X-Active-Role': window.localStorage.getItem('activeRole') as string }
+        : {}),
       ...(headers || {}),
     }
 
@@ -372,6 +375,12 @@ export const api = {
   getArticleReviewers: <T>(articleId: string | number) => request<T>(`/articles/${articleId}/reviewers`, 'GET'),
   getReviewers: <T>(language?: 'ru' | 'kz') => request<T>('/users/reviewers', 'GET', { params: { language } }),
   getAdminUsers: <T>() => request<T>('/auth/admin/users', 'GET'),
+  createAdminUser: <T>(body: {
+    username: string; email: string; password: string
+    first_name?: string | null; last_name?: string | null
+    organization?: string | null; institution?: string | null; phone?: string | null
+    roles: string[]; is_active: boolean
+  }) => request<T>('/auth/admin/users', 'POST', { json: body }),
   getAdminUserDetail: <T>(userId: number | string) => request<T>(`/auth/admin/users/${userId}`, 'GET'),
   updateAdminUser: <T>(userId: number | string, body: {
     username: string
@@ -407,6 +416,8 @@ export const api = {
     request<T>(`/auth/admin/users/${userId}/activate`, 'PATCH', { json: { is_active: isActive } }),
   updateAdminUserRole: <T>(userId: number | string, role: string) =>
     request<T>(`/auth/admin/users/${userId}/role`, 'PATCH', { json: { role } }),
+  updateAdminUserRoles: <T>(userId: number | string, roles: string[]) =>
+    request<T>(`/auth/admin/users/${userId}/roles`, 'PATCH', { json: { roles } }),
   resetAdminUserPassword: <T>(userId: number | string, newPassword?: string) =>
     request<T>(`/auth/admin/users/${userId}/reset-password`, 'POST', {
       json: newPassword ? { new_password: newPassword } : {},

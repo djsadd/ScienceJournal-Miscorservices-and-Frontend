@@ -7,6 +7,7 @@ import { toApiFilesUrl } from '../shared/url'
 
 export default function VolumeDetailPage() {
   const { id } = useParams()
+  const [readOnly, setReadOnly] = useState(true)
   const [volume, setVolume] = useState<Volume | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +33,12 @@ export default function VolumeDetailPage() {
       cancelled = true
     }
   }, [id])
+
+  useEffect(() => {
+    api.get<{ roles: string[] }>('/users/me/roles')
+      .then(({ roles = [] }) => setReadOnly(roles.includes('commission')))
+      .catch(() => setReadOnly(true))
+  }, [])
 
   const moveArticle = async (articleId: string, direction: 'up' | 'down') => {
     if (!id) return
@@ -59,7 +66,7 @@ export default function VolumeDetailPage() {
         </div>
         <div className="section-actions">
           <Link className="button button--ghost" to="/cabinet/volumes">← Назад к томам</Link>
-          {volume && (
+          {volume && !readOnly && (
             <Link className="button" to={`/cabinet/volumes/${volume.id}/edit`}>Редактировать том</Link>
           )}
         </div>
@@ -114,7 +121,7 @@ export default function VolumeDetailPage() {
                     </div>
                     <div className="latest-table__cell latest-table__cell--title">
                       <div className="latest-table__name">{article.title_ru || article.title_en || article.title_kz || 'Без заголовка'}</div>
-                      <div className="latest-table__meta">DOI: {article.doi || '—'}</div>
+                      {!readOnly && <div className="latest-table__meta">DOI: {article.doi || '—'}</div>}
                     </div>
                     <div className="latest-table__cell">{article.article_type || '—'}</div>
                     <div className="latest-table__cell">
@@ -130,6 +137,7 @@ export default function VolumeDetailPage() {
                       )}
                     </div>
                     <div className="latest-table__cell" style={{ display: 'flex', gap: '0.5rem' }}>
+                      {!readOnly && <>
                       <button
                         className="button button--ghost button--compact"
                         type="button"
@@ -146,6 +154,7 @@ export default function VolumeDetailPage() {
                       >
                         ↓
                       </button>
+                      </>}
                     </div>
                   </div>
                 )

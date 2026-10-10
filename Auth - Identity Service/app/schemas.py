@@ -131,6 +131,23 @@ class AdminUserUpdate(BaseModel):
     phone: str | None = Field(default=None, max_length=50)
 
 
+class AdminUserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=100)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    first_name: str | None = Field(default=None, max_length=150)
+    last_name: str | None = Field(default=None, max_length=150)
+    organization: str | None = Field(default=None, max_length=255)
+    institution: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=50)
+    roles: list[str] = Field(min_length=1)
+    is_active: bool = True
+
+
+class AdminUserRolesUpdate(BaseModel):
+    roles: list[str] = Field(min_length=1)
+
+
 class AdminUserStats(BaseModel):
     total: int
     active: int

@@ -10,7 +10,7 @@ interface MainLayoutProps {
   children: ReactNode
 }
 
-type RoleKey = 'author' | 'editor' | 'reviewer' | 'layout' | 'admin'
+type RoleKey = 'author' | 'editor' | 'reviewer' | 'layout' | 'commission' | 'admin'
 type LangKey = 'ru' | 'en' | 'kz'
 type CabinetBrandSettings = {
   journal_name_ru: string; journal_name_kz: string; journal_name_en: string
@@ -96,6 +96,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       editor: 'Редактор',
       reviewer: 'Рецензент',
       layout: 'Вёрстальщик',
+      commission: 'Комиссия',
       admin: 'Администратор',
     },
     roleSwitcherLabel: 'Выбор роли',
@@ -188,6 +189,11 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           ],
         },
       ],
+      commission: [{ title: 'Просмотр', items: [
+        { label: 'Все рукописи', path: '/cabinet/editorial2' },
+        { label: 'Выпуски', path: '/cabinet/volumes' },
+        { label: 'Профиль', path: '/cabinet/profile' },
+      ] }],
       admin: [
         {
           title: 'Обзор',
@@ -241,6 +247,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       editor: 'Editor',
       reviewer: 'Reviewer',
       layout: 'Designer',
+      commission: 'Commission',
       admin: 'Administrator',
     },
     roleSwitcherLabel: 'Role switcher',
@@ -333,6 +340,11 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           ],
         },
       ],
+      commission: [{ title: 'Read only', items: [
+        { label: 'All manuscripts', path: '/cabinet/editorial2' },
+        { label: 'Issues', path: '/cabinet/volumes' },
+        { label: 'Profile', path: '/cabinet/profile' },
+      ] }],
       admin: [
         {
           title: 'Overview',
@@ -386,6 +398,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
       editor: 'Редактор',
       reviewer: 'Рецензент',
       layout: 'Дизайнер',
+      commission: 'Комиссия',
       admin: 'Әкімші',
     },
     roleSwitcherLabel: 'Рөлді таңдау',
@@ -478,6 +491,11 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           ],
         },
       ],
+      commission: [{ title: 'Тек көру', items: [
+        { label: 'Барлық қолжазбалар', path: '/cabinet/editorial2' },
+        { label: 'Шығарылымдар', path: '/cabinet/volumes' },
+        { label: 'Профиль', path: '/cabinet/profile' },
+      ] }],
       admin: [
         {
           title: 'Шолу',
@@ -527,7 +545,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
   },
 }
 
-const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
+const allRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'commission', 'admin']
 const selfRequestRoles: RoleKey[] = ['author', 'editor', 'reviewer', 'layout']
 const isRoleKey = (value: string): value is RoleKey => allRoles.includes(value as RoleKey)
 const languageOptions: Lang[] = ['ru', 'en', 'kz']

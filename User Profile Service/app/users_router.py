@@ -6,7 +6,7 @@ import httpx
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-ALLOWED_ROLES = {"author", "reviewer", "editor", "layout", "admin"}
+ALLOWED_ROLES = {"author", "reviewer", "editor", "layout", "commission", "admin"}
 ALLOWED_SELF_REQUEST_ROLES = {"author", "reviewer", "editor", "layout"}
 ROLE_REQUEST_PENDING_STATUSES = {"pending", "pending_editor", "pending_admin"}
 

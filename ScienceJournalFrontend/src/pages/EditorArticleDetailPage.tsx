@@ -91,6 +91,24 @@ export default function EditorArticleDetailPage() {
   const [data, setData] = useState<ArticleOut | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [canEdit, setCanEdit] = useState(false)
+  const [isCommission, setIsCommission] = useState(false)
+  useEffect(() => {
+    let active = true
+    api.get<{ roles: string[] }>('/users/me/roles')
+      .then(({ roles = [] }) => {
+        if (!active) return
+        const commissionMode = roles.includes('commission')
+        setCanEdit(!commissionMode && (roles.includes('editor') || roles.includes('admin')))
+        setIsCommission(commissionMode && roles.includes('commission'))
+      })
+      .catch(() => {
+        if (!active) return
+        setCanEdit(false)
+        setIsCommission(false)
+      })
+    return () => { active = false }
+  }, [])
   const [correspondence, setCorrespondence] = useState<CorrespondenceItem[]>([])
   const [correspondenceLoading, setCorrespondenceLoading] = useState(false)
   const [correspondenceError, setCorrespondenceError] = useState<string | null>(null)
@@ -345,9 +363,7 @@ export default function EditorArticleDetailPage() {
 
     return fields.length > 0 ? fields.join(', ') : 'Пусто'
   }
-  // Article data is loaded through an editor-only endpoint. Using that result
-  // avoids hiding controls when a redundant /auth/me request fails or is slow.
-  const isEditor = Boolean(data)
+  const isEditor = canEdit
   const assignedReviewerIds = useMemo(() => new Set(reviewList.map((item) => item.reviewer_id)), [reviewList])
 
   // Upload layout states (editor-only UI)
@@ -846,6 +862,7 @@ export default function EditorArticleDetailPage() {
               <span className="manuscript-hero__number">№ {String(data.id).padStart(6, '0')}</span>
               <span className="manuscript-status">{formatArticleStatus(data.status, pageLang)}</span>
               <span className="manuscript-type">{formatArticleType(data.article_type, pageLang)}</span>
+              {isCommission && <span className="pill">Только просмотр</span>}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', gap: '1rem', flexWrap: 'wrap' }}>
               <div className="manuscript-hero__heading">

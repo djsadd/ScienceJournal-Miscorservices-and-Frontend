@@ -5,7 +5,7 @@ import { api } from '../api/client'
 import { useLanguage } from '../shared/LanguageContext'
 import type { Lang } from '../shared/labels'
 
-type RoleKey = 'author' | 'editor' | 'reviewer' | 'layout' | 'admin'
+type RoleKey = 'author' | 'editor' | 'reviewer' | 'layout' | 'commission' | 'admin'
 
 interface MeResponse {
   id: number
@@ -52,7 +52,7 @@ type DashboardCopy = {
   empty: string
   all: string
   manuscriptNumber: string
-  roleNames: Record<RoleKey, string>
+  roleNames: Record<string, string>
   status: Record<string, string>
   stats: {
     manuscripts: string
@@ -64,7 +64,7 @@ type DashboardCopy = {
     pending: string
     volumes: string
   }
-  recent: Record<RoleKey, { title: string; path: string }>
+  recent: Record<string, { title: string; path: string }>
   notifications: string
   notificationEmpty: string
   locale: string
@@ -238,7 +238,7 @@ const copies: Record<Lang, DashboardCopy> = {
   },
 }
 
-const roleKeys: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'admin']
+const roleKeys: RoleKey[] = ['author', 'editor', 'reviewer', 'layout', 'commission', 'admin']
 const isRoleKey = (value: string): value is RoleKey => roleKeys.includes(value as RoleKey)
 
 const readStoredRole = (): RoleKey | null => {
@@ -362,7 +362,7 @@ export function Dashboard() {
             setArticles(data.map(normalizeArticle))
             setNotifications(latestNotifications)
           }
-        } else if (nextRole === 'editor') {
+        } else if (nextRole === 'editor' || nextRole === 'commission') {
           const [data, latestNotifications] = await Promise.all([
             api.getUnassignedArticles<{ items?: Record<string, unknown>[] } | Record<string, unknown>[]>({ status: 'all', page_size: 20 }),
             notificationsPromise,
@@ -450,17 +450,17 @@ export function Dashboard() {
       meta: formatDate(article.submittedAt, t.locale),
       statusKey: article.status,
       statusLabel: t.status[article.status] ?? article.status,
-      path: activeRole === 'editor' ? `/cabinet/editorial2/${article.id}` : `/cabinet/my-articles/${article.id}`,
+      path: activeRole === 'editor' || activeRole === 'commission' ? `/cabinet/editorial2/${article.id}` : `/cabinet/my-articles/${article.id}`,
     }))
   }, [activeRole, adminStats, articles, reviews, t, volumes])
 
-  const section = t.recent[activeRole]
+  const section = t.recent[activeRole] ?? { title: 'Рукописи (только просмотр)', path: '/cabinet/editorial2' }
 
   return (
     <div className="app-container dashboard-home">
       <section className="section-header dashboard-home__header" aria-label={t.title}>
         <div>
-          <p className="eyebrow">{t.roleNames[activeRole]}</p>
+          <p className="eyebrow">{t.roleNames[activeRole] ?? 'Комиссия'}</p>
           <h1 className="page-title">{t.title}</h1>
         </div>
       </section>

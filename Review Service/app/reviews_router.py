@@ -574,7 +574,7 @@ def get_review(review_id: int, db: Session = Depends(get_db), current_user: dict
     if not db_review:
         raise HTTPException(status_code=404, detail="Review not found")
     roles = current_user.get("roles", [])
-    if ("editor" not in roles) and ("admin" not in roles) and (db_review.reviewer_id != current_user["user_id"]):
+    if not ({"editor", "admin", "commission"} & set(roles)) and (db_review.reviewer_id != current_user["user_id"]):
         raise HTTPException(status_code=403, detail="Not allowed to view this review")
     return db_review
 

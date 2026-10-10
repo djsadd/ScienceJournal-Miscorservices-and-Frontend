@@ -233,8 +233,8 @@ def get_article_correspondence_history(
     roles = current_user.get("roles") or []
     if isinstance(roles, str):
         roles = [roles]
-    if "editor" not in roles and "admin" not in roles:
-        raise HTTPException(status_code=403, detail="Editor role required")
+    if not ({"editor", "admin", "commission"} & set(roles)):
+        raise HTTPException(status_code=403, detail="Editorial viewer role required")
 
     return (
         db.query(models.Notification)

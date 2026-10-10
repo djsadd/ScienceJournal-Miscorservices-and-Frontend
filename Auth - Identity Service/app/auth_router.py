@@ -823,6 +823,104 @@ def get_all_users(
     return result
 
 
+@router.post("/admin/users", response_model=schemas.UserOut, status_code=201)
+def create_admin_user(
+    payload: schemas.AdminUserCreate,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    allowed_roles = {"author", "editor", "reviewer", "layout", "commission", "admin"}
+    roles = list(dict.fromkeys(role.strip().lower() for role in payload.roles if role.strip()))
+    if not roles or any(role not in allowed_roles for role in roles):
+        raise HTTPException(status_code=400, detail="Invalid roles")
+
+    username = payload.username.strip()
+    email = str(payload.email).strip().lower()
+    existing_username = db.query(models.User).filter(func.lower(models.User.username) == username.lower()).first()
+    existing_email = db.query(models.User).filter(func.lower(models.User.email) == email).first()
+    if existing_username or existing_email:
+        raise build_registration_conflict_error(bool(existing_username), bool(existing_email))
+
+    first_name = (payload.first_name or "").strip() or None
+    last_name = (payload.last_name or "").strip() or None
+    full_name = " ".join(part for part in [first_name, last_name] if part) or username
+    user = models.User(
+        username=username,
+        email=email,
+        hashed_password=security.hash_password(payload.password),
+        role=roles[0],
+        is_active=payload.is_active,
+        full_name=full_name,
+        first_name=first_name,
+        last_name=last_name,
+        organization=(payload.organization or "").strip() or None,
+        institution=(payload.institution or "").strip() or None,
+        accept_terms=False,
+        notify_status=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            response = client.post(
+                f"{config.USER_SERVICE_URL}/users/",
+                json={
+                    "user_id": user.id,
+                    "full_name": full_name,
+                    "roles": roles,
+                    "organization": user.organization,
+                    "phone": (payload.phone or "").strip() or None,
+                    "preferred_language": "en",
+                },
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+            response.raise_for_status()
+    except Exception as exc:
+        db.delete(user)
+        db.commit()
+        raise HTTPException(status_code=502, detail="Failed to create user profile") from exc
+    return user
+
+
+@router.patch("/admin/users/{user_id}/roles", response_model=schemas.UserOut)
+def update_admin_user_roles(
+    user_id: int,
+    payload: schemas.AdminUserRolesUpdate,
+    admin: models.User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    allowed_roles = {"author", "editor", "reviewer", "layout", "commission", "admin"}
+    roles = list(dict.fromkeys(role.strip().lower() for role in payload.roles if role.strip()))
+    if not roles or any(role not in allowed_roles for role in roles):
+        raise HTTPException(status_code=400, detail="Invalid roles")
+    if user_id == admin.id and "admin" not in roles:
+        raise HTTPException(status_code=400, detail="You cannot remove your own administrator role")
+
+    user = db.query(models.User).filter(models.User.id == user_id, models.User.is_hidden == False).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            response = client.patch(
+                f"{config.USER_SERVICE_URL}/users/internal/{user_id}/roles",
+                json={"roles": roles},
+                headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
+            )
+            response.raise_for_status()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Failed to update profile roles") from exc
+
+    if user.role not in roles:
+        user.role = roles[0]
+    if "admin" in roles:
+        user.is_active = True
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @router.get("/admin/users/stats", response_model=schemas.AdminUserStats)
 def get_user_stats(
     admin: models.User = Depends(require_admin),
@@ -1169,7 +1267,7 @@ def get_active_users_by_role(
     """Return active, visible users of a role to trusted internal services."""
     if not x_service_secret or x_service_secret != config.SHARED_SERVICE_SECRET:
         raise HTTPException(status_code=403, detail="Forbidden")
-    if role not in {"author", "editor", "reviewer", "layout", "admin"}:
+    if role not in {"author", "editor", "reviewer", "layout", "commission", "admin"}:
         raise HTTPException(status_code=422, detail="Unsupported role")
     return (
         db.query(models.User)
@@ -1197,7 +1295,7 @@ def update_user_role(
     if user.is_hidden:
         raise HTTPException(status_code=404, detail="User not found")
 
-    allowed_roles = {"author", "editor", "reviewer", "layout", "admin"}
+    allowed_roles = {"author", "editor", "reviewer", "layout", "commission", "admin"}
     if role_update.role not in allowed_roles:
         raise HTTPException(status_code=400, detail="Invalid role")
 
