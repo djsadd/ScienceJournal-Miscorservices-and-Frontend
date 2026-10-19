@@ -6237,7 +6237,7 @@
   max-width: 820px;
   margin: 1rem 0 0;
   color: #171113;
-  font-size: 1rem;
+  font-size: clamp(1.125rem, 1.8vw, 1.25rem);
   line-height: 1.65;
   letter-spacing: 0;
 }
