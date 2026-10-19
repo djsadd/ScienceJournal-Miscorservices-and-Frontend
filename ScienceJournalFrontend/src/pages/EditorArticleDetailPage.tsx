@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { toApiFilesUrl } from '../shared/url'
@@ -528,13 +528,15 @@ export default function EditorArticleDetailPage() {
     Promise.all(ids.map((fileId) => api.get<FileOut>(`/files/${fileId}`).catch(() => null)))
       .then((items) => setStoredFileMeta((current) => ({ ...current, ...Object.fromEntries(items.filter((item): item is FileOut => Boolean(item)).map((item) => [item.id, item])) })))
   }, [layoutRecords])
-  // Author details modal state
-  const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorOut | null>(null)
-  const [authorSaving, setAuthorSaving] = useState(false)
-  const [authorError, setAuthorError] = useState<string | null>(null)
+  const authorDetailsRef = useRef<HTMLDivElement>(null)
   const [keywordModalOpen, setKeywordModalOpen] = useState(false)
   const [selectedKeyword, setSelectedKeyword] = useState<KeywordOut | null>(null)
+
+  useEffect(() => {
+    if (!selectedAuthor) return
+    requestAnimationFrame(() => authorDetailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [selectedAuthor])
 
   const fetchLayoutRecords = async (articleId: number) => {
     setLayoutRecordsLoading(true)
@@ -1043,12 +1045,37 @@ export default function EditorArticleDetailPage() {
               <p>{data.authors.length ? `Указано авторов: ${data.authors.length}` : 'Авторы не указаны'}</p>
             </div>
             {data.authors.length === 0 ? <div className="module-empty">Авторы пока не добавлены.</div> : <div className="author-cards">
-              {data.authors.map((author) => <button className="author-card" type="button" key={author.id} onClick={() => { setSelectedAuthor(author); setAuthorModalOpen(true) }}>
+              {data.authors.map((author) => <div className={`author-card${selectedAuthor?.id === author.id ? ' is-selected' : ''}`} key={author.id}>
                 <span className="author-card__avatar">{authorLocalized(author, 'first_name', pageLang).charAt(0)}{authorLocalized(author, 'last_name', pageLang).charAt(0)}</span>
                 <span className="author-card__content"><strong>{authorLocalized(author, 'last_name', pageLang)} {authorLocalized(author, 'first_name', pageLang)} {authorLocalized(author, 'patronymic', pageLang)}</strong><small>{author.email}</small><small>{authorLocalized(author, 'affiliation1', pageLang) || 'Аффилиация не указана'}</small></span>
                 {author.is_corresponding && <span className="author-card__badge">Контактный автор</span>}
-                <span className="author-card__arrow">→</span>
-              </button>)}
+                <button className="author-card__view" type="button" onClick={() => setSelectedAuthor(author)}>Просмотр</button>
+              </div>)}
+            </div>}
+            {selectedAuthor && <div className="author-inline-details" ref={authorDetailsRef} tabIndex={-1}>
+              <div className="author-inline-details__header">
+                <div><p className="eyebrow">Подробная информация</p><h3>{authorLocalized(selectedAuthor, 'last_name', pageLang)} {authorLocalized(selectedAuthor, 'first_name', pageLang)} {authorLocalized(selectedAuthor, 'patronymic', pageLang)}</h3></div>
+                <button className="button button--ghost button--compact" type="button" onClick={() => setSelectedAuthor(null)}>Скрыть</button>
+              </div>
+              <dl className="author-inline-details__contacts">
+                <div><dt>Email</dt><dd>{selectedAuthor.email || '—'}</dd></div>
+                <div><dt>Телефон</dt><dd>{selectedAuthor.phone || '—'}</dd></div>
+                <div><dt>Страна</dt><dd>{getCountryLabel(selectedAuthor.country) || '—'}</dd></div>
+                <div><dt>Адрес</dt><dd>{selectedAuthor.address || '—'}</dd></div>
+                <div><dt>ORCID</dt><dd>{selectedAuthor.orcid || '—'}</dd></div>
+                <div><dt>Scopus Author ID</dt><dd>{selectedAuthor.scopus_author_id || '—'}</dd></div>
+                <div><dt>ResearcherID</dt><dd>{selectedAuthor.researcher_id || '—'}</dd></div>
+                <div><dt>Статус</dt><dd>{selectedAuthor.is_corresponding ? 'Контактный автор' : 'Соавтор'}</dd></div>
+              </dl>
+              <div className="author-inline-details__languages">
+                {(['en', 'ru', 'kz'] as const).map((language) => <section key={language}>
+                  <h4>{language === 'en' ? 'Латиница' : language === 'ru' ? 'Русский' : 'Қазақша'}</h4>
+                  <p><span>ФИО</span><strong>{authorLocalized(selectedAuthor, 'last_name', language)} {authorLocalized(selectedAuthor, 'first_name', language)} {authorLocalized(selectedAuthor, 'patronymic', language)}</strong></p>
+                  <p><span>Основная аффилиация</span><strong>{authorLocalized(selectedAuthor, 'affiliation1', language) || '—'}</strong></p>
+                  {authorLocalized(selectedAuthor, 'affiliation2', language) && <p><span>Дополнительная аффилиация</span><strong>{authorLocalized(selectedAuthor, 'affiliation2', language)}</strong></p>}
+                  {authorLocalized(selectedAuthor, 'affiliation3', language) && <p><span>Дополнительная аффилиация</span><strong>{authorLocalized(selectedAuthor, 'affiliation3', language)}</strong></p>}
+                </section>)}
+              </div>
             </div>}
           </div>}
 
@@ -1586,52 +1613,6 @@ export default function EditorArticleDetailPage() {
           </div>
         </section>
       )}
-      {authorModalOpen && selectedAuthor && (
-        <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
-          <div className="modal modal--wide author-editor-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0 }}>Автор</h3>
-              <button className="modal__close" onClick={() => setAuthorModalOpen(false)}>×</button>
-            </div>
-            <div className="modal__body">
-              <div className="author-editor-form">
-                <section className="author-editor-section">
-                  <div className="author-editor-section__heading"><span>01</span><div><h4>Основная информация</h4><p>Контактные данные и научные идентификаторы автора.</p></div></div>
-                  <div className="author-editor-grid">
-                    {([['email', 'Email *'], ['prefix', 'Префикс'], ['phone', 'Телефон'], ['address', 'Адрес'], ['orcid', 'ORCID'], ['scopus_author_id', 'Scopus Author ID'], ['researcher_id', 'ResearcherID']] as const).map(([field, label]) => <label className={field === 'address' ? 'form-field author-editor-grid__wide' : 'form-field'} key={field}><span className="form-label">{label}</span><input className="text-input" value={String(selectedAuthor[field] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [field]: e.target.value })} disabled={!canEdit} /></label>)}
-                    <div className="form-field"><span className="form-label">Страна</span><div className="author-editor-readonly">{getCountryLabel(selectedAuthor.country) || '—'}</div></div>
-                    <label className="form-field"><span className="form-label">Контактный автор</span><select className="text-input" value={selectedAuthor.is_corresponding ? 'yes' : 'no'} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, is_corresponding: e.target.value === 'yes' })} disabled={!canEdit}><option value="yes">Да</option><option value="no">Нет</option></select></label>
-                  </div>
-                </section>
-                {(['en', 'ru', 'kz'] as const).map((language, index) => {
-                  const languageTitle = language === 'en' ? 'English' : language === 'ru' ? 'Русский' : 'Қазақша'
-                  return <section className="author-editor-section" key={language}>
-                    <div className="author-editor-section__heading"><span>0{index + 2}</span><div><h4>{languageTitle}: ФИО и аффилиации</h4><p>{language === 'en' ? 'Обязательная основная версия данных автора.' : 'Необязательный локализованный вариант.'}</p></div></div>
-                    <div className="author-editor-grid">
-                      {(['last_name', 'first_name', 'patronymic'] as const).map((field) => { const key = `${field}_${language}` as keyof AuthorOut; const label = field === 'last_name' ? 'Фамилия' : field === 'first_name' ? 'Имя' : 'Отчество'; const required = language === 'en' && field !== 'patronymic'; return <label className="form-field" key={field}><span className="form-label">{label}{required ? ' *' : ''}</span><input className="text-input" value={String(selectedAuthor[key] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [key]: e.target.value })} disabled={!canEdit} /></label> })}
-                      {(['affiliation1', 'affiliation2', 'affiliation3'] as const).map((field, affiliationIndex) => { const key = `${field}_${language}` as keyof AuthorOut; return <label className="form-field author-editor-grid__wide" key={field}><span className="form-label">{affiliationIndex === 0 ? 'Основная аффилиация' : `Аффилиация ${affiliationIndex + 1}`}{language === 'en' && affiliationIndex === 0 ? ' *' : ''}</span><textarea className="text-input" rows={2} value={String(selectedAuthor[key] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [key]: e.target.value })} disabled={!canEdit} /></label> })}
-                    </div>
-                  </section>
-                })}
-              </div>
-              {authorError && <div className="alert error" style={{ marginTop: '1rem' }}>{authorError}</div>}
-            </div>
-            <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button className="button button--ghost" onClick={() => setAuthorModalOpen(false)}>Закрыть</button>
-              {canEdit && <button className="button button--primary" disabled={authorSaving || !selectedAuthor.email || !selectedAuthor.country || !authorLocalized(selectedAuthor, 'first_name', 'en').trim() || !authorLocalized(selectedAuthor, 'last_name', 'en').trim() || !authorLocalized(selectedAuthor, 'affiliation1', 'en').trim()} onClick={async () => {
-                setAuthorSaving(true); setAuthorError(null)
-                try {
-                  const payload = { ...Object.fromEntries((['en', 'ru', 'kz'] as const).flatMap((language) => (['first_name', 'patronymic', 'last_name', 'affiliation1', 'affiliation2', 'affiliation3'] as const).map((field) => [`${field}_${language}`, (selectedAuthor as any)[`${field}_${language}`]?.trim() || null]))), email: selectedAuthor.email.trim(), prefix: selectedAuthor.prefix?.trim() || null, phone: selectedAuthor.phone?.trim() || null, address: selectedAuthor.address?.trim() || null, is_corresponding: selectedAuthor.is_corresponding, orcid: selectedAuthor.orcid?.trim() || null, scopus_author_id: selectedAuthor.scopus_author_id?.trim() || null, researcher_id: selectedAuthor.researcher_id?.trim() || null }
-                  const updated = await api.updateAuthor<AuthorOut>(selectedAuthor.id, payload)
-                  setData((current) => current ? { ...current, authors: current.authors.map((author) => author.id === updated.id ? updated : author) } : current)
-                  setSelectedAuthor(updated); setAuthorModalOpen(false)
-                } catch (e: any) { setAuthorError(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить автора') } finally { setAuthorSaving(false) }
-              }}>{authorSaving ? 'Сохранение…' : 'Сохранить'}</button>}
-            </div>
-          </div>
-        </div>
-      )}
-
       {keywordModalOpen && selectedKeyword && (
         <div className="modal-backdrop" onClick={() => setKeywordModalOpen(false)}>
           <div className="modal keyword-modal" onClick={(e) => e.stopPropagation()}>
