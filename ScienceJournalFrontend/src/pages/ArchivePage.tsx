@@ -13,7 +13,7 @@ export function ArchivePage() {
   const t = {
     ru: {
       title: 'Архив выпусков',
-      summary: 'Архив научных статей журнала · ISSN 2958-8103',
+      summary: 'Архив научных статей журнала',
       search: 'Поиск по названию или автору…',
       all: 'Все',
       expand: 'Развернуть всё',
@@ -28,7 +28,7 @@ export function ArchivePage() {
     },
     en: {
       title: 'Issue archive',
-      summary: 'Scientific journal archive · ISSN 2958-8103',
+      summary: 'Scientific journal archive',
       search: 'Search by title or author…',
       all: 'All',
       expand: 'Expand all',
@@ -43,7 +43,7 @@ export function ArchivePage() {
     },
     kz: {
       title: 'Шығарылымдар мұрағаты',
-      summary: 'Ғылыми журнал мұрағаты · ISSN 2958-8103',
+      summary: 'Ғылыми журнал мұрағаты',
       search: 'Атауы немесе авторы бойынша іздеу…',
       all: 'Барлығы',
       expand: 'Барлығын ашу',

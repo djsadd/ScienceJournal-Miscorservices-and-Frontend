@@ -153,14 +153,13 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
       label: nav.editorial.title,
       children: [
         { href: '/editorial', label: nav.editorial.board },
-        { href: '/policies', label: nav.editorial.policies },
       ],
     },
     {
-      href: '/policies',
+      href: '/policies/editorial',
       label: nav.policies.title,
       children: [
-        { href: '/policies', label: nav.policies.editorial },
+        { href: '/policies/editorial', label: nav.policies.editorial },
         { href: '/policies/ethics', label: nav.policies.ethics },
         { href: '/policies/review', label: nav.policies.review },
         { href: '/policies/ai', label: nav.policies.ai },

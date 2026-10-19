@@ -7,7 +7,7 @@ type NavCopy = {
   archive: string
   search: string
   contacts: string
-  editorial: { title: string; board: string; policies: string }
+  editorial: { title: string; board: string }
   policies: { title: string; editorial: string; ethics: string; ai: string; review: string }
   authors: { title: string; requirements: string; contract: string }
   cabinet: string
@@ -180,7 +180,7 @@ export const publicNavCopy: Record<Lang, NavCopy> = {
     archive: 'Архив',
     search: 'Поиск',
     contacts: 'Контакты',
-    editorial: { title: 'Редакция', board: 'Состав редакции', policies: 'Политики издания' },
+    editorial: { title: 'Редакция', board: 'Состав редакции' },
     policies: {
       title: 'Политика',
       editorial: 'Редакционная политика',
@@ -215,7 +215,7 @@ export const publicNavCopy: Record<Lang, NavCopy> = {
     archive: 'Archive',
     search: 'Search',
     contacts: 'Contacts',
-    editorial: { title: 'Editorial', board: 'Editorial board', policies: 'Journal policies' },
+    editorial: { title: 'Editorial', board: 'Editorial board' },
     policies: {
       title: 'Policy',
       editorial: 'Editorial policy',
@@ -250,7 +250,7 @@ export const publicNavCopy: Record<Lang, NavCopy> = {
     archive: 'Мұрағат',
     search: 'Іздеу',
     contacts: 'Байланыс',
-    editorial: { title: 'Редакция', board: 'Редколлегия құрамы', policies: 'Журнал саясаты' },
+    editorial: { title: 'Редакция', board: 'Редколлегия құрамы' },
     policies: {
       title: 'Саясат',
       editorial: 'Редакциялық саясат',

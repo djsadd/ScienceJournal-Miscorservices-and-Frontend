@@ -104,7 +104,7 @@ const publicRoutes: { path: string; element: ReactElement }[] = [
   { path: '/archive/volumes/:volumeId/articles/:articleId', element: <PublicArticleDetailPage /> },
   { path: '/editorial', element: <EditorialPage /> },
   { path: '/editorial/unassigned', element: <EditorialUnassignedPage /> },
-  { path: '/policies', element: <PoliciesPage /> },
+  { path: '/policies/editorial', element: <PoliciesPage /> },
   { path: '/contacts', element: <ContactsPage /> },
   { path: '/policies/ethics', element: <PolicyEthicsPage /> },
   { path: '/policies/ai', element: <PolicyAIPage /> },
