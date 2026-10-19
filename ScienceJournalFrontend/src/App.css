@@ -7820,6 +7820,12 @@
 
 .editor-author-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .editor-author-form-grid--name { grid-template-columns: .65fr 1fr 1fr 1fr; }
+.editor-author-form-grid--name-rows { grid-template-columns: 1fr; gap: 16px; }
+.editor-author-name-row { display: grid; grid-template-columns: 92px repeat(3, minmax(0, 1fr)); align-items: end; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #eee4e6; }
+.editor-author-name-row > strong { align-self: center; color: #7d273c; font-size: 12px; }
+.editor-author-name-row--prefix { grid-template-columns: 92px minmax(0, 1fr); }
+.editor-author-name-row--prefix .form-field { max-width: 220px; }
+.editor-author-contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .editor-author-form-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .editor-author-form-grid__wide { grid-column: span 2; }
 .editor-author-form-grid--name .editor-author-form-grid__wide { grid-column: span 3; }
@@ -7845,6 +7851,9 @@
   .editor-author-modal > .modal__header, .editor-author-modal__body, .editor-author-modal > .modal__footer { padding-left: 16px; padding-right: 16px; }
   .editor-author-form-section { grid-template-columns: 1fr; gap: 12px; }
   .editor-author-form-grid, .editor-author-form-grid--name, .editor-author-form-grid--three { grid-template-columns: 1fr; }
+  .editor-author-name-row, .editor-author-name-row--prefix { grid-template-columns: 1fr; align-items: stretch; }
+  .editor-author-name-row--prefix .form-field { max-width: none; }
+  .editor-author-contact-grid { grid-template-columns: 1fr; }
   .editor-author-form-grid__wide, .editor-author-form-grid--name .editor-author-form-grid__wide { grid-column: auto; }
   .editor-author-modal > .modal__footer .button { flex: 1; }
 }

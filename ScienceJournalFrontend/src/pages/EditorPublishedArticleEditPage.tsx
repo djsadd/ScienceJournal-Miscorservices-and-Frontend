@@ -25,7 +25,7 @@ interface ApiAuthor {
   last_name: string
   phone: string
   address: string
-  country: string
+  country: { id: number; name: string; alpha_2?: string; alpha_3?: string }
   affiliation1: string
   affiliation2: string
   affiliation3: string
@@ -33,7 +33,18 @@ interface ApiAuthor {
   orcid: string
   scopus_author_id: string
   researcher_id: string
+  first_name_en: string | null
+  first_name_ru: string | null
+  first_name_kz: string | null
+  patronymic_en: string | null
+  patronymic_ru: string | null
+  patronymic_kz: string | null
+  last_name_en: string | null
+  last_name_ru: string | null
+  last_name_kz: string | null
 }
+
+type CountryOption = { id: number; name: string; alpha_2: string; alpha_3: string }
 
 interface ApiArticle {
   id: number
@@ -158,9 +169,15 @@ type AuthorForm = {
   firstName: string
   middleName: string
   lastName: string
+  firstNameRu: string
+  middleNameRu: string
+  lastNameRu: string
+  firstNameKz: string
+  middleNameKz: string
+  lastNameKz: string
   phone: string
   address: string
-  country: string
+  countryId: string
   affiliation1: string
   affiliation2: string
   affiliation3: string
@@ -176,9 +193,15 @@ const createEmptyAuthorForm = (): AuthorForm => ({
   firstName: '',
   middleName: '',
   lastName: '',
+  firstNameRu: '',
+  middleNameRu: '',
+  lastNameRu: '',
+  firstNameKz: '',
+  middleNameKz: '',
+  lastNameKz: '',
   phone: '',
   address: '',
-  country: '',
+  countryId: '',
   affiliation1: '',
   affiliation2: '',
   affiliation3: '',
@@ -192,12 +215,18 @@ const mapApiAuthorToForm = (author: ApiAuthor): AuthorForm => ({
   id: author.id,
   email: author.email,
   prefix: author.prefix ?? '',
-  firstName: author.first_name,
-  middleName: author.patronymic ?? '',
-  lastName: author.last_name,
+  firstName: author.first_name_en ?? author.first_name,
+  middleName: author.patronymic_en ?? author.patronymic ?? '',
+  lastName: author.last_name_en ?? author.last_name,
+  firstNameRu: author.first_name_ru ?? '',
+  middleNameRu: author.patronymic_ru ?? '',
+  lastNameRu: author.last_name_ru ?? '',
+  firstNameKz: author.first_name_kz ?? '',
+  middleNameKz: author.patronymic_kz ?? '',
+  lastNameKz: author.last_name_kz ?? '',
   phone: author.phone ?? '',
   address: author.address ?? '',
-  country: getCountryLabel(author.country),
+  countryId: author.country?.id ? String(author.country.id) : '',
   affiliation1: author.affiliation1,
   affiliation2: author.affiliation2 ?? '',
   affiliation3: author.affiliation3 ?? '',
@@ -235,6 +264,7 @@ export default function EditorPublishedArticleEditPage() {
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [authorForm, setAuthorForm] = useState<AuthorForm>(createEmptyAuthorForm())
   const [authorList, setAuthorList] = useState<AuthorForm[]>([])
+  const [countries, setCountries] = useState<CountryOption[]>([])
   const [editingAuthorIndex, setEditingAuthorIndex] = useState<number | null>(null)
   const [authorDeleteDialog, setAuthorDeleteDialog] = useState<{ index: number; name: string; status: 'confirm' | 'success' } | null>(null)
   // file replacement state
@@ -245,6 +275,14 @@ export default function EditorPublishedArticleEditPage() {
   const [fileDeleting, setFileDeleting] = useState<string | null>(null)
   const [storedFileMeta, setStoredFileMeta] = useState<Record<string, StoredFileMeta>>({})
   const [activeEditSection, setActiveEditSection] = useState<'main' | 'content' | 'keywords' | 'authors' | 'files'>('main')
+
+  useEffect(() => {
+    let active = true
+    api.get<CountryOption[]>('/countries')
+      .then((items) => { if (active) setCountries(items) })
+      .catch((err) => console.error('Failed to load countries', err))
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     if (!id) return
@@ -317,7 +355,7 @@ export default function EditorPublishedArticleEditPage() {
       !authorForm.email.trim()
       || !authorForm.firstName.trim()
       || !authorForm.lastName.trim()
-      || !authorForm.country.trim()
+      || !authorForm.countryId
       || !authorForm.affiliation1.trim()
     ) return
     const payload = {
@@ -326,9 +364,18 @@ export default function EditorPublishedArticleEditPage() {
       first_name: authorForm.firstName.trim(),
       patronymic: authorForm.middleName.trim() || null,
       last_name: authorForm.lastName.trim(),
+      first_name_en: authorForm.firstName.trim(),
+      patronymic_en: authorForm.middleName.trim() || null,
+      last_name_en: authorForm.lastName.trim(),
+      first_name_ru: authorForm.firstNameRu.trim() || null,
+      patronymic_ru: authorForm.middleNameRu.trim() || null,
+      last_name_ru: authorForm.lastNameRu.trim() || null,
+      first_name_kz: authorForm.firstNameKz.trim() || null,
+      patronymic_kz: authorForm.middleNameKz.trim() || null,
+      last_name_kz: authorForm.lastNameKz.trim() || null,
       phone: authorForm.phone.trim() || null,
       address: authorForm.address.trim() || null,
-      country: authorForm.country.trim(),
+      country_id: Number(authorForm.countryId),
       affiliation1: authorForm.affiliation1.trim(),
       affiliation2: authorForm.affiliation2.trim() || null,
       affiliation3: authorForm.affiliation3.trim() || null,
@@ -1355,16 +1402,18 @@ export default function EditorPublishedArticleEditPage() {
             </div>
             <div className="modal__body editor-author-modal__body">
               <section className="editor-author-form-section">
-                <div className="editor-author-form-section__title"><span>01</span><div><h4>Основная информация</h4><p>Имя и контактные данные автора</p></div></div>
-                <div className="editor-author-form-grid editor-author-form-grid--name">
-                  <div className="form-field"><label className="form-label">Префикс</label><input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} placeholder="Д-р, проф." /></div>
-                  <div className="form-field"><label className="form-label">Имя<RequiredMark /></label><input className="text-input" autoFocus value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} placeholder="Имя" /></div>
-                  <div className="form-field"><label className="form-label">Отчество</label><input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} placeholder="Отчество" /></div>
-                  <div className="form-field"><label className="form-label">Фамилия<RequiredMark /></label><input className="text-input" value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} placeholder="Фамилия" /></div>
+                <div className="editor-author-form-section__title"><span>01</span><div><h4>Основная информация</h4><p>ФИО отдельно на латинице, русском и казахском</p></div></div>
+                <div className="editor-author-form-grid editor-author-form-grid--name-rows">
+                  <div className="editor-author-name-row editor-author-name-row--prefix"><strong>Обращение</strong><div className="form-field"><label className="form-label">Префикс</label><input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} placeholder="Д-р, проф." /></div></div>
+                  <div className="editor-author-name-row"><strong>Латиница<RequiredMark /></strong><div className="form-field"><label className="form-label">Фамилия<RequiredMark /></label><input className="text-input" autoFocus value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} placeholder="Surname" /></div><div className="form-field"><label className="form-label">Имя<RequiredMark /></label><input className="text-input" value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} placeholder="First name" /></div><div className="form-field"><label className="form-label">Отчество</label><input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} placeholder="Middle name" /></div></div>
+                  <div className="editor-author-name-row"><strong>Русский</strong><div className="form-field"><label className="form-label">Фамилия</label><input className="text-input" value={authorForm.lastNameRu} onChange={(e) => setAuthorForm((p) => ({ ...p, lastNameRu: e.target.value }))} placeholder="Фамилия" /></div><div className="form-field"><label className="form-label">Имя</label><input className="text-input" value={authorForm.firstNameRu} onChange={(e) => setAuthorForm((p) => ({ ...p, firstNameRu: e.target.value }))} placeholder="Имя" /></div><div className="form-field"><label className="form-label">Отчество</label><input className="text-input" value={authorForm.middleNameRu} onChange={(e) => setAuthorForm((p) => ({ ...p, middleNameRu: e.target.value }))} placeholder="Отчество" /></div></div>
+                  <div className="editor-author-name-row"><strong>Қазақша</strong><div className="form-field"><label className="form-label">Тегі</label><input className="text-input" value={authorForm.lastNameKz} onChange={(e) => setAuthorForm((p) => ({ ...p, lastNameKz: e.target.value }))} placeholder="Тегі" /></div><div className="form-field"><label className="form-label">Аты</label><input className="text-input" value={authorForm.firstNameKz} onChange={(e) => setAuthorForm((p) => ({ ...p, firstNameKz: e.target.value }))} placeholder="Аты" /></div><div className="form-field"><label className="form-label">Әкесінің аты</label><input className="text-input" value={authorForm.middleNameKz} onChange={(e) => setAuthorForm((p) => ({ ...p, middleNameKz: e.target.value }))} placeholder="Әкесінің аты" /></div></div>
+                  <div className="editor-author-contact-grid">
                   <div className="form-field"><label className="form-label">Email<RequiredMark /></label><input className="text-input" type="email" value={authorForm.email} onChange={(e) => setAuthorForm((p) => ({ ...p, email: e.target.value }))} placeholder="name@example.com" /></div>
                   <div className="form-field"><label className="form-label">Телефон</label><input className="text-input" type="tel" value={authorForm.phone} onChange={(e) => setAuthorForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+7 700 000 00 00" /></div>
-                  <div className="form-field"><label className="form-label">Страна<RequiredMark /></label><input className="text-input" value={authorForm.country} onChange={(e) => setAuthorForm((p) => ({ ...p, country: e.target.value }))} placeholder="Казахстан" /></div>
+                  <div className="form-field"><label className="form-label">Страна<RequiredMark /></label><select className="text-input" value={authorForm.countryId} onChange={(e) => setAuthorForm((p) => ({ ...p, countryId: e.target.value }))}><option value="">Выберите страну</option>{[...countries].sort((a, b) => a.name.localeCompare(b.name, 'ru')).map((country) => <option key={country.id} value={String(country.id)}>{country.name}</option>)}</select></div>
                   <div className="form-field editor-author-form-grid__wide"><label className="form-label">Адрес</label><input className="text-input" value={authorForm.address} onChange={(e) => setAuthorForm((p) => ({ ...p, address: e.target.value }))} placeholder="Город, улица, организация" /></div>
+                  </div>
                 </div>
               </section>
 
@@ -1403,7 +1452,7 @@ export default function EditorPublishedArticleEditPage() {
                   !authorForm.email.trim()
                   || !authorForm.firstName.trim()
                   || !authorForm.lastName.trim()
-                  || !authorForm.country.trim()
+                  || !authorForm.countryId
                   || !authorForm.affiliation1.trim()
                 }
               >

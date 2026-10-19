@@ -303,6 +303,15 @@ export const api = {
     orcid: string | null
     scopus_author_id: string | null
     researcher_id: string | null
+    first_name_en: string | null
+    first_name_ru: string | null
+    first_name_kz: string | null
+    patronymic_en: string | null
+    patronymic_ru: string | null
+    patronymic_kz: string | null
+    last_name_en: string | null
+    last_name_ru: string | null
+    last_name_kz: string | null
   }>) => request<T>(`/articles/authors/${authorId}`, 'PATCH', { json: body }),
   getKeywords: <T>() => request<T>('/articles/keywords', 'GET'),
   getArticleStatuses: <T>(params?: { scope?: 'unassigned' }) => request<T>('/articles/statuses', 'GET', { params }),
