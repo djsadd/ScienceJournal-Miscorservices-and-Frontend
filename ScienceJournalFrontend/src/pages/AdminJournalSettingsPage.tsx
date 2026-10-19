@@ -129,7 +129,7 @@ export default function AdminJournalSettingsPage() {
       {(['ru', 'kz', 'en'] as Lang[]).map(language => <div className="requirements-upload" key={language}><strong>{language.toUpperCase()}</strong><label className="button button--ghost">{labels.upload}<input hidden type="file" accept="application/pdf,.pdf" disabled={saving} onChange={e => upload(language, e.target.files?.[0])} /></label>{settings.requirements[language] && <a className="button button--ghost" href={api.getRequirementsPdfUrl(language)} target="_blank" rel="noreferrer">{labels.open}</a>}</div>)}
     </div></section>
     <section className="panel settings-section"><h2>PDF-файлы публичных страниц</h2><p className="form-hint">Загрузите отдельный PDF для каждой языковой версии страницы.</p>
-      {(['about', 'editorial-policy', 'ai-policy'] as DocumentKind[]).map(kind => <div key={kind} style={{ marginTop: '1.25rem' }}><h3>{documentNames[kind]}</h3><div className="requirements-upload-grid">
+      {(['about', 'editorial-policy'] as DocumentKind[]).map(kind => <div key={kind} style={{ marginTop: '1.25rem' }}><h3>{documentNames[kind]}</h3><div className="requirements-upload-grid">
         {(['ru', 'kz', 'en'] as Lang[]).map(language => <div className="requirements-upload" key={language}><strong>{language.toUpperCase()}</strong><label className="button button--ghost">{labels.upload}<input hidden type="file" accept="application/pdf,.pdf" disabled={saving} onChange={e => uploadDocument(kind, language, e.target.files?.[0])} /></label>{settings.documents?.[kind]?.[language] && <a className="button button--ghost" href={api.getPublicDocumentPdfUrl(kind, language)} target="_blank" rel="noreferrer">{labels.open}</a>}</div>)}
       </div></div>)}
     </section>
