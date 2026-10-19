@@ -8816,3 +8816,26 @@
     max-width: 128px;
   }
 }
+.author-editor-modal { max-width: 920px; }
+.author-editor-form { display: grid; gap: 18px; }
+.author-editor-section { padding: 18px; border: 1px solid var(--border, #e4dfe1); border-radius: 14px; background: var(--surface, #fff); }
+.author-editor-section__heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.author-editor-section__heading > span { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 50%; color: #fff; background: #8b1e32; font-size: 12px; font-weight: 800; }
+.author-editor-section__heading h4 { margin: 0; }
+.author-editor-section__heading p { margin: 3px 0 0; color: #786d71; font-size: 13px; }
+.author-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.author-editor-grid__wide { grid-column: 1 / -1; }
+.author-editor-readonly { min-height: 42px; display: flex; align-items: center; padding: 9px 12px; border: 1px solid #ddd4d7; border-radius: 8px; background: #f7f4f5; }
+.layout-workspace { display: grid; gap: 16px; }
+.layout-send-card { width: 100%; min-height: 180px; border: 1px dashed #b99199; border-radius: 16px; background: linear-gradient(145deg, #fff, #fbf5f6); cursor: pointer; }
+.layout-send-card:disabled { cursor: not-allowed; opacity: .65; }
+.layout-task-card { display: flex; align-items: center; gap: 16px; padding: 20px; border: 1px solid #d9c8cc; border-radius: 16px; background: linear-gradient(145deg, #fff, #faf5f6); }
+.layout-task-card__icon { display: grid; place-items: center; flex: 0 0 46px; height: 46px; border-radius: 50%; color: #fff; background: #2f7b5b; font-size: 22px; }
+.layout-task-card__content { flex: 1; min-width: 0; }
+.layout-task-card__content h3 { margin: 3px 0 5px; }
+.layout-task-card__content p { margin: 0 0 7px; color: #665d60; }
+@media (max-width: 720px) {
+  .author-editor-grid { grid-template-columns: 1fr; }
+  .author-editor-grid__wide { grid-column: auto; }
+  .layout-task-card { align-items: flex-start; flex-wrap: wrap; }
+}

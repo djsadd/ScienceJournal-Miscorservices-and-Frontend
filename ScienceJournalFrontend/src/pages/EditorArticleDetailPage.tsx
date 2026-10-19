@@ -96,7 +96,7 @@ interface CorrespondenceItem {
 export default function EditorArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { lang: pageLang } = useLanguage()
-  const [activeTab, setActiveTab] = useState<'overview' | 'metadata' | 'authors' | 'files' | 'versions' | 'reviews' | 'history'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'metadata' | 'authors' | 'files' | 'versions' | 'reviews' | 'history' | 'layout'>('overview')
   const [data, setData] = useState<ArticleOut | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -507,7 +507,19 @@ export default function EditorArticleDetailPage() {
     created_at?: string | null
     updated_at?: string | null
   }
+  type LayoutTaskOut = {
+    id: string
+    article_id: number
+    article_title: string
+    layout_user_id?: number | null
+    status: string
+    created_at?: string | null
+    updated_at?: string | null
+    completed_at?: string | null
+  }
   const [layoutRecords, setLayoutRecords] = useState<LayoutRecordOut[]>([])
+  const [layoutTasks, setLayoutTasks] = useState<LayoutTaskOut[]>([])
+  const activeLayoutTask = useMemo(() => layoutTasks.find((task) => task.status === 'pending' || task.status === 'in_progress') || null, [layoutTasks])
   const [layoutRecordsLoading, setLayoutRecordsLoading] = useState(false)
   const [layoutRecordsError, setLayoutRecordsError] = useState<string | null>(null)
   useEffect(() => {
@@ -519,7 +531,6 @@ export default function EditorArticleDetailPage() {
   // Author details modal state
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorOut | null>(null)
-  const [authorEditLang, setAuthorEditLang] = useState<'en' | 'ru' | 'kz'>('en')
   const [authorSaving, setAuthorSaving] = useState(false)
   const [authorError, setAuthorError] = useState<string | null>(null)
   const [keywordModalOpen, setKeywordModalOpen] = useState(false)
@@ -537,6 +548,15 @@ export default function EditorArticleDetailPage() {
       setLayoutRecordsError(String(message))
     } finally {
       setLayoutRecordsLoading(false)
+    }
+  }
+
+  const fetchLayoutTasks = async (articleId: number) => {
+    try {
+      const tasks = await api.getLayoutTasks<LayoutTaskOut[]>()
+      setLayoutTasks((Array.isArray(tasks) ? tasks : []).filter((task) => Number(task.article_id) === articleId))
+    } catch {
+      setLayoutTasks([])
     }
   }
 
@@ -616,7 +636,10 @@ export default function EditorArticleDetailPage() {
         try { console.log('[EditorDetail] Article:', res) } catch {}
         setData(res)
         // Fetch layout records for this article
-        if (res?.id) fetchLayoutRecords(res.id)
+        if (res?.id) {
+          fetchLayoutRecords(res.id)
+          fetchLayoutTasks(res.id)
+        }
       })
       .catch((e: any) => {
         const message = e?.bodyJson?.detail || e?.message || 'Failed to load'
@@ -945,6 +968,7 @@ export default function EditorArticleDetailPage() {
             <button className={activeTab === 'versions' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('versions')}>Версии · {data.versions.length}</button>
             <button className={activeTab === 'reviews' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('reviews')}>Рецензии · {reviewList.length}</button>
             <button className={activeTab === 'history' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('history')}>История</button>
+            <button className={activeTab === 'layout' ? 'is-active' : ''} type="button" onClick={() => setActiveTab('layout')}>Вёрстка</button>
           </nav>
 
           {activeTab === 'metadata' && <div className="manuscript-module">
@@ -1062,27 +1086,8 @@ export default function EditorArticleDetailPage() {
           </div>}
 
           <div className="manuscript-tab-panel" hidden={activeTab !== 'files'}>
-          <div className="manuscript-module__header"><div><p className="eyebrow">Материалы</p><h2>Файлы рукописи</h2></div><p>Исходные документы, антиплагиат и материалы вёрстки.</p></div>
+          <div className="manuscript-module__header"><div><p className="eyebrow">Материалы</p><h2>Файлы рукописи</h2></div><p>Исходные документы, антиплагиат и сопроводительные материалы.</p></div>
           <CollapsibleSection title="Файлы" defaultOpen>
-            {isEditor && <div className="panel" style={{ marginBottom: '1rem', padding: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.35rem' }}>Передать верстальщику</h4>
-              <p className="form-hint">Верстальщик увидит рукопись в своей очереди и после завершения прикрепит готовый файл. Вам придёт уведомление.</p>
-              {layoutTaskMessage && <div className="alert" style={{ marginBottom: '0.5rem' }}>{layoutTaskMessage}</div>}
-              <button className="button button--primary" type="button" disabled={layoutTaskSending || !data.manuscript_file_url} onClick={async () => {
-                setLayoutTaskSending(true); setLayoutTaskMessage(null)
-                try {
-                  const sourceUrl = data.manuscript_file_url || undefined
-                  const sourceId = sourceUrl?.match(/\/files\/([^/]+)\//)?.[1]
-                  await api.createLayoutTask({ article_id: data.id, article_title: title, source_file_id: sourceId, source_file_url: sourceUrl })
-                  setLayoutTaskMessage('Материал отправлен верстальщику.')
-                  setToastMessage('Материал отправлен на вёрстку'); setToastOpen(true)
-                } catch (e: any) {
-                  const detail = e?.bodyJson?.detail
-                  setLayoutTaskMessage(detail === 'Article already has an active layout task' ? 'Материал уже находится на вёрстке.' : String(detail || e?.message || 'Не удалось отправить материал'))
-                } finally { setLayoutTaskSending(false) }
-              }}>{layoutTaskSending ? 'Отправка…' : 'Отправить на вёрстку'}</button>
-              {!data.manuscript_file_url && <span className="form-hint" style={{ marginLeft: '0.75rem' }}>Сначала загрузите рукопись.</span>}
-            </div>}
             <div className="actions">
               <a className="button button--ghost button--compact" href={toApiFilesUrl(data.manuscript_file_url) || '#'} target="_blank" rel="noreferrer">Рукопись</a>
               {data.antiplagiarism_file_url && (
@@ -1094,20 +1099,6 @@ export default function EditorArticleDetailPage() {
               {data.cover_letter_file_url && (
                 <a className="button button--ghost button--compact" href={toApiFilesUrl(data.cover_letter_file_url)} target="_blank" rel="noreferrer">Письмо</a>
               )}
-              {/* Render layout files if exist */}
-              {layoutRecordsLoading && (
-                <span className="button button--ghost button--compact" style={{ opacity: 0.6, pointerEvents: 'none' }}>Вёрстка: загрузка…</span>
-              )}
-              {layoutRecordsError && (
-                <span className="button button--ghost button--compact" style={{ color: '#b00020' }} title={layoutRecordsError}>Вёрстка: ошибка</span>
-              )}
-              {layoutRecords && layoutRecords.length > 0 && layoutRecords.map((r, idx) => {
-                const href = toApiFilesUrl(r.file_url || (r.file_id ? `/files/${r.file_id}/download` : undefined)) || '#'
-                const label = `Вёрстка${layoutRecords.length > 1 ? ` ${idx + 1}` : ''}`
-                return (
-                  <a key={r.id} className="button button--ghost button--compact" href={href} target="_blank" rel="noreferrer">{label}</a>
-                )
-              })}
             </div>
 
             <>
@@ -1467,6 +1458,56 @@ export default function EditorArticleDetailPage() {
           </CollapsibleSection>
           </div>
 
+          <div className="manuscript-tab-panel" hidden={activeTab !== 'layout'}>
+            <div className="manuscript-module__header"><div><p className="eyebrow">Подготовка публикации</p><h2>Вёрстка</h2></div><p>Передача принятой рукописи верстальщику и готовые файлы.</p></div>
+            <div className="layout-workspace">
+              {activeLayoutTask ? (
+                <div className="layout-task-card layout-task-card--active">
+                  <div className="layout-task-card__icon">✓</div>
+                  <div className="layout-task-card__content">
+                    <span className="eyebrow">Задача создана</span>
+                    <h3>{activeLayoutTask.status === 'in_progress' ? 'Верстальщик работает над статьёй' : 'Статья ожидает верстальщика'}</h3>
+                    <p>Задача на вёрстку уже передана. Повторно отправлять статью не нужно.</p>
+                    <div className="table__meta">Задача #{activeLayoutTask.id}{activeLayoutTask.created_at ? ` · ${new Date(activeLayoutTask.created_at).toLocaleString('ru-RU')}` : ''}</div>
+                  </div>
+                  <span className="badge">{activeLayoutTask.status === 'in_progress' ? 'В работе' : 'Ожидает'}</span>
+                </div>
+              ) : (
+                <button className="layout-send-card manuscript-file-dropzone" type="button" disabled={layoutTaskSending || !data.manuscript_file_url || !isEditor} onClick={async () => {
+                  setLayoutTaskSending(true); setLayoutTaskMessage(null)
+                  try {
+                    const sourceUrl = data.manuscript_file_url || undefined
+                    const sourceId = sourceUrl?.match(/\/files\/([^/]+)\//)?.[1]
+                    await api.createLayoutTask({ article_id: data.id, article_title: title, source_file_id: sourceId, source_file_url: sourceUrl })
+                    await fetchLayoutTasks(data.id)
+                    setLayoutTaskMessage('Статья успешно передана верстальщику.')
+                    setToastMessage('Материал отправлен на вёрстку'); setToastOpen(true)
+                  } catch (e: any) {
+                    const detail = e?.bodyJson?.detail
+                    setLayoutTaskMessage(detail === 'Article already has an active layout task' ? 'Задача уже создана. Обновите страницу, чтобы увидеть её статус.' : String(detail || e?.message || 'Не удалось отправить материал'))
+                    await fetchLayoutTasks(data.id)
+                  } finally { setLayoutTaskSending(false) }
+                }}>
+                  <span>+</span>
+                  <strong>{layoutTaskSending ? 'Передаём статью…' : 'Отправить статью на вёрстку'}</strong>
+                  <small>{data.manuscript_file_url ? 'Верстальщик получит текущую рукопись и увидит задачу в своей очереди' : 'Сначала добавьте файл рукописи во вкладке «Файлы»'}</small>
+                </button>
+              )}
+              {layoutTaskMessage && <div className="alert" style={{ marginTop: '1rem' }}>{layoutTaskMessage}</div>}
+              {layoutRecordsLoading && <div className="loading">Загрузка готовых файлов…</div>}
+              {layoutRecordsError && <div className="alert error">{layoutRecordsError}</div>}
+              {layoutRecords.length > 0 && <div className="manuscript-file-grid manuscript-layout-files" style={{ marginTop: '1.25rem' }}>
+                {layoutRecords.map((record, index) => {
+                  const meta = record.file_id ? storedFileMeta[record.file_id] : undefined
+                  const name = meta?.original_name || `Вёрстка ${index + 1}`
+                  const kind = getFileKind(name, meta?.content_type)
+                  const href = toApiFilesUrl(record.file_url || (record.file_id ? `/files/${record.file_id}/download` : undefined)) || '#'
+                  return <div className="manuscript-file-slot" key={record.id}><div className="manuscript-file-slot__heading"><span>Готовая вёрстка {layoutRecords.length > 1 ? index + 1 : ''}</span><small>Загружена</small></div><div className="manuscript-file-card"><span className={`manuscript-file-card__type manuscript-file-card__type--${kind.toLowerCase()}`}>{kind}</span><span className="manuscript-file-card__info"><strong>{name}</strong><small>{getFileSize(meta?.size_bytes) || 'Файл вёрстки'}</small></span><a href={href} target="_blank" rel="noreferrer">Открыть</a></div></div>
+                })}
+              </div>}
+            </div>
+          </div>
+
           <div className="manuscript-tab-panel" hidden={activeTab !== 'reviews'}>
           <div className="manuscript-module__header"><div><p className="eyebrow">Экспертиза</p><h2>Рецензии</h2></div><p>Назначения, сроки и рекомендации рецензентов.</p></div>
           <CollapsibleSection title="Рецензенты" defaultOpen>
@@ -1547,32 +1588,31 @@ export default function EditorArticleDetailPage() {
       )}
       {authorModalOpen && selectedAuthor && (
         <div className="modal-backdrop" onClick={() => setAuthorModalOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal--wide author-editor-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ margin: 0 }}>Автор</h3>
               <button className="modal__close" onClick={() => setAuthorModalOpen(false)}>×</button>
             </div>
             <div className="modal__body">
-              <div className="lang-switch" style={{ marginBottom: '1rem' }}>
-                {(['en', 'ru', 'kz'] as const).map((language) => <button key={language} type="button" className={`lang-chip ${authorEditLang === language ? 'lang-chip--active' : ''}`} onClick={() => setAuthorEditLang(language)}>{language.toUpperCase()}{language === 'en' ? ' *' : ''}</button>)}
-              </div>
-              <p className="form-hint">Английские имя, фамилия и основная аффилиация обязательны. Русский и казахский варианты необязательны.</p>
-              <div className="details-grid">
-                {(['first_name', 'patronymic', 'last_name', 'affiliation1', 'affiliation2', 'affiliation3'] as const).map((field) => {
-                  const labels = { first_name: 'Имя', patronymic: 'Отчество', last_name: 'Фамилия', affiliation1: 'Основная аффилиация', affiliation2: 'Аффилиация 2', affiliation3: 'Аффилиация 3' }
-                  const key = `${field}_${authorEditLang}` as keyof AuthorOut
-                  const required = authorEditLang === 'en' && (field === 'first_name' || field === 'last_name' || field === 'affiliation1')
-                  return <label key={field} className={field.startsWith('affiliation') ? 'form-field form-field--span-2' : 'form-field'}><span className="form-label">{labels[field]}{required ? ' *' : ''}</span>{field.startsWith('affiliation') ? <textarea className="text-input" rows={2} value={String(selectedAuthor[key] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [key]: e.target.value })} disabled={!canEdit} /> : <input className="text-input" value={String(selectedAuthor[key] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [key]: e.target.value })} disabled={!canEdit} />}</label>
+              <div className="author-editor-form">
+                <section className="author-editor-section">
+                  <div className="author-editor-section__heading"><span>01</span><div><h4>Основная информация</h4><p>Контактные данные и научные идентификаторы автора.</p></div></div>
+                  <div className="author-editor-grid">
+                    {([['email', 'Email *'], ['prefix', 'Префикс'], ['phone', 'Телефон'], ['address', 'Адрес'], ['orcid', 'ORCID'], ['scopus_author_id', 'Scopus Author ID'], ['researcher_id', 'ResearcherID']] as const).map(([field, label]) => <label className={field === 'address' ? 'form-field author-editor-grid__wide' : 'form-field'} key={field}><span className="form-label">{label}</span><input className="text-input" value={String(selectedAuthor[field] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [field]: e.target.value })} disabled={!canEdit} /></label>)}
+                    <div className="form-field"><span className="form-label">Страна</span><div className="author-editor-readonly">{getCountryLabel(selectedAuthor.country) || '—'}</div></div>
+                    <label className="form-field"><span className="form-label">Контактный автор</span><select className="text-input" value={selectedAuthor.is_corresponding ? 'yes' : 'no'} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, is_corresponding: e.target.value === 'yes' })} disabled={!canEdit}><option value="yes">Да</option><option value="no">Нет</option></select></label>
+                  </div>
+                </section>
+                {(['en', 'ru', 'kz'] as const).map((language, index) => {
+                  const languageTitle = language === 'en' ? 'English' : language === 'ru' ? 'Русский' : 'Қазақша'
+                  return <section className="author-editor-section" key={language}>
+                    <div className="author-editor-section__heading"><span>0{index + 2}</span><div><h4>{languageTitle}: ФИО и аффилиации</h4><p>{language === 'en' ? 'Обязательная основная версия данных автора.' : 'Необязательный локализованный вариант.'}</p></div></div>
+                    <div className="author-editor-grid">
+                      {(['last_name', 'first_name', 'patronymic'] as const).map((field) => { const key = `${field}_${language}` as keyof AuthorOut; const label = field === 'last_name' ? 'Фамилия' : field === 'first_name' ? 'Имя' : 'Отчество'; const required = language === 'en' && field !== 'patronymic'; return <label className="form-field" key={field}><span className="form-label">{label}{required ? ' *' : ''}</span><input className="text-input" value={String(selectedAuthor[key] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [key]: e.target.value })} disabled={!canEdit} /></label> })}
+                      {(['affiliation1', 'affiliation2', 'affiliation3'] as const).map((field, affiliationIndex) => { const key = `${field}_${language}` as keyof AuthorOut; return <label className="form-field author-editor-grid__wide" key={field}><span className="form-label">{affiliationIndex === 0 ? 'Основная аффилиация' : `Аффилиация ${affiliationIndex + 1}`}{language === 'en' && affiliationIndex === 0 ? ' *' : ''}</span><textarea className="text-input" rows={2} value={String(selectedAuthor[key] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [key]: e.target.value })} disabled={!canEdit} /></label> })}
+                    </div>
+                  </section>
                 })}
-                <div><strong>Префикс:</strong> {selectedAuthor.prefix || '—'}</div>
-                <div><strong>Email:</strong> {selectedAuthor.email}</div>
-                <div><strong>Телефон:</strong> {selectedAuthor.phone || '—'}</div>
-                <div><strong>Адрес:</strong> {selectedAuthor.address || '—'}</div>
-                <div><strong>Страна:</strong> {getCountryLabel(selectedAuthor.country) || '—'}</div>
-                <div><strong>Контактный автор:</strong> {selectedAuthor.is_corresponding ? 'Да' : 'Нет'}</div>
-                <div><strong>ORCID:</strong> {selectedAuthor.orcid || '—'}</div>
-                <div><strong>Scopus Author ID:</strong> {selectedAuthor.scopus_author_id || '—'}</div>
-                <div><strong>ResearcherID:</strong> {selectedAuthor.researcher_id || '—'}</div>
               </div>
               {authorError && <div className="alert error" style={{ marginTop: '1rem' }}>{authorError}</div>}
             </div>
@@ -1581,7 +1621,7 @@ export default function EditorArticleDetailPage() {
               {canEdit && <button className="button button--primary" disabled={authorSaving || !selectedAuthor.email || !selectedAuthor.country || !authorLocalized(selectedAuthor, 'first_name', 'en').trim() || !authorLocalized(selectedAuthor, 'last_name', 'en').trim() || !authorLocalized(selectedAuthor, 'affiliation1', 'en').trim()} onClick={async () => {
                 setAuthorSaving(true); setAuthorError(null)
                 try {
-                  const payload = Object.fromEntries((['en', 'ru', 'kz'] as const).flatMap((language) => (['first_name', 'patronymic', 'last_name', 'affiliation1', 'affiliation2', 'affiliation3'] as const).map((field) => [`${field}_${language}`, (selectedAuthor as any)[`${field}_${language}`]?.trim() || null])))
+                  const payload = { ...Object.fromEntries((['en', 'ru', 'kz'] as const).flatMap((language) => (['first_name', 'patronymic', 'last_name', 'affiliation1', 'affiliation2', 'affiliation3'] as const).map((field) => [`${field}_${language}`, (selectedAuthor as any)[`${field}_${language}`]?.trim() || null]))), email: selectedAuthor.email.trim(), prefix: selectedAuthor.prefix?.trim() || null, phone: selectedAuthor.phone?.trim() || null, address: selectedAuthor.address?.trim() || null, is_corresponding: selectedAuthor.is_corresponding, orcid: selectedAuthor.orcid?.trim() || null, scopus_author_id: selectedAuthor.scopus_author_id?.trim() || null, researcher_id: selectedAuthor.researcher_id?.trim() || null }
                   const updated = await api.updateAuthor<AuthorOut>(selectedAuthor.id, payload)
                   setData((current) => current ? { ...current, authors: current.authors.map((author) => author.id === updated.id ? updated : author) } : current)
                   setSelectedAuthor(updated); setAuthorModalOpen(false)
