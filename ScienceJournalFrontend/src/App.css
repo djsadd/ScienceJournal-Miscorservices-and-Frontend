@@ -2677,15 +2677,43 @@
 .contact-card {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
-  padding: 1.05rem;
+  gap: 0;
+  width: min(720px, 100%);
+  margin-top: 1.5rem;
+  padding: 0 1.35rem;
 }
 
 .contact-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: 1fr;
+  gap: 0;
 }
+
+.contact-grid > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 0.35rem;
+  padding: 1.05rem 0;
+  color: #171214;
+  border-bottom: 1px solid #eadfe1;
+}
+
+.contact-grid > div:last-child {
+  border-bottom: 0;
+}
+
+.contact-card .divider {
+  height: 1px;
+  margin: 0;
+  background: #d9c9cd;
+}
+
+.contact-card .meta-label {
+  color: #66585d;
+  font-weight: 700;
+}
+
 
 .filter-bar {
   display: flex;
