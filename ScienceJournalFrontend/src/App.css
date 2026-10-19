@@ -8851,5 +8851,6 @@
 .policy-text-section p,
 .policy-text-section li { color: #171214; font-size: 16px; line-height: 1.72; }
 .policy-text-section p { margin: 0 0 14px; }
-.policy-text-section ul { margin: 8px 0 20px; padding-left: 24px; }
+.policy-text-section ul,
+.policy-text-section ol { margin: 8px 0 20px; padding-left: 24px; }
 .policy-text-section li + li { margin-top: 8px; }
