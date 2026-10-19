@@ -30,6 +30,11 @@ const copy = {
     latin: 'Латиница', russian: 'Русский', kazakh: 'Қазақша', contacts: 'Контакты',
     loading: 'Загружаем авторов…', empty: 'Авторы не найдены', missing: 'Не заполнено',
     error: 'Не удалось загрузить список авторов', refresh: 'Обновить',
+    autofill: 'Заполнить русский из қазақша', autofilling: 'Заполняем…',
+    confirmAutofill: 'Заполнить пустые русские поля из казахских',
+    nothingToFill: 'Нет авторов с пустым русским ФИО и заполненным казахским ФИО.',
+    filled: 'Русские поля заполнены. Обновлено авторов:',
+    fillError: 'Часть данных не удалось обновить. Успешно обновлено авторов:',
   },
   en: {
     eyebrow: 'Administration', title: 'Authors',
@@ -38,6 +43,11 @@ const copy = {
     latin: 'Latin', russian: 'Russian', kazakh: 'Kazakh', contacts: 'Contacts',
     loading: 'Loading authors…', empty: 'No authors found', missing: 'Not provided',
     error: 'Failed to load authors', refresh: 'Refresh',
+    autofill: 'Fill Russian from Kazakh', autofilling: 'Filling…',
+    confirmAutofill: 'Fill empty Russian fields from Kazakh for',
+    nothingToFill: 'There are no authors with empty Russian and completed Kazakh names.',
+    filled: 'Russian fields filled. Authors updated:',
+    fillError: 'Some data could not be updated. Authors updated successfully:',
   },
   kz: {
     eyebrow: 'Әкімшілік', title: 'Авторлар',
@@ -46,6 +56,11 @@ const copy = {
     latin: 'Латынша', russian: 'Орысша', kazakh: 'Қазақша', contacts: 'Байланыс',
     loading: 'Авторлар жүктелуде…', empty: 'Авторлар табылмады', missing: 'Толтырылмаған',
     error: 'Авторлар тізімін жүктеу мүмкін болмады', refresh: 'Жаңарту',
+    autofill: 'Орысшаны қазақшадан толтыру', autofilling: 'Толтырылуда…',
+    confirmAutofill: 'Бос орысша өрістерді қазақшадан толтыру',
+    nothingToFill: 'Орысша аты-жөні бос және қазақша аты-жөні толтырылған авторлар жоқ.',
+    filled: 'Орысша өрістер толтырылды. Жаңартылған авторлар:',
+    fillError: 'Кейбір деректер жаңартылмады. Сәтті жаңартылған авторлар:',
   },
 } satisfies Record<Language, Record<string, string>>
 
@@ -75,6 +90,8 @@ export default function AdminAuthorsPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [autofilling, setAutofilling] = useState(false)
+  const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -101,6 +118,43 @@ export default function AdminAuthorsPage() {
     ].some((value) => value.toLocaleLowerCase().includes(query)))
   }, [authors, search])
 
+  const autofillCandidates = useMemo(() => authors.filter((author) =>
+    (Boolean(author.first_name_kz?.trim()) && !author.first_name_ru?.trim())
+    || (Boolean(author.patronymic_kz?.trim()) && !author.patronymic_ru?.trim())
+    || (Boolean(author.last_name_kz?.trim()) && !author.last_name_ru?.trim())
+  ), [authors])
+
+  const autofillRussian = async () => {
+    setMessage(null)
+    if (autofillCandidates.length === 0) {
+      setMessage({ kind: 'success', text: t.nothingToFill })
+      return
+    }
+    if (!window.confirm(`${t.confirmAutofill}: ${autofillCandidates.length}?`)) return
+
+    setAutofilling(true)
+    let updated = 0
+    let failed = 0
+    for (const author of autofillCandidates) {
+      const payload: Partial<Pick<Author, 'first_name_ru' | 'patronymic_ru' | 'last_name_ru'>> = {}
+      if (!author.first_name_ru?.trim() && author.first_name_kz?.trim()) payload.first_name_ru = author.first_name_kz.trim()
+      if (!author.patronymic_ru?.trim() && author.patronymic_kz?.trim()) payload.patronymic_ru = author.patronymic_kz.trim()
+      if (!author.last_name_ru?.trim() && author.last_name_kz?.trim()) payload.last_name_ru = author.last_name_kz.trim()
+      try {
+        await api.updateAuthor<Author>(author.id, payload)
+        updated += 1
+      } catch {
+        failed += 1
+      }
+    }
+    await load()
+    setAutofilling(false)
+    setMessage({
+      kind: failed ? 'error' : 'success',
+      text: `${failed ? t.fillError : t.filled} ${updated}`,
+    })
+  }
+
   const nameCell = (author: Author, nameLanguage: Language) => {
     const value = localizedName(author, nameLanguage)
     return value
@@ -116,10 +170,17 @@ export default function AdminAuthorsPage() {
           <h1 className="page-title">{t.title}</h1>
           <p className="subtitle">{t.subtitle}</p>
         </div>
-        <button type="button" className="button button--ghost" onClick={() => void load()} disabled={loading}>
-          {t.refresh}
-        </button>
+        <div className="admin-authors__actions">
+          <button type="button" className="button button--primary" onClick={() => void autofillRussian()} disabled={loading || autofilling || autofillCandidates.length === 0}>
+            {autofilling ? t.autofilling : `${t.autofill} (${autofillCandidates.length})`}
+          </button>
+          <button type="button" className="button button--ghost" onClick={() => void load()} disabled={loading || autofilling}>
+            {t.refresh}
+          </button>
+        </div>
       </section>
+
+      {message ? <div className={`admin-authors__message admin-authors__message--${message.kind}`}>{message.text}</div> : null}
 
       <section className="panel admin-authors__panel">
         <div className="admin-authors__toolbar">
