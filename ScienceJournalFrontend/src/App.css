@@ -8845,3 +8845,11 @@
 .about-page-content .list li { color: #171214; }
 .about-page-content__text { margin: 0 0 14px; color: #171214; font-size: 16px; line-height: 1.7; }
 .about-page-content .panel-title { color: #171214; }
+.policy-text-page { color: #171214; }
+.policy-text-section { margin-top: 28px; }
+.policy-text-section h2 { margin: 0 0 16px; color: #171214; font-size: clamp(23px, 2.5vw, 32px); }
+.policy-text-section p,
+.policy-text-section li { color: #171214; font-size: 16px; line-height: 1.72; }
+.policy-text-section p { margin: 0 0 14px; }
+.policy-text-section ul { margin: 8px 0 20px; padding-left: 24px; }
+.policy-text-section li + li { margin-top: 8px; }
