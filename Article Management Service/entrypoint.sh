@@ -11,6 +11,11 @@ echo "Database is ready!"
 echo "Running migrations..."
 alembic upgrade head
 
+if [ "$#" -gt 0 ]; then
+  echo "Running one-off command..."
+  exec "$@"
+fi
+
 echo "Starting application..."
 exec uvicorn app.main:app \
   --host 0.0.0.0 \
