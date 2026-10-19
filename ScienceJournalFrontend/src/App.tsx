@@ -55,6 +55,7 @@ import AdminEmailTemplatesPage from './pages/AdminEmailTemplatesPage'
 import AdminEmailTemplateEditPage from './pages/AdminEmailTemplateEditPage'
 import EmailTemplateDocsPage from './pages/EmailTemplateDocsPage'
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage'
+import AdminAuthorsPage from './pages/AdminAuthorsPage'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const tokens = api.getTokens()
@@ -306,6 +307,7 @@ function App() {
       <Route path="/cabinet/admin/email-templates/:templateKey" element={<RequireAuth><MainLayout><AdminEmailTemplateEditPage /></MainLayout></RequireAuth>} />
       <Route path="/cabinet/admin/email-template-docs" element={<RequireAuth><MainLayout><EmailTemplateDocsPage /></MainLayout></RequireAuth>} />
       <Route path="/cabinet/admin/analytics" element={<RequireAuth><MainLayout><AdminAnalyticsPage /></MainLayout></RequireAuth>} />
+      <Route path="/cabinet/admin/authors" element={<RequireAuth><RequireRoles allowed={['admin']}><MainLayout><AdminAuthorsPage /></MainLayout></RequireRoles></RequireAuth>} />
       <Route
         path="/cabinet/admin/users"
         element={

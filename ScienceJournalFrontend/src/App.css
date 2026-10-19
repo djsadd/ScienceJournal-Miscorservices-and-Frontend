@@ -6694,6 +6694,36 @@
   align-items: flex-start;
 }
 
+.admin-authors__header { align-items: flex-end; }
+.admin-authors__panel { padding: 0; overflow: hidden; }
+.admin-authors__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; border-bottom: 1px solid #eadfe2; background: #fcf9fa; }
+.admin-authors__search { display: flex; width: min(520px, 100%); align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #ddd1d5; border-radius: 9px; background: #fff; }
+.admin-authors__search:focus-within { border-color: #a35a6d; box-shadow: 0 0 0 3px rgba(139, 24, 49, .08); }
+.admin-authors__search span { color: #977e86; font-size: 21px; }
+.admin-authors__search input { width: 100%; min-height: 42px; padding: 0; border: 0; outline: 0; color: #352b2e; background: transparent; font: inherit; }
+.admin-authors__count { color: #806c73; font-size: 13px; white-space: nowrap; }
+.admin-authors__count strong { color: #501528; font-size: 16px; }
+.admin-authors__table-wrap { overflow-x: auto; }
+.admin-authors__table { width: 100%; min-width: 1040px; border-collapse: collapse; }
+.admin-authors__table th { padding: 13px 16px; color: #866d75; background: #fcf9fa; border-bottom: 1px solid #eadfe2; font-size: 12px; text-align: left; white-space: nowrap; }
+.admin-authors__table th:first-child { width: 58px; }
+.admin-authors__table td { padding: 16px; color: #4d4145; border-bottom: 1px solid #f0e8ea; vertical-align: top; font-size: 14px; }
+.admin-authors__table tbody tr:hover { background: #fffafb; }
+.admin-authors__table tbody tr:last-child td { border-bottom: 0; }
+.admin-authors__name { color: #392f32; font-weight: 650; line-height: 1.45; }
+.admin-authors__missing { display: inline-flex; padding: 4px 8px; border-radius: 999px; color: #9a747d; background: #f8ecef; font-size: 11px; font-weight: 700; }
+.admin-authors__id { color: #9a858c; font-variant-numeric: tabular-nums; }
+.admin-authors__table a { color: #8b1831; overflow-wrap: anywhere; }
+.admin-authors__state { padding: 54px 24px; color: #806c73; text-align: center; }
+.admin-authors__state--error { color: #a22c2c; }
+
+@media (max-width: 720px) {
+  .admin-authors__header { align-items: stretch; }
+  .admin-authors__header .button { width: 100%; }
+  .admin-authors__toolbar { align-items: stretch; flex-direction: column; }
+  .admin-authors__count { white-space: normal; }
+}
+
 .admin-users__password-result {
   display: flex;
   flex-direction: column;

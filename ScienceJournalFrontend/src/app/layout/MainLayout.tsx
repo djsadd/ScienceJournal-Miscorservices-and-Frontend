@@ -207,6 +207,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Администрирование',
           items: [
             { label: 'Пользователи', path: '/cabinet/admin/users' },
+            { label: 'Авторы', path: '/cabinet/admin/authors' },
             { label: 'Состав редакции', path: '/cabinet/admin/editorial-team' },
             { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Настройки журнала', path: '/cabinet/admin/journal-settings' },
@@ -358,6 +359,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Administration',
           items: [
             { label: 'Users', path: '/cabinet/admin/users' },
+            { label: 'Authors', path: '/cabinet/admin/authors' },
             { label: 'Editorial team', path: '/cabinet/admin/editorial-team' },
             { label: 'Analytics', path: '/cabinet/admin/analytics' },
             { label: 'Journal settings', path: '/cabinet/admin/journal-settings' },
@@ -509,6 +511,7 @@ const sidebarCopy: Record<LangKey, SidebarCopy> = {
           title: 'Әкімшілік',
           items: [
             { label: 'Пайдаланушылар', path: '/cabinet/admin/users' },
+            { label: 'Авторлар', path: '/cabinet/admin/authors' },
             { label: 'Редакция құрамы', path: '/cabinet/admin/editorial-team' },
             { label: 'Аналитика', path: '/cabinet/admin/analytics' },
             { label: 'Журнал баптаулары', path: '/cabinet/admin/journal-settings' },
@@ -598,6 +601,10 @@ const NavIcon = ({ path }: { path?: string }) => {
         <path d="M17 8V14M14 11H20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
     )
+  }
+
+  if (path === '/cabinet/admin/authors') {
+    return <svg {...common}><circle cx="8" cy="8" r="2.7" stroke="currentColor" strokeWidth="1.6"/><path d="M3.8 18C4.2 14.9 5.6 13.4 8 13.4C10.4 13.4 11.8 14.9 12.2 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M15 6H20M15 10H20M15 14H19" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
   }
 
   if (path === '/cabinet/admin/editorial-team') {
