@@ -1,4 +1,5 @@
 import { useLanguage } from '../shared/LanguageContext'
+import PublicPagePdf from '../shared/components/PublicPagePdf'
 
 export function PoliciesPage() {
   const { lang } = useLanguage()
@@ -22,6 +23,7 @@ export function PoliciesPage() {
       <div className="section public-section">
         <p className="eyebrow">{t.eyebrow}</p>
         <h1 className="hero__title">{t.title}</h1>
+        <PublicPagePdf kind="editorial-policy" title={t.title} />
       </div>
     </div>
   )

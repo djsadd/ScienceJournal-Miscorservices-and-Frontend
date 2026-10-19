@@ -1,4 +1,5 @@
 import { useLanguage } from '../shared/LanguageContext'
+import PublicPagePdf from '../shared/components/PublicPagePdf'
 
 export function PolicyAIPage() {
   const { lang } = useLanguage()
@@ -29,6 +30,7 @@ export function PolicyAIPage() {
         <p className="eyebrow">{t.eyebrow}</p>
         <h1 className="hero__title">{t.title}</h1>
         <p className="subtitle">{t.text}</p>
+        <PublicPagePdf kind="ai-policy" title={t.title} />
       </div>
     </div>
   )

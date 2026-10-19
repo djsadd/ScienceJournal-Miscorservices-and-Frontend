@@ -4,6 +4,7 @@ import { api, ApiError } from '../api/client'
 import { useLanguage } from '../shared/LanguageContext'
 
 type Lang = 'ru' | 'kz' | 'en'
+type DocumentKind = 'about' | 'editorial-policy' | 'ai-policy'
 type Settings = {
   university_name_ru: string; university_name_kz: string; university_name_en: string
   journal_name_ru: string; journal_name_kz: string; journal_name_en: string
@@ -13,6 +14,7 @@ type Settings = {
   address_ru: string; address_kz: string; address_en: string
   contact_email_ru: string; contact_email_kz: string; contact_email_en: string
   logo_available: boolean; logo_url: string | null; logo_version: number | null; requirements: Record<Lang, boolean>
+  documents: Record<DocumentKind, Record<Lang, boolean>>
 }
 
 const emptySettings: Settings = {
@@ -24,8 +26,14 @@ const emptySettings: Settings = {
   address_ru: '', address_kz: '', address_en: '',
   contact_email_ru: '', contact_email_kz: '', contact_email_en: '',
   logo_available: false, logo_url: null, logo_version: null, requirements: { ru: false, kz: false, en: false },
+  documents: {
+    about: { ru: false, kz: false, en: false },
+    'editorial-policy': { ru: false, kz: false, en: false },
+    'ai-policy': { ru: false, kz: false, en: false },
+  },
 }
 const languageNames: Record<Lang, string> = { ru: 'Русский', kz: 'Қазақша', en: 'English' }
+const documentNames: Record<DocumentKind, string> = { about: 'О журнале', 'editorial-policy': 'Редакционная политика', 'ai-policy': 'Политика в области ИИ' }
 
 export default function AdminJournalSettingsPage() {
   const { lang } = useLanguage()
@@ -73,6 +81,15 @@ export default function AdminJournalSettingsPage() {
       setMessage(labels.saved)
     } catch { setMessage(labels.error) } finally { setSaving(false) }
   }
+  const uploadDocument = async (kind: DocumentKind, language: Lang, file?: File) => {
+    if (!file) return
+    setSaving(true); setMessage('')
+    try {
+      await api.uploadPublicDocumentPdf(kind, language, file)
+      setSettings(current => ({ ...current, documents: { ...current.documents, [kind]: { ...current.documents[kind], [language]: true } } }))
+      setMessage(labels.saved)
+    } catch { setMessage(labels.error) } finally { setSaving(false) }
+  }
 
   if (loading) return <div className="page"><div className="panel">{labels.loading}</div></div>
   return <div className="page admin-journal-settings">
@@ -111,5 +128,10 @@ export default function AdminJournalSettingsPage() {
     <section className="panel settings-section"><h2>{labels.docs}</h2><div className="requirements-upload-grid">
       {(['ru', 'kz', 'en'] as Lang[]).map(language => <div className="requirements-upload" key={language}><strong>{language.toUpperCase()}</strong><label className="button button--ghost">{labels.upload}<input hidden type="file" accept="application/pdf,.pdf" disabled={saving} onChange={e => upload(language, e.target.files?.[0])} /></label>{settings.requirements[language] && <a className="button button--ghost" href={api.getRequirementsPdfUrl(language)} target="_blank" rel="noreferrer">{labels.open}</a>}</div>)}
     </div></section>
+    <section className="panel settings-section"><h2>PDF-файлы публичных страниц</h2><p className="form-hint">Загрузите отдельный PDF для каждой языковой версии страницы.</p>
+      {(['about', 'editorial-policy', 'ai-policy'] as DocumentKind[]).map(kind => <div key={kind} style={{ marginTop: '1.25rem' }}><h3>{documentNames[kind]}</h3><div className="requirements-upload-grid">
+        {(['ru', 'kz', 'en'] as Lang[]).map(language => <div className="requirements-upload" key={language}><strong>{language.toUpperCase()}</strong><label className="button button--ghost">{labels.upload}<input hidden type="file" accept="application/pdf,.pdf" disabled={saving} onChange={e => uploadDocument(kind, language, e.target.files?.[0])} /></label>{settings.documents?.[kind]?.[language] && <a className="button button--ghost" href={api.getPublicDocumentPdfUrl(kind, language)} target="_blank" rel="noreferrer">{labels.open}</a>}</div>)}
+      </div></div>)}
+    </section>
   </div>
 }

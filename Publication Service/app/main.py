@@ -17,6 +17,7 @@ SETTINGS_FILE = DATA_DIR / "journal-settings.json"
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
 ALGORITHM = "HS256"
 LANGUAGES = {"ru", "kz", "en"}
+DOCUMENT_KINDS = {"about", "editorial-policy", "ai-policy"}
 
 DEFAULT_SETTINGS = {
     "university_name_ru": "Университет «Туран-Астана»",
@@ -112,6 +113,10 @@ async def get_journal_settings():
     settings["requirements"] = {
         lang: (DATA_DIR / f"requirements-{lang}.pdf").exists() for lang in LANGUAGES
     }
+    settings["documents"] = {
+        kind: {lang: (DATA_DIR / f"document-{kind}-{lang}.pdf").exists() for lang in LANGUAGES}
+        for kind in DOCUMENT_KINDS
+    }
     return settings
 
 
@@ -202,4 +207,38 @@ async def view_requirements(lang: Literal["ru", "kz", "en"]):
     target = DATA_DIR / f"requirements-{lang}.pdf"
     if not target.exists():
         raise HTTPException(status_code=404, detail="Requirements PDF is not uploaded")
+    return FileResponse(target, media_type="application/pdf", headers={"Content-Disposition": "inline"})
+
+
+@app.put("/publication/journal-settings/documents/{kind}/{lang}", dependencies=[Depends(require_admin)])
+async def upload_public_document(kind: str, lang: str, document: UploadFile = File(...)):
+    if kind not in DOCUMENT_KINDS or lang not in LANGUAGES:
+        raise HTTPException(status_code=404, detail="Unknown public document")
+    if document.content_type != "application/pdf" and not (document.filename or "").lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    ensure_storage()
+    target = DATA_DIR / f"document-{kind}-{lang}.pdf"
+    with tempfile.NamedTemporaryFile(dir=DATA_DIR, delete=False) as temporary:
+        shutil.copyfileobj(document.file, temporary)
+        temporary_path = Path(temporary.name)
+    file_size = temporary_path.stat().st_size
+    with temporary_path.open("rb") as uploaded:
+        is_pdf = uploaded.read(5) == b"%PDF-"
+    if not is_pdf:
+        temporary_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF")
+    if file_size == 0 or file_size > 25 * 1024 * 1024:
+        temporary_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=413, detail="PDF file must not be empty or exceed 25 MB")
+    temporary_path.replace(target)
+    return {"kind": kind, "language": lang, "filename": document.filename, "available": True}
+
+
+@app.get("/publication/journal-settings/documents/{kind}/{lang}")
+async def view_public_document(kind: str, lang: str):
+    if kind not in DOCUMENT_KINDS or lang not in LANGUAGES:
+        raise HTTPException(status_code=404, detail="Unknown public document")
+    target = DATA_DIR / f"document-{kind}-{lang}.pdf"
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Public document PDF is not uploaded")
     return FileResponse(target, media_type="application/pdf", headers={"Content-Disposition": "inline"})

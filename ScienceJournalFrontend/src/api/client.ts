@@ -477,6 +477,13 @@ export const api = {
   },
   getRequirementsPdfUrl: (lang: 'ru' | 'kz' | 'en') =>
     buildUrl(`/publication/journal-settings/requirements/${lang}`),
+  uploadPublicDocumentPdf: <T>(kind: 'about' | 'editorial-policy' | 'ai-policy', lang: 'ru' | 'kz' | 'en', file: File) => {
+    const form = new FormData()
+    form.append('document', file)
+    return request<T>(`/publication/journal-settings/documents/${kind}/${lang}`, 'PUT', { body: form })
+  },
+  getPublicDocumentPdfUrl: (kind: 'about' | 'editorial-policy' | 'ai-policy', lang: 'ru' | 'kz' | 'en') =>
+    buildUrl(`/publication/journal-settings/documents/${kind}/${lang}`),
   // Change article status (editor role required)
   changeArticleStatus: <T>(articleId: string | number, status: string, options?: { comment_for_author?: string }) =>
     request<T>(`/articles/${articleId}/status`, 'PATCH', { json: { status, ...(options?.comment_for_author ? { comment_for_author: options.comment_for_author } : {}) } }),
