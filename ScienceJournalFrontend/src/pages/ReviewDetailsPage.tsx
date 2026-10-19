@@ -378,6 +378,21 @@ export default function ReviewDetailsPage() {
           <div className="table__empty">Данные не найдены.</div>
         ) : (
           <>
+          {data.previous_review && (
+            <section className="panel" style={{ marginBottom: '1rem', borderLeft: '4px solid #8b1e32' }}>
+              <p className="eyebrow">Предыдущий раунд</p>
+              <h3 className="panel-title">Ваша предыдущая рецензия</h3>
+              <p className="form-hint">Используйте её для проверки того, как автор учёл замечания.</p>
+              {data.previous_review.comments && <p style={{ whiteSpace: 'pre-wrap' }}><strong>Комментарии:</strong><br />{data.previous_review.comments}</p>}
+              {(Object.keys(reviewCriterionLabels.ru) as ReviewCriterionKey[]).map((key) => data.previous_review?.[key] ? (
+                <div key={key} style={{ marginTop: '0.75rem' }}>
+                  <strong>{reviewCriterionLabels[lang === 'en' ? 'en' : 'ru'][key]}</strong>
+                  <div style={{ whiteSpace: 'pre-wrap' }}>{data.previous_review?.[key]}</div>
+                </div>
+              ) : null)}
+              {data.previous_review.recommendation && <p style={{ marginTop: '0.75rem' }}><strong>Рекомендация:</strong> {formatReviewRecommendation(data.previous_review.recommendation, lang)}</p>}
+            </section>
+          )}
           {!isReadOnly && (
             <section className="ai-review-panel review-assistant" aria-labelledby="review-assistant-title">
               <div className="review-assistant__header">

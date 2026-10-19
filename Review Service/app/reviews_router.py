@@ -467,6 +467,7 @@ def update_review(review_id: int, review: schemas.ReviewUpdate, background_tasks
 @router.patch("/{review_id}/request-resubmission", response_model=schemas.ReviewOut)
 def request_resubmission(
     review_id: int,
+    background_tasks: BackgroundTasks,
     payload: Optional[schemas.RequestResubmission] = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -482,9 +483,30 @@ def request_resubmission(
     if payload and payload.deadline is not None:
         db_review.deadline = payload.deadline
 
+    # Preserve the submitted review before reopening the same assignment. This
+    # gives the reviewer a stable reference while they write the next round.
+    db_review.previous_review = {
+        "comments": db_review.comments,
+        "recommendation": db_review.recommendation.value if db_review.recommendation else None,
+        "importance_applicability": db_review.importance_applicability,
+        "novelty_application": db_review.novelty_application,
+        "originality": db_review.originality,
+        "innovation_product": db_review.innovation_product,
+        "results_significance": db_review.results_significance,
+        "coherence": db_review.coherence,
+        "style_quality": db_review.style_quality,
+        "editorial_compliance": db_review.editorial_compliance,
+        "submitted_at": db_review.updated_at.isoformat() if db_review.updated_at else None,
+    }
     db_review.status = models.ReviewStatus.resubmission
     db.commit()
     db.refresh(db_review)
+    background_tasks.add_task(
+        _notify_reviewer_assignment,
+        db_review.article_id,
+        db_review.reviewer_id,
+        db_review.id,
+    )
     return db_review
 
 
@@ -632,6 +654,7 @@ def get_review_detail(review_id: int, db: Session = Depends(get_db), current_use
                 'coherence': db_review.coherence,
                 'style_quality': db_review.style_quality,
                 'editorial_compliance': db_review.editorial_compliance,
+                'previous_review': db_review.previous_review,
                 'created_at': db_review.created_at,
                 'updated_at': db_review.updated_at,
                 'article': article,

@@ -106,7 +106,7 @@ export function ArchivePage() {
       : ['', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 
   const articleTitle = (article: NonNullable<ApiVolume['articles']>[number]) => article[`title_${lang}`] || article.title || 'Без названия'
-  const articleAuthors = (article: NonNullable<ApiVolume['articles']>[number]) => (article.authors || []).map((author: any) => typeof author === 'string' ? author : [author.first_name, author.patronymic, author.last_name].filter(Boolean).join(' ')).filter(Boolean).join(', ')
+  const articleAuthors = (article: NonNullable<ApiVolume['articles']>[number]) => (article.authors || []).map((author: any) => typeof author === 'string' ? author : [author[`first_name_${lang}`] || author.first_name_en || author.first_name, author[`patronymic_${lang}`] || author.patronymic_en || author.patronymic, author[`last_name_${lang}`] || author.last_name_en || author.last_name].filter(Boolean).join(' ')).filter(Boolean).join(', ')
 
   const toggleYear = (year: number) => {
     setOpenYears((prev: Record<number, boolean>) => ({ ...prev, [year]: !prev[year] }))

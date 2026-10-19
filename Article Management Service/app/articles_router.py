@@ -946,6 +946,14 @@ def create_author(
         }
     else:
         author_dict = author.dict()
+        # The legacy columns remain the canonical English values for backwards
+        # compatibility with older clients and exports.
+        author_dict["first_name_en"] = author_dict.get("first_name_en") or author_dict["first_name"]
+        author_dict["last_name_en"] = author_dict.get("last_name_en") or author_dict["last_name"]
+        author_dict["patronymic_en"] = author_dict.get("patronymic_en") or author_dict.get("patronymic")
+        author_dict["affiliation1_en"] = author_dict.get("affiliation1_en") or author_dict["affiliation1"]
+        author_dict["affiliation2_en"] = author_dict.get("affiliation2_en") or author_dict.get("affiliation2")
+        author_dict["affiliation3_en"] = author_dict.get("affiliation3_en") or author_dict.get("affiliation3")
 
     new_author = models.Author(**author_dict)
     db.add(new_author)
@@ -969,6 +977,17 @@ def update_author(
         raise HTTPException(status_code=404, detail="Author not found")
 
     update_data = payload.dict(exclude_unset=True)
+    english_to_legacy = {
+        "first_name_en": "first_name",
+        "patronymic_en": "patronymic",
+        "last_name_en": "last_name",
+        "affiliation1_en": "affiliation1",
+        "affiliation2_en": "affiliation2",
+        "affiliation3_en": "affiliation3",
+    }
+    for translated, legacy in english_to_legacy.items():
+        if translated in update_data:
+            update_data[legacy] = update_data[translated]
     for field, value in update_data.items():
         setattr(author, field, value)
 

@@ -274,7 +274,7 @@ export default function PublicVolumeDetailPage() {
                   </div>
                   <div className="latest-table__cell">
                     {Array.isArray(a.authors)
-                      ? a.authors.map((x: any) => `${x.last_name} ${x.first_name}`).join(', ')
+                      ? a.authors.map((x: any) => `${x[`last_name_${lang}`] || x.last_name_en || x.last_name || ''} ${x[`first_name_${lang}`] || x.first_name_en || x.first_name || ''}`.trim()).join(', ')
                       : '-'}
                   </div>
                   <div className="latest-table__cell">

@@ -28,6 +28,7 @@ def _ensure_schema():
 		"coherence": "TEXT NULL",
 		"style_quality": "TEXT NULL",
 		"editorial_compliance": "TEXT NULL",
+		"previous_review": "JSONB NULL",
 	}
 
 	for name, ddl in expected.items():

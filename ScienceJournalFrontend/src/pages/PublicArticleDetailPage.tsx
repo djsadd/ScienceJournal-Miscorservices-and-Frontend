@@ -23,15 +23,15 @@ const pickLocalized = (lang: 'ru' | 'en' | 'kz', ru?: string | null, en?: string
   return compact(value)
 }
 
-const formatAuthorName = (a: any) => {
-  const last = compact(a?.last_name)
-  const first = compact(a?.first_name)
-  const patronymic = compact(a?.patronymic)
+const formatAuthorName = (a: any, lang: 'ru' | 'en' | 'kz') => {
+  const last = compact(a?.[`last_name_${lang}`] || a?.last_name_en || a?.last_name)
+  const first = compact(a?.[`first_name_${lang}`] || a?.first_name_en || a?.first_name)
+  const patronymic = compact(a?.[`patronymic_${lang}`] || a?.patronymic_en || a?.patronymic)
   return [last, first, patronymic].filter(Boolean).join(' ')
 }
 
-const extractAffiliations = (a: any) => {
-  const values = [a?.affiliation1, a?.affiliation2, a?.affiliation3].map(compact).filter(Boolean)
+const extractAffiliations = (a: any, lang: 'ru' | 'en' | 'kz') => {
+  const values = [1, 2, 3].map((index) => a?.[`affiliation${index}_${lang}`] || a?.[`affiliation${index}_en`] || a?.[`affiliation${index}`]).map(compact).filter(Boolean)
   return Array.from(new Set(values))
 }
 
@@ -335,8 +335,8 @@ export default function PublicArticleDetailPage() {
               ) : (
                 <ul className="public-article__author-list">
                   {authors.map((a: any, idx: number) => {
-                    const name = formatAuthorName(a) || `Author ${idx + 1}`
-                    const affs = extractAffiliations(a)
+                    const name = formatAuthorName(a, lang) || `Author ${idx + 1}`
+                    const affs = extractAffiliations(a, lang)
                     const isCorresponding = Boolean(a?.is_corresponding)
                     return (
                       <li className="public-article__author" key={String(a?.id ?? `${idx}-${name}`)}>

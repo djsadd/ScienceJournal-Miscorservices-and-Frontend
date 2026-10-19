@@ -34,7 +34,16 @@ interface AuthorOut {
   orcid?: string | null
   scopus_author_id?: string | null
   researcher_id?: string | null
+  first_name_en?: string | null; first_name_ru?: string | null; first_name_kz?: string | null
+  patronymic_en?: string | null; patronymic_ru?: string | null; patronymic_kz?: string | null
+  last_name_en?: string | null; last_name_ru?: string | null; last_name_kz?: string | null
+  affiliation1_en?: string | null; affiliation1_ru?: string | null; affiliation1_kz?: string | null
+  affiliation2_en?: string | null; affiliation2_ru?: string | null; affiliation2_kz?: string | null
+  affiliation3_en?: string | null; affiliation3_ru?: string | null; affiliation3_kz?: string | null
 }
+
+const authorLocalized = (author: AuthorOut, field: 'first_name' | 'patronymic' | 'last_name' | 'affiliation1' | 'affiliation2' | 'affiliation3', lang: 'ru' | 'en' | 'kz') =>
+  String((author as any)[`${field}_${lang}`] || (author as any)[`${field}_en`] || (author as any)[field] || '')
 
 interface ArticleVersionOut {
   id: number
@@ -510,6 +519,9 @@ export default function EditorArticleDetailPage() {
   // Author details modal state
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorOut | null>(null)
+  const [authorEditLang, setAuthorEditLang] = useState<'en' | 'ru' | 'kz'>('en')
+  const [authorSaving, setAuthorSaving] = useState(false)
+  const [authorError, setAuthorError] = useState<string | null>(null)
   const [keywordModalOpen, setKeywordModalOpen] = useState(false)
   const [selectedKeyword, setSelectedKeyword] = useState<KeywordOut | null>(null)
 
@@ -1008,8 +1020,8 @@ export default function EditorArticleDetailPage() {
             </div>
             {data.authors.length === 0 ? <div className="module-empty">Авторы пока не добавлены.</div> : <div className="author-cards">
               {data.authors.map((author) => <button className="author-card" type="button" key={author.id} onClick={() => { setSelectedAuthor(author); setAuthorModalOpen(true) }}>
-                <span className="author-card__avatar">{author.first_name.charAt(0)}{author.last_name.charAt(0)}</span>
-                <span className="author-card__content"><strong>{author.last_name} {author.first_name} {author.patronymic || ''}</strong><small>{author.email}</small><small>{author.affiliation1 || 'Аффилиация не указана'}</small></span>
+                <span className="author-card__avatar">{authorLocalized(author, 'first_name', pageLang).charAt(0)}{authorLocalized(author, 'last_name', pageLang).charAt(0)}</span>
+                <span className="author-card__content"><strong>{authorLocalized(author, 'last_name', pageLang)} {authorLocalized(author, 'first_name', pageLang)} {authorLocalized(author, 'patronymic', pageLang)}</strong><small>{author.email}</small><small>{authorLocalized(author, 'affiliation1', pageLang) || 'Аффилиация не указана'}</small></span>
                 {author.is_corresponding && <span className="author-card__badge">Контактный автор</span>}
                 <span className="author-card__arrow">→</span>
               </button>)}
@@ -1541,22 +1553,40 @@ export default function EditorArticleDetailPage() {
               <button className="modal__close" onClick={() => setAuthorModalOpen(false)}>×</button>
             </div>
             <div className="modal__body">
+              <div className="lang-switch" style={{ marginBottom: '1rem' }}>
+                {(['en', 'ru', 'kz'] as const).map((language) => <button key={language} type="button" className={`lang-chip ${authorEditLang === language ? 'lang-chip--active' : ''}`} onClick={() => setAuthorEditLang(language)}>{language.toUpperCase()}{language === 'en' ? ' *' : ''}</button>)}
+              </div>
+              <p className="form-hint">Английские имя, фамилия и основная аффилиация обязательны. Русский и казахский варианты необязательны.</p>
               <div className="details-grid">
-                <div><strong>ФИО:</strong> {`${selectedAuthor.last_name} ${selectedAuthor.first_name}${selectedAuthor.patronymic ? ' ' + selectedAuthor.patronymic : ''}`}</div>
+                {(['first_name', 'patronymic', 'last_name', 'affiliation1', 'affiliation2', 'affiliation3'] as const).map((field) => {
+                  const labels = { first_name: 'Имя', patronymic: 'Отчество', last_name: 'Фамилия', affiliation1: 'Основная аффилиация', affiliation2: 'Аффилиация 2', affiliation3: 'Аффилиация 3' }
+                  const key = `${field}_${authorEditLang}` as keyof AuthorOut
+                  const required = authorEditLang === 'en' && (field === 'first_name' || field === 'last_name' || field === 'affiliation1')
+                  return <label key={field} className={field.startsWith('affiliation') ? 'form-field form-field--span-2' : 'form-field'}><span className="form-label">{labels[field]}{required ? ' *' : ''}</span>{field.startsWith('affiliation') ? <textarea className="text-input" rows={2} value={String(selectedAuthor[key] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [key]: e.target.value })} disabled={!canEdit} /> : <input className="text-input" value={String(selectedAuthor[key] || '')} onChange={(e) => setSelectedAuthor({ ...selectedAuthor, [key]: e.target.value })} disabled={!canEdit} />}</label>
+                })}
                 <div><strong>Префикс:</strong> {selectedAuthor.prefix || '—'}</div>
                 <div><strong>Email:</strong> {selectedAuthor.email}</div>
                 <div><strong>Телефон:</strong> {selectedAuthor.phone || '—'}</div>
                 <div><strong>Адрес:</strong> {selectedAuthor.address || '—'}</div>
                 <div><strong>Страна:</strong> {getCountryLabel(selectedAuthor.country) || '—'}</div>
-                <div style={{ gridColumn: '1 / -1' }}><strong>Аффилиация(и):</strong><br/>{[selectedAuthor.affiliation1, selectedAuthor.affiliation2, selectedAuthor.affiliation3].filter(Boolean).join('; ') || '—'}</div>
                 <div><strong>Контактный автор:</strong> {selectedAuthor.is_corresponding ? 'Да' : 'Нет'}</div>
                 <div><strong>ORCID:</strong> {selectedAuthor.orcid || '—'}</div>
                 <div><strong>Scopus Author ID:</strong> {selectedAuthor.scopus_author_id || '—'}</div>
                 <div><strong>ResearcherID:</strong> {selectedAuthor.researcher_id || '—'}</div>
               </div>
+              {authorError && <div className="alert error" style={{ marginTop: '1rem' }}>{authorError}</div>}
             </div>
             <div className="modal__footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button className="button button--primary" onClick={() => setAuthorModalOpen(false)}>Закрыть</button>
+              <button className="button button--ghost" onClick={() => setAuthorModalOpen(false)}>Закрыть</button>
+              {canEdit && <button className="button button--primary" disabled={authorSaving || !selectedAuthor.email || !selectedAuthor.country || !authorLocalized(selectedAuthor, 'first_name', 'en').trim() || !authorLocalized(selectedAuthor, 'last_name', 'en').trim() || !authorLocalized(selectedAuthor, 'affiliation1', 'en').trim()} onClick={async () => {
+                setAuthorSaving(true); setAuthorError(null)
+                try {
+                  const payload = Object.fromEntries((['en', 'ru', 'kz'] as const).flatMap((language) => (['first_name', 'patronymic', 'last_name', 'affiliation1', 'affiliation2', 'affiliation3'] as const).map((field) => [`${field}_${language}`, (selectedAuthor as any)[`${field}_${language}`]?.trim() || null])))
+                  const updated = await api.updateAuthor<AuthorOut>(selectedAuthor.id, payload)
+                  setData((current) => current ? { ...current, authors: current.authors.map((author) => author.id === updated.id ? updated : author) } : current)
+                  setSelectedAuthor(updated); setAuthorModalOpen(false)
+                } catch (e: any) { setAuthorError(e?.bodyJson?.detail || e?.message || 'Не удалось сохранить автора') } finally { setAuthorSaving(false) }
+              }}>{authorSaving ? 'Сохранение…' : 'Сохранить'}</button>}
             </div>
           </div>
         </div>

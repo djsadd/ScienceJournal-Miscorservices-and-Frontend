@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Any, Dict, Optional, List
 from datetime import datetime
 from enum import Enum
 
@@ -77,6 +77,7 @@ class ReviewOut(ReviewBase):
     id: int
     reviewer_id: int
     deadline: Optional[datetime] = None
+    previous_review: Optional[Dict[str, Any]] = None
 
 
 class DeclineReviewRequest(BaseModel):

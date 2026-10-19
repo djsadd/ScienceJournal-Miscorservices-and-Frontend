@@ -81,6 +81,24 @@ class AuthorCreate(BaseModel):
     orcid: Optional[str] = None
     scopus_author_id: Optional[str] = None
     researcher_id: Optional[str] = None
+    first_name_en: Optional[str] = None
+    first_name_ru: Optional[str] = None
+    first_name_kz: Optional[str] = None
+    patronymic_en: Optional[str] = None
+    patronymic_ru: Optional[str] = None
+    patronymic_kz: Optional[str] = None
+    last_name_en: Optional[str] = None
+    last_name_ru: Optional[str] = None
+    last_name_kz: Optional[str] = None
+    affiliation1_en: Optional[str] = None
+    affiliation1_ru: Optional[str] = None
+    affiliation1_kz: Optional[str] = None
+    affiliation2_en: Optional[str] = None
+    affiliation2_ru: Optional[str] = None
+    affiliation2_kz: Optional[str] = None
+    affiliation3_en: Optional[str] = None
+    affiliation3_ru: Optional[str] = None
+    affiliation3_kz: Optional[str] = None
 
 
 class AuthorUpdate(BaseModel):
@@ -99,6 +117,24 @@ class AuthorUpdate(BaseModel):
     orcid: Optional[str] = None
     scopus_author_id: Optional[str] = None
     researcher_id: Optional[str] = None
+    first_name_en: Optional[str] = None
+    first_name_ru: Optional[str] = None
+    first_name_kz: Optional[str] = None
+    patronymic_en: Optional[str] = None
+    patronymic_ru: Optional[str] = None
+    patronymic_kz: Optional[str] = None
+    last_name_en: Optional[str] = None
+    last_name_ru: Optional[str] = None
+    last_name_kz: Optional[str] = None
+    affiliation1_en: Optional[str] = None
+    affiliation1_ru: Optional[str] = None
+    affiliation1_kz: Optional[str] = None
+    affiliation2_en: Optional[str] = None
+    affiliation2_ru: Optional[str] = None
+    affiliation2_kz: Optional[str] = None
+    affiliation3_en: Optional[str] = None
+    affiliation3_ru: Optional[str] = None
+    affiliation3_kz: Optional[str] = None
 
 
 class AuthorOut(BaseModel):
@@ -118,6 +154,24 @@ class AuthorOut(BaseModel):
     orcid: Optional[str] = None
     scopus_author_id: Optional[str] = None
     researcher_id: Optional[str] = None
+    first_name_en: Optional[str] = None
+    first_name_ru: Optional[str] = None
+    first_name_kz: Optional[str] = None
+    patronymic_en: Optional[str] = None
+    patronymic_ru: Optional[str] = None
+    patronymic_kz: Optional[str] = None
+    last_name_en: Optional[str] = None
+    last_name_ru: Optional[str] = None
+    last_name_kz: Optional[str] = None
+    affiliation1_en: Optional[str] = None
+    affiliation1_ru: Optional[str] = None
+    affiliation1_kz: Optional[str] = None
+    affiliation2_en: Optional[str] = None
+    affiliation2_ru: Optional[str] = None
+    affiliation2_kz: Optional[str] = None
+    affiliation3_en: Optional[str] = None
+    affiliation3_ru: Optional[str] = None
+    affiliation3_kz: Optional[str] = None
 
     class Config:
         orm_mode = True

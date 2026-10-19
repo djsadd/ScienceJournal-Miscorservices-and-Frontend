@@ -30,6 +30,12 @@ type AuthorApi = {
   orcid?: string | null
   scopus_author_id?: string | null
   researcher_id?: string | null
+  first_name_en?: string | null; first_name_ru?: string | null; first_name_kz?: string | null
+  patronymic_en?: string | null; patronymic_ru?: string | null; patronymic_kz?: string | null
+  last_name_en?: string | null; last_name_ru?: string | null; last_name_kz?: string | null
+  affiliation1_en?: string | null; affiliation1_ru?: string | null; affiliation1_kz?: string | null
+  affiliation2_en?: string | null; affiliation2_ru?: string | null; affiliation2_kz?: string | null
+  affiliation3_en?: string | null; affiliation3_ru?: string | null; affiliation3_kz?: string | null
 }
 
 type CountryOption = {
@@ -52,15 +58,15 @@ type AuthorForm = {
   id?: number
   email: string
   prefix: string
-  firstName: string
-  middleName: string
-  lastName: string
+  firstName: Record<Lang, string>
+  middleName: Record<Lang, string>
+  lastName: Record<Lang, string>
   phone: string
   address: string
   country: string
-  affiliation1: string
-  affiliation2: string
-  affiliation3: string
+  affiliation1: Record<Lang, string>
+  affiliation2: Record<Lang, string>
+  affiliation3: Record<Lang, string>
   isCorresponding: boolean
   orcid: string
   scopusId: string
@@ -68,6 +74,8 @@ type AuthorForm = {
 }
 
 const RequiredMark = () => <span className="required-star" aria-hidden="true">{'\u00a0'}*</span>
+const emptyLocalized = (): Record<Lang, string> => ({ ru: '', kz: '', en: '' })
+const localizedValue = (values: Record<Lang, string>, lang: Lang) => values[lang] || values.en || values.ru || values.kz
 
 const pageCopy: Record<LocaleKey, any> = {
   ru: {
@@ -551,21 +559,23 @@ export function AuthorsSubmissionPage() {
   const [confirmOriginality, setConfirmOriginality] = useState(false)
   const [confirmConsent, setConfirmConsent] = useState(false)
   const [authorModalOpen, setAuthorModalOpen] = useState(false)
+  const [authorLang, setAuthorLang] = useState<Lang>('en')
+  const authorT = pageCopy[authorLang].authors
   const [manuscriptWarningOpen, setManuscriptWarningOpen] = useState(false)
   const manuscriptFileRef = useRef<HTMLInputElement>(null)
   const allowManuscriptPickerRef = useRef(false)
   const [authorForm, setAuthorForm] = useState<AuthorForm>({
     email: '',
     prefix: '',
-    firstName: '',
-    middleName: '',
-    lastName: '',
+    firstName: emptyLocalized(),
+    middleName: emptyLocalized(),
+    lastName: emptyLocalized(),
     phone: '',
     address: '',
     country: '',
-    affiliation1: '',
-    affiliation2: '',
-    affiliation3: '',
+    affiliation1: emptyLocalized(),
+    affiliation2: emptyLocalized(),
+    affiliation3: emptyLocalized(),
     isCorresponding: true,
     orcid: '',
     scopusId: '',
@@ -690,15 +700,15 @@ export function AuthorsSubmissionPage() {
     setAuthorForm({
       email: '',
       prefix: '',
-      firstName: '',
-      middleName: '',
-      lastName: '',
+      firstName: emptyLocalized(),
+      middleName: emptyLocalized(),
+      lastName: emptyLocalized(),
       phone: '',
       address: '',
       country: '',
-      affiliation1: '',
-      affiliation2: '',
-      affiliation3: '',
+      affiliation1: emptyLocalized(),
+      affiliation2: emptyLocalized(),
+      affiliation3: emptyLocalized(),
       isCorresponding: true,
       orcid: '',
       scopusId: '',
@@ -709,15 +719,15 @@ export function AuthorsSubmissionPage() {
     id: a.id,
     email: a.email,
     prefix: a.prefix ?? '',
-    firstName: a.first_name,
-    middleName: a.patronymic ?? '',
-    lastName: a.last_name,
+    firstName: { en: a.first_name_en || a.first_name, ru: a.first_name_ru || '', kz: a.first_name_kz || '' },
+    middleName: { en: a.patronymic_en || a.patronymic || '', ru: a.patronymic_ru || '', kz: a.patronymic_kz || '' },
+    lastName: { en: a.last_name_en || a.last_name, ru: a.last_name_ru || '', kz: a.last_name_kz || '' },
     phone: a.phone ?? '',
     address: a.address ?? '',
     country: getCountryLabel(a.country),
-    affiliation1: a.affiliation1,
-    affiliation2: a.affiliation2 ?? '',
-    affiliation3: a.affiliation3 ?? '',
+    affiliation1: { en: a.affiliation1_en || a.affiliation1, ru: a.affiliation1_ru || '', kz: a.affiliation1_kz || '' },
+    affiliation2: { en: a.affiliation2_en || a.affiliation2 || '', ru: a.affiliation2_ru || '', kz: a.affiliation2_kz || '' },
+    affiliation3: { en: a.affiliation3_en || a.affiliation3 || '', ru: a.affiliation3_ru || '', kz: a.affiliation3_kz || '' },
     isCorresponding: a.is_corresponding,
     orcid: a.orcid ?? '',
     scopusId: a.scopus_author_id ?? '',
@@ -725,20 +735,28 @@ export function AuthorsSubmissionPage() {
   })
 
   const saveAuthor = async () => {
-    if (!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()) return
+    if (!authorForm.email.trim() || !authorForm.firstName.en.trim() || !authorForm.lastName.en.trim() || !authorForm.country.trim() || !authorForm.affiliation1.en.trim()) return
     try {
       const payload = {
         email: authorForm.email.trim(),
         prefix: authorForm.prefix.trim() || null,
-        first_name: authorForm.firstName.trim(),
-        patronymic: authorForm.middleName.trim() || null,
-        last_name: authorForm.lastName.trim(),
+        first_name: authorForm.firstName.en.trim(),
+        patronymic: authorForm.middleName.en.trim() || null,
+        last_name: authorForm.lastName.en.trim(),
         phone: authorForm.phone.trim() || null,
         address: authorForm.address.trim() || null,
         country_id: Number(authorForm.country),
-        affiliation1: authorForm.affiliation1.trim(),
-        affiliation2: authorForm.affiliation2.trim() || null,
-        affiliation3: authorForm.affiliation3.trim() || null,
+        affiliation1: authorForm.affiliation1.en.trim(),
+        affiliation2: authorForm.affiliation2.en.trim() || null,
+        affiliation3: authorForm.affiliation3.en.trim() || null,
+        ...Object.fromEntries((['en', 'ru', 'kz'] as Lang[]).flatMap((language) => [
+          [`first_name_${language}`, authorForm.firstName[language].trim() || null],
+          [`patronymic_${language}`, authorForm.middleName[language].trim() || null],
+          [`last_name_${language}`, authorForm.lastName[language].trim() || null],
+          [`affiliation1_${language}`, authorForm.affiliation1[language].trim() || null],
+          [`affiliation2_${language}`, authorForm.affiliation2[language].trim() || null],
+          [`affiliation3_${language}`, authorForm.affiliation3[language].trim() || null],
+        ])),
         is_corresponding: authorForm.isCorresponding,
         orcid: authorForm.orcid.trim() || null,
         scopus_author_id: authorForm.scopusId.trim() || null,
@@ -769,7 +787,7 @@ export function AuthorsSubmissionPage() {
   const authorsText = useMemo<Record<Lang, string>>(
     () => {
       const fullNames = authorList
-        .map((author) => [author.prefix, author.firstName, author.middleName, author.lastName].filter(Boolean).join(' '))
+        .map((author) => [author.prefix, localizedValue(author.firstName, locale), localizedValue(author.middleName, locale), localizedValue(author.lastName, locale)].filter(Boolean).join(' '))
         .filter(Boolean)
         .join('; ')
       return { ru: fullNames, kz: fullNames, en: fullNames }
@@ -1260,13 +1278,13 @@ export function AuthorsSubmissionPage() {
                   <div className="table__cell">
                     <div className="table__title">
                       {a.prefix ? `${a.prefix} ` : ''}
-                      {a.firstName} {a.middleName} {a.lastName}
+                      {localizedValue(a.firstName, locale)} {localizedValue(a.middleName, locale)} {localizedValue(a.lastName, locale)}
                     </div>
                     <div className="table__meta">{a.phone}</div>
                   </div>
                   <div className="table__cell">{a.email}</div>
                   <div className="table__cell">
-                    {[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join('; ') || t.common.notSpecified}
+                    {[a.affiliation1, a.affiliation2, a.affiliation3].map((value) => localizedValue(value, locale)).filter(Boolean).join('; ') || t.common.notSpecified}
                   </div>
                   <div className="table__cell">{a.isCorresponding ? t.authors.yes : t.authors.no}</div>
                   <div className="table__cell">
@@ -1435,6 +1453,14 @@ export function AuthorsSubmissionPage() {
               <div className="author-modal__intro">
                 <p className="author-modal__eyebrow">{t.authors.modalEyebrow}</p>
                 <p className="author-modal__hint">{t.authors.modalHint}</p>
+                <div className="lang-switch" aria-label="Author data language">
+                  {(['en', 'ru', 'kz'] as Lang[]).map((language) => (
+                    <button key={language} type="button" className={`lang-chip ${authorLang === language ? 'lang-chip--active' : ''}`} onClick={() => setAuthorLang(language)}>
+                      {language.toUpperCase()}{language === 'en' ? ' *' : ''}
+                    </button>
+                  ))}
+                </div>
+                <p className="form-hint">English fields marked with * are required. Русский и қазақша — необязательно.</p>
               </div>
               <div className="author-grid">
                 <div className="form-field">
@@ -1446,16 +1472,16 @@ export function AuthorsSubmissionPage() {
                   <input className="text-input" value={authorForm.prefix} onChange={(e) => setAuthorForm((p) => ({ ...p, prefix: e.target.value }))} placeholder={t.authors.placeholders.prefix} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.firstName.replace(' *', '')}<RequiredMark /></label>
-                  <input className="text-input" value={authorForm.firstName} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: e.target.value }))} placeholder={t.authors.placeholders.firstName} />
+                  <label className="form-label">{authorT.fields.firstName.replace(' *', '')}{authorLang === 'en' && <RequiredMark />}</label>
+                  <input className="text-input" value={authorForm.firstName[authorLang]} onChange={(e) => setAuthorForm((p) => ({ ...p, firstName: { ...p.firstName, [authorLang]: e.target.value } }))} placeholder={authorT.placeholders.firstName} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.middleName}</label>
-                  <input className="text-input" value={authorForm.middleName} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: e.target.value }))} placeholder={t.authors.placeholders.middleName} />
+                  <label className="form-label">{authorT.fields.middleName}</label>
+                  <input className="text-input" value={authorForm.middleName[authorLang]} onChange={(e) => setAuthorForm((p) => ({ ...p, middleName: { ...p.middleName, [authorLang]: e.target.value } }))} placeholder={authorT.placeholders.middleName} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.lastName.replace(' *', '')}<RequiredMark /></label>
-                  <input className="text-input" value={authorForm.lastName} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: e.target.value }))} placeholder={t.authors.placeholders.lastName} />
+                  <label className="form-label">{authorT.fields.lastName.replace(' *', '')}{authorLang === 'en' && <RequiredMark />}</label>
+                  <input className="text-input" value={authorForm.lastName[authorLang]} onChange={(e) => setAuthorForm((p) => ({ ...p, lastName: { ...p.lastName, [authorLang]: e.target.value } }))} placeholder={authorT.placeholders.lastName} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.phone}</label>
@@ -1477,16 +1503,16 @@ export function AuthorsSubmissionPage() {
                   </select>
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.affiliation1.replace(' *', '')}<RequiredMark /></label>
-                  <textarea className="text-input" rows={3} value={authorForm.affiliation1} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: e.target.value }))} placeholder={t.authors.placeholders.affiliation1} />
+                  <label className="form-label">{authorT.fields.affiliation1.replace(' *', '')}{authorLang === 'en' && <RequiredMark />}</label>
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation1[authorLang]} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation1: { ...p.affiliation1, [authorLang]: e.target.value } }))} placeholder={authorT.placeholders.affiliation1} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.affiliation2}</label>
-                  <textarea className="text-input" rows={3} value={authorForm.affiliation2} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: e.target.value }))} placeholder={t.authors.placeholders.affiliation2} />
+                  <label className="form-label">{authorT.fields.affiliation2}</label>
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation2[authorLang]} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation2: { ...p.affiliation2, [authorLang]: e.target.value } }))} placeholder={authorT.placeholders.affiliation2} />
                 </div>
                 <div className="form-field">
-                  <label className="form-label">{t.authors.fields.affiliation3}</label>
-                  <textarea className="text-input" rows={3} value={authorForm.affiliation3} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: e.target.value }))} placeholder={t.authors.placeholders.affiliation3} />
+                  <label className="form-label">{authorT.fields.affiliation3}</label>
+                  <textarea className="text-input" rows={3} value={authorForm.affiliation3[authorLang]} onChange={(e) => setAuthorForm((p) => ({ ...p, affiliation3: { ...p.affiliation3, [authorLang]: e.target.value } }))} placeholder={authorT.placeholders.affiliation3} />
                 </div>
                 <div className="form-field">
                   <label className="form-label">{t.authors.fields.corresponding}</label>
@@ -1511,7 +1537,7 @@ export function AuthorsSubmissionPage() {
             </div>
             <div className="modal__footer author-modal__footer">
               <button className="button button--ghost" type="button" onClick={() => setAuthorModalOpen(false)}>{t.common.cancel}</button>
-              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.trim() || !authorForm.lastName.trim() || !authorForm.country.trim() || !authorForm.affiliation1.trim()}>{t.authors.save}</button>
+              <button className="button button--primary" type="button" onClick={saveAuthor} disabled={!authorForm.email.trim() || !authorForm.firstName.en.trim() || !authorForm.lastName.en.trim() || !authorForm.country.trim() || !authorForm.affiliation1.en.trim()}>{t.authors.save}</button>
             </div>
           </div>
         </div>
@@ -1537,8 +1563,8 @@ export function AuthorsSubmissionPage() {
                   <div className="table__row"><div className="table__cell">{t.confirm.articleType}</div><div className="table__cell">{articleType ? t.articleTypes[articleType] : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.articleLanguage}</div><div className="table__cell">{pendingPayload.article_language ? getArticleLanguageLabel(pendingPayload.article_language, locale) ?? pendingPayload.article_language : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.keywords}</div><div className="table__cell">{selectedKeywords.length ? selectedKeywords.map((kw) => confirmLang === 'ru' ? kw.ru : confirmLang === 'kz' ? kw.kz : kw.en).filter(Boolean).join(', ') : t.common.notAvailable}</div></div>
-                  <div className="table__row"><div className="table__cell">{t.confirm.responsibleAuthor}</div><div className="table__cell">{(() => { const responsible = authorList.find((a) => a.id === pendingPayload.responsible_user_id); if (!responsible) return pendingPayload.responsible_user_id ?? t.common.notAvailable; const name = [responsible.prefix, responsible.firstName, responsible.middleName, responsible.lastName].filter(Boolean).join(' '); return `${name} (${responsible.email})`; })()}</div></div>
-                  <div className="table__row"><div className="table__cell">{t.confirm.authors}</div><div className="table__cell">{authorList.length ? authorList.map((a) => [a.prefix, a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ')).join('; ') : t.common.notAvailable}</div></div>
+                  <div className="table__row"><div className="table__cell">{t.confirm.responsibleAuthor}</div><div className="table__cell">{(() => { const responsible = authorList.find((a) => a.id === pendingPayload.responsible_user_id); if (!responsible) return pendingPayload.responsible_user_id ?? t.common.notAvailable; const name = [responsible.prefix, localizedValue(responsible.firstName, confirmLang), localizedValue(responsible.middleName, confirmLang), localizedValue(responsible.lastName, confirmLang)].filter(Boolean).join(' '); return `${name} (${responsible.email})`; })()}</div></div>
+                  <div className="table__row"><div className="table__cell">{t.confirm.authors}</div><div className="table__cell">{authorList.length ? authorList.map((a) => [a.prefix, localizedValue(a.firstName, confirmLang), localizedValue(a.middleName, confirmLang), localizedValue(a.lastName, confirmLang)].filter(Boolean).join(' ')).join('; ') : t.common.notAvailable}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.manuscript}</div><div className="table__cell">{getFileNameFromInputKind('manuscript') || (pendingPayload.manuscript_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.antiplagiarism}</div><div className="table__cell">{getFileNameFromInputKind('antiplagiarism') || (pendingPayload.antiplagiarism_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>
                   <div className="table__row"><div className="table__cell">{t.confirm.authorInfo}</div><div className="table__cell">{getFileNameFromInputKind('authorInfo') || (pendingPayload.author_info_file_id ? t.common.uploaded : t.common.notAvailable)}</div></div>

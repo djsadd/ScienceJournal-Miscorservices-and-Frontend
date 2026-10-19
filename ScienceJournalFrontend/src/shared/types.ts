@@ -27,6 +27,12 @@ export interface Author {
   orcid?: string | null
   scopus_author_id?: string | null
   researcher_id?: string | null
+  first_name_en?: string | null; first_name_ru?: string | null; first_name_kz?: string | null
+  patronymic_en?: string | null; patronymic_ru?: string | null; patronymic_kz?: string | null
+  last_name_en?: string | null; last_name_ru?: string | null; last_name_kz?: string | null
+  affiliation1_en?: string | null; affiliation1_ru?: string | null; affiliation1_kz?: string | null
+  affiliation2_en?: string | null; affiliation2_ru?: string | null; affiliation2_kz?: string | null
+  affiliation3_en?: string | null; affiliation3_ru?: string | null; affiliation3_kz?: string | null
 }
 
 export interface Keyword {
@@ -183,6 +189,7 @@ export interface ReviewDetail {
   editorial_compliance?: string | null
   created_at?: string | null
   updated_at?: string | null
+  previous_review?: Partial<Record<'comments' | 'recommendation' | 'importance_applicability' | 'novelty_application' | 'originality' | 'innovation_product' | 'results_significance' | 'coherence' | 'style_quality' | 'editorial_compliance' | 'submitted_at', string | null>> | null
   // Enriched article preview for reviewer (without authors and versions)
   article?: {
     id: number
