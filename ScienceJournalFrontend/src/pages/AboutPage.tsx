@@ -61,21 +61,20 @@ export function AboutPage() {
 
   return (
     <div className="public-container">
-      <div className="section public-section">
-        <p className="eyebrow">{t.eyebrow.toLowerCase()}</p>
+      <div className="section public-section about-page-content">
         <h1 className="hero__title">{t.title}</h1>
         {t.paragraphs.map((p, i) => (
-          <p className="subtitle" key={i}>{p}</p>
+          <p className="about-page-content__text" key={i}>{p}</p>
         ))}
         {lang === 'ru' && 'tasks' in t && <>
           <div className="panel" style={{ marginTop: '1.5rem' }}>
             <h2 className="panel-title">{t.purposeTitle}</h2>
-            <p className="subtitle">{t.purpose}</p>
+            <p className="about-page-content__text">{t.purpose}</p>
             <ul className="list">{t.tasks.map((item) => <li key={item}>{item}</li>)}</ul>
           </div>
           <div className="panel" style={{ marginTop: '1rem' }}>
             <h2 className="panel-title">{t.scopeTitle}</h2>
-            <p className="subtitle">{t.scopeIntro}</p>
+            <p className="about-page-content__text">{t.scopeIntro}</p>
             <ul className="list">{t.scope.map((item) => <li key={item}>{item}</li>)}</ul>
           </div>
         </>}

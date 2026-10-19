@@ -8839,3 +8839,9 @@
   .author-editor-grid__wide { grid-column: auto; }
   .layout-task-card { align-items: flex-start; flex-wrap: wrap; }
 }
+.about-page-content,
+.about-page-content .panel,
+.about-page-content .list,
+.about-page-content .list li { color: #171214; }
+.about-page-content__text { margin: 0 0 14px; color: #171214; font-size: 16px; line-height: 1.7; }
+.about-page-content .panel-title { color: #171214; }
