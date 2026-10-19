@@ -8,7 +8,7 @@ type NavCopy = {
   search: string
   contacts: string
   editorial: { title: string; board: string; policies: string }
-  policies: { title: string; ethics: string; ai: string; review: string }
+  policies: { title: string; editorial: string; ethics: string; ai: string; review: string }
   authors: { title: string; requirements: string; contract: string }
   cabinet: string
   searchModal: {
@@ -182,9 +182,10 @@ export const publicNavCopy: Record<Lang, NavCopy> = {
     contacts: 'Контакты',
     editorial: { title: 'Редакция', board: 'Состав редакции', policies: 'Политики издания' },
     policies: {
-      title: 'Политики и этика',
-      ethics: 'Этическая политика',
-      ai: 'Политика по ИИ',
+      title: 'Политика',
+      editorial: 'Редакционная политика',
+      ethics: 'Публикационная этика',
+      ai: 'Политика в области искусственного интеллекта (ИИ)',
       review: 'Процесс рецензирования',
     },
     authors: { title: 'Авторам', requirements: 'Требования к статьям', contract: 'Публикационный договор' },
@@ -216,9 +217,10 @@ export const publicNavCopy: Record<Lang, NavCopy> = {
     contacts: 'Contacts',
     editorial: { title: 'Editorial', board: 'Editorial board', policies: 'Journal policies' },
     policies: {
-      title: 'Policies & ethics',
-      ethics: 'Ethics policy',
-      ai: 'AI disclosure',
+      title: 'Policy',
+      editorial: 'Editorial policy',
+      ethics: 'Publication ethics',
+      ai: 'Artificial intelligence (AI) policy',
       review: 'Peer review process',
     },
     authors: { title: 'For authors', requirements: 'Submission guidelines', contract: 'Publishing agreement' },
@@ -250,9 +252,10 @@ export const publicNavCopy: Record<Lang, NavCopy> = {
     contacts: 'Байланыс',
     editorial: { title: 'Редакция', board: 'Редколлегия құрамы', policies: 'Журнал саясаты' },
     policies: {
-      title: 'Саясат және этика',
-      ethics: 'Этикалық саясат',
-      ai: 'ЖИ туралы ақпарат',
+      title: 'Саясат',
+      editorial: 'Редакциялық саясат',
+      ethics: 'Жариялау этикасы',
+      ai: 'Жасанды интеллект (ЖИ) саласындағы саясат',
       review: 'Рецензиялау үдерісі',
     },
     authors: { title: 'Авторларға', requirements: 'Мақала талаптары', contract: 'Баспа келісімі' },

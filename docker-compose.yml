@@ -119,6 +119,8 @@ services:
       - FILE_SERVICE_URL=http://fileprocessing:7000
       - DATABASE_URL=postgresql://layout:pass@db/layout
       - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - NOTIFICATIONS_SERVICE_URL=http://notifications:8000
     ports:
       - "8006:8000"
     depends_on:
@@ -127,6 +129,8 @@ services:
       auth:
         condition: service_started
       fileprocessing:
+        condition: service_started
+      notifications:
         condition: service_started
 
   publication:

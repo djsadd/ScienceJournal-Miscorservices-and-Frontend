@@ -160,9 +160,10 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
       href: '/policies',
       label: nav.policies.title,
       children: [
+        { href: '/policies', label: nav.policies.editorial },
         { href: '/policies/ethics', label: nav.policies.ethics },
-        { href: '/policies/ai', label: nav.policies.ai },
         { href: '/policies/review', label: nav.policies.review },
+        { href: '/policies/ai', label: nav.policies.ai },
       ],
     },
     {

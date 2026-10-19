@@ -279,6 +279,12 @@ export const api = {
     request<T>('/layout/records', 'POST', { json: body }),
   getLayoutRecordsByArticle: <T>(articleId: number | string) =>
     request<T>(`/layout/articles/${articleId}/records`, 'GET'),
+  createLayoutTask: <T>(body: { article_id: number; article_title: string; source_file_id?: string; source_file_url?: string; instructions?: string }) =>
+    request<T>('/layout/tasks', 'POST', { json: body }),
+  getLayoutTasks: <T>() => request<T>('/layout/tasks', 'GET'),
+  claimLayoutTask: <T>(taskId: string) => request<T>(`/layout/tasks/${taskId}/claim`, 'POST'),
+  completeLayoutTask: <T>(taskId: string, body: { file_id: string; file_url?: string }) =>
+    request<T>(`/layout/tasks/${taskId}/complete`, 'POST', { json: body }),
   // Domain-specific helpers
   getAuthors: <T>() => request<T>('/articles/authors', 'GET'),
   updateAuthor: <T>(authorId: number | string, body: Partial<{

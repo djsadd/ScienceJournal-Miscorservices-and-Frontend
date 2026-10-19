@@ -245,9 +245,9 @@ function App() {
         path="/cabinet/layout"
         element={
           <RequireAuth>
-            <MainLayout>
-              <LayoutBoard articles={articles} />
-            </MainLayout>
+            <RequireRoles allowed={['layout', 'admin']}>
+              <MainLayout><LayoutBoard /></MainLayout>
+            </RequireRoles>
           </RequireAuth>
         }
       />

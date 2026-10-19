@@ -8,6 +8,9 @@ FILE_SERVICE_URL = os.getenv("FILE_SERVICE_URL", "http://fileprocessing:7000")
 ARTICLE_SERVICE_URL = os.getenv("ARTICLE_SERVICE_URL", "http://articles:8000")
 API_GATEWAY_URL = os.getenv("API_GATEWAY_URL", "http://localhost:8000")
 API_PREFIX = os.getenv("API_PREFIX", "/api")
+NOTIFICATIONS_SERVICE_URL = os.getenv("NOTIFICATIONS_SERVICE_URL", "http://notifications:8000")
+SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
 
 # Storage/DB
 # Default to Postgres in container if not provided

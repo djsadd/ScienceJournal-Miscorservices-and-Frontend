@@ -372,6 +372,8 @@ export default function EditorArticleDetailPage() {
   const [layoutUploadError, setLayoutUploadError] = useState<string | null>(null)
   const [layoutUploadSuccess, setLayoutUploadSuccess] = useState<string | null>(null)
   const [layoutDragActive, setLayoutDragActive] = useState(false)
+  const [layoutTaskSending, setLayoutTaskSending] = useState(false)
+  const [layoutTaskMessage, setLayoutTaskMessage] = useState<string | null>(null)
   // Antiplagiarism upload states
   const [antiFile, setAntiFile] = useState<File | null>(null)
   const [antiUploading, setAntiUploading] = useState(false)
@@ -1050,6 +1052,25 @@ export default function EditorArticleDetailPage() {
           <div className="manuscript-tab-panel" hidden={activeTab !== 'files'}>
           <div className="manuscript-module__header"><div><p className="eyebrow">Материалы</p><h2>Файлы рукописи</h2></div><p>Исходные документы, антиплагиат и материалы вёрстки.</p></div>
           <CollapsibleSection title="Файлы" defaultOpen>
+            {isEditor && <div className="panel" style={{ marginBottom: '1rem', padding: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.35rem' }}>Передать верстальщику</h4>
+              <p className="form-hint">Верстальщик увидит рукопись в своей очереди и после завершения прикрепит готовый файл. Вам придёт уведомление.</p>
+              {layoutTaskMessage && <div className="alert" style={{ marginBottom: '0.5rem' }}>{layoutTaskMessage}</div>}
+              <button className="button button--primary" type="button" disabled={layoutTaskSending || !data.manuscript_file_url} onClick={async () => {
+                setLayoutTaskSending(true); setLayoutTaskMessage(null)
+                try {
+                  const sourceUrl = data.manuscript_file_url || undefined
+                  const sourceId = sourceUrl?.match(/\/files\/([^/]+)\//)?.[1]
+                  await api.createLayoutTask({ article_id: data.id, article_title: title, source_file_id: sourceId, source_file_url: sourceUrl })
+                  setLayoutTaskMessage('Материал отправлен верстальщику.')
+                  setToastMessage('Материал отправлен на вёрстку'); setToastOpen(true)
+                } catch (e: any) {
+                  const detail = e?.bodyJson?.detail
+                  setLayoutTaskMessage(detail === 'Article already has an active layout task' ? 'Материал уже находится на вёрстке.' : String(detail || e?.message || 'Не удалось отправить материал'))
+                } finally { setLayoutTaskSending(false) }
+              }}>{layoutTaskSending ? 'Отправка…' : 'Отправить на вёрстку'}</button>
+              {!data.manuscript_file_url && <span className="form-hint" style={{ marginLeft: '0.75rem' }}>Сначала загрузите рукопись.</span>}
+            </div>}
             <div className="actions">
               <a className="button button--ghost button--compact" href={toApiFilesUrl(data.manuscript_file_url) || '#'} target="_blank" rel="noreferrer">Рукопись</a>
               {data.antiplagiarism_file_url && (
@@ -1160,7 +1181,7 @@ export default function EditorArticleDetailPage() {
             </>
 
             {isEditor && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+              <div style={{ display: 'none', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
                 <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>Загрузка вёрстки рукописи</h4>
                 <p className="form-hint" style={{ marginTop: 0 }}>Поддерживаемые форматы: PDF, DOC, DOCX, ZIP. Максимум зависит от сервера.</p>
                 {layoutUploadError && <div className="alert error" style={{ marginBottom: '0.5rem' }}>Ошибка: {layoutUploadError}</div>}

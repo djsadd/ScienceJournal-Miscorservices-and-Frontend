@@ -44,6 +44,7 @@ export default function QuickPublishPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [activeStep, setActiveStep] = useState(0)
 
   const [activeLang, setActiveLang] = useState<Lang>('ru')
   const langLabels: Record<Lang, string> = { ru: 'Русский', kz: 'Казахский', en: 'Английский' }
@@ -280,7 +281,9 @@ export default function QuickPublishPage() {
             file_id: layoutFileId,
             file_url: fileUrl,
           })
-        } catch {}
+        } catch {
+          // Публикация уже создана; отсутствие layout-записи не должно блокировать переход.
+        }
       }
 
       setSuccess(true)
@@ -390,6 +393,22 @@ export default function QuickPublishPage() {
   const removeAuthor = (id: number) => setSelectedAuthors((prev) => prev.filter((a) => a.id !== id))
   const removeKeyword = (id: number) => setSelectedKeywords((prev) => prev.filter((k) => k.id !== id))
 
+  const steps = [
+    { label: 'Основное', hint: 'Название и аннотация' },
+    { label: 'Метаданные', hint: 'Тип, язык и DOI' },
+    { label: 'Материалы', hint: 'Файлы публикации' },
+    { label: 'Участники', hint: 'Авторы и ключевые слова' },
+    { label: 'Просмотр', hint: 'Проверка и публикация' },
+  ]
+
+  const goToStep = (index: number) => {
+    setActiveStep(Math.max(0, Math.min(steps.length - 1, index)))
+    window.requestAnimationFrame(() => document.querySelector('.quick-publish__workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
+  const previewTitle = form.title_ru || form.title_kz || form.title_en || 'Название статьи'
+  const previewAbstract = form.abstract_ru || form.abstract_kz || form.abstract_en || 'Аннотация появится здесь после заполнения.'
+
   return (
     <div className="app-container quick-publish">
       <section className="section public-section quick-publish__section">
@@ -397,7 +416,7 @@ export default function QuickPublishPage() {
           <div className="quick-publish__intro">
             <p className="eyebrow">Редактор</p>
             <h1 className="hero__title">Быстрая публикация статьи</h1>
-            <p className="subtitle">Загрузите готовую статью и опубликуйте её напрямую</p>
+            <p className="subtitle">Соберите карточку публикации по разделам, проверьте рукопись и опубликуйте её напрямую.</p>
           </div>
 
           <div className="panel panel--elevated quick-publish__hero-panel">
@@ -429,270 +448,69 @@ export default function QuickPublishPage() {
           </div>
         )}
 
-        <div className="quick-publish__layout">
-          <form id="quick-publish-form" onSubmit={handleSubmit} className="auth-form quick-publish__form">
-            <div className="form-field">
-            <label className="form-label">Язык формы</label>
-            <div className="lang-switch">
-              {(['ru', 'kz', 'en'] as const).map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  className={`lang-chip ${activeLang === code ? 'lang-chip--active' : ''} ${langDone[code] ? 'lang-chip--done' : ''}`}
-                  onClick={() => setActiveLang(code)}
-                  aria-label={`Переключить язык: ${langLabels[code]}`}
-                >
-                  <span className="lang-chip__label">{langLabels[code]}</span>
-                  {langDone[code] ? <span className="lang-chip__done" aria-hidden>✓</span> : null}
-                </button>
-              ))}
-            </div>
-            <p className="form-hint">Заполните название на русском, затем на казахском и английском.</p>
-          </div>
-
-          <div className="form-field">
-            <label className="form-label">Название статьи ({langLabels[activeLang]})*</label>
-            <input
-              className="text-input"
-              type="text"
-              value={getTitleForLang(activeLang)}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitleForLang(activeLang, e.target.value)}
-              placeholder="Введите название статьи"
-            />
-          </div>
-
-          <div className="form-field">
-            <label className="form-label">Аннотация ({langLabels[activeLang]})</label>
-            <textarea
-              className="text-input"
-              rows={5}
-              value={getAbstractForLang(activeLang)}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAbstractForLang(activeLang, e.target.value)}
-              placeholder="Короткое описание статьи (необязательно)"
-            />
-          </div>
-
-          <div className="form-grid form-grid--cols-3">
-            <div className="form-field">
-              <label className="form-label">Язык статьи</label>
-              <select
-                className="chip-select"
-                value={form.articleLanguage}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm({ ...form, articleLanguage: e.target.value })}
-              >
-                {articleLanguageOptions.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.label} ({option.code.toUpperCase()})
-                  </option>
-                ))}
-              </select>
-              <p className="form-hint">Выберите основной язык рукописи. Это значение будет сохранено в карточке статьи.</p>
-            </div>
-            <div className="form-field">
-              <label className="form-label">DOI</label>
-              <input
-                className="text-input"
-                type="text"
-                value={form.doi}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, doi: e.target.value })}
-                placeholder="10.1234/example"
-              />
-            </div>
-            <div className="form-field">
-              <label className="form-label">Тип статьи</label>
-              <select
-                className="chip-select"
-                value={form.articleType}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setForm({ ...form, articleType: e.target.value as FormData['articleType'] })
-                }
-              >
-                <option value="original">Original</option>
-                <option value="review">Review</option>
-              </select>
-            </div>
-            <div className="form-field">
-              <label className="form-label">Информация об ИИ</label>
-              <input
-                className="text-input"
-                type="text"
-                value={form.generativeAiInfo}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, generativeAiInfo: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="form-grid form-grid--cols-3">
-            <div className="form-field">
-              <div className="form-label">Файл верстки (Layout)</div>
-              <input
-                ref={layoutFileRef}
-                type="file"
-                className="file-input"
-                onChange={handleLayoutFileSelect}
-                style={{ display: 'none' }}
-              />
-              <div className="quick-publish__file-actions">
-                <button
-                  type="button"
-                  className="button button--secondary"
-                  onClick={() => layoutFileRef.current?.click()}
-                  disabled={loading}
-                >
-                  {fileLayoutName ? `✓ ${fileLayoutName}` : 'Выбрать файл'}
-                </button>
-                {form.layoutFileId ? (
-                  <button type="button" className="button button--ghost button--compact" onClick={clearLayoutFile} disabled={loading}>
-                    Сбросить
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="form-field">
-              <div className="form-label">Манускрипт</div>
-              <input
-                ref={manuscriptFileRef}
-                type="file"
-                className="file-input"
-                onChange={handleManuscriptFileSelect}
-                style={{ display: 'none' }}
-              />
-              <div className="quick-publish__file-actions">
-                <button
-                  type="button"
-                  className="button button--secondary"
-                  onClick={() => manuscriptFileRef.current?.click()}
-                  disabled={loading}
-                >
-                  {fileManuscriptName ? `✓ ${fileManuscriptName}` : 'Выбрать файл'}
-                </button>
-                {form.manuscriptFileId ? (
-                  <button type="button" className="button button--ghost button--compact" onClick={clearManuscriptFile} disabled={loading}>
-                    Сбросить
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="form-field">
-              <div className="form-label">Данные автора</div>
-              <input
-                ref={authorInfoFileRef}
-                type="file"
-                className="file-input"
-                onChange={handleAuthorInfoFileSelect}
-                style={{ display: 'none' }}
-              />
-              <div className="quick-publish__file-actions">
-                <button
-                  type="button"
-                  className="button button--secondary"
-                  onClick={() => authorInfoFileRef.current?.click()}
-                  disabled={loading}
-                >
-                  {fileAuthorInfoName ? `✓ ${fileAuthorInfoName}` : 'Выбрать файл'}
-                </button>
-                {form.authorInfoFileId ? (
-                  <button type="button" className="button button--ghost button--compact" onClick={clearAuthorInfoFile} disabled={loading}>
-                    Сбросить
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="panel panel--elevated quick-publish__panel">
-            <div className="panel-title quick-publish__panel-title-row">
-              <span>Авторы</span>
-              <button type="button" className="button button--compact button--ghost" onClick={() => setAuthorModalOpen(true)}>
-                + Добавить
+        <div className="quick-publish__workspace">
+          <nav className="quick-publish__steps" aria-label="Разделы публикации">
+            {steps.map((step, index) => (
+              <button type="button" key={step.label} onClick={() => goToStep(index)} className={activeStep === index ? 'is-active' : ''}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <strong>{step.label}</strong>
+                <small>{step.hint}</small>
               </button>
-            </div>
-            {selectedAuthors.length ? (
-              <div className="quick-publish__tags">
-                {selectedAuthors.map((a) => (
-                  <span key={a.id} className="quick-publish__tag">
-                    {a.name}
-                    <button
-                      type="button"
-                      className="quick-publish__tag-remove"
-                      onClick={() => removeAuthor(a.id)}
-                      aria-label={`Удалить автора: ${a.name}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="meta-label">Добавлено: 0</p>
-            )}
-          </div>
+            ))}
+          </nav>
 
-          <div className="panel panel--elevated quick-publish__panel">
-            <div className="panel-title quick-publish__panel-title-row">
-              <span>Ключевые слова</span>
-              <button type="button" className="button button--compact button--ghost" onClick={() => setKeywordModalOpen(true)}>
-                + Добавить
-              </button>
+          <form id="quick-publish-form" onSubmit={handleSubmit} className="quick-publish__editor">
+            <header className="quick-publish__editor-head">
+              <div><span>Раздел {activeStep + 1} из {steps.length}</span><h2>{steps[activeStep].label}</h2></div>
+              <button type="button" className="quick-publish__preview-link" onClick={() => goToStep(4)}>Предпросмотр рукописи →</button>
+            </header>
+
+            <div className="quick-publish__stage" key={activeStep}>
+              {activeStep === 0 && <>
+                <div className="quick-publish__language-row">
+                  <div><strong>Язык данных</strong><small>Заполните карточку на трёх языках</small></div>
+                  <div className="lang-switch">{(['ru', 'kz', 'en'] as const).map((code) => <button key={code} type="button" className={`lang-chip ${activeLang === code ? 'lang-chip--active' : ''} ${langDone[code] ? 'lang-chip--done' : ''}`} onClick={() => setActiveLang(code)}>{langLabels[code]} {langDone[code] && '✓'}</button>)}</div>
+                </div>
+                <label className="quick-publish__paper-field"><span>Название статьи <b>*</b></span><input value={getTitleForLang(activeLang)} onChange={(e) => setTitleForLang(activeLang, e.target.value)} placeholder="Введите название статьи" /><small>{getTitleForLang(activeLang).length} символов</small></label>
+                <label className="quick-publish__paper-field"><span>Аннотация</span><textarea rows={9} value={getAbstractForLang(activeLang)} onChange={(e) => setAbstractForLang(activeLang, e.target.value)} placeholder="Кратко опишите цель, методы и результаты исследования" /><small>{getAbstractForLang(activeLang).length} символов</small></label>
+              </>}
+
+              {activeStep === 1 && <div className="quick-publish__field-grid">
+                <label><span>Основной язык рукописи</span><select value={form.articleLanguage} onChange={(e) => setForm({ ...form, articleLanguage: e.target.value })}>{articleLanguageOptions.map((o) => <option key={o.code} value={o.code}>{o.label} ({o.code.toUpperCase()})</option>)}</select></label>
+                <label><span>Тип статьи</span><select value={form.articleType} onChange={(e) => setForm({ ...form, articleType: e.target.value as FormData['articleType'] })}><option value="original">Оригинальная статья</option><option value="review">Обзорная статья</option></select></label>
+                <label><span>DOI</span><input value={form.doi} onChange={(e) => setForm({ ...form, doi: e.target.value })} placeholder="10.1234/example" /></label>
+                <label className="is-wide"><span>Информация об использовании генеративного ИИ</span><textarea rows={5} value={form.generativeAiInfo} onChange={(e) => setForm({ ...form, generativeAiInfo: e.target.value })} placeholder="Укажите инструменты и способ использования, если применимо" /></label>
+              </div>}
+
+              {activeStep === 2 && <div className="quick-publish__uploads">
+                {[
+                  { title: 'Готовая вёрстка', note: 'PDF или файл финальной версии', name: fileLayoutName, id: form.layoutFileId, ref: layoutFileRef, change: handleLayoutFileSelect, clear: clearLayoutFile },
+                  { title: 'Файл рукописи', note: 'DOCX, DOC или PDF', name: fileManuscriptName, id: form.manuscriptFileId, ref: manuscriptFileRef, change: handleManuscriptFileSelect, clear: clearManuscriptFile },
+                  { title: 'Сведения об авторах', note: 'Дополнительный файл с данными', name: fileAuthorInfoName, id: form.authorInfoFileId, ref: authorInfoFileRef, change: handleAuthorInfoFileSelect, clear: clearAuthorInfoFile },
+                ].map((file) => <div className={`quick-publish__upload ${file.id ? 'is-ready' : ''}`} key={file.title}><input ref={file.ref} type="file" hidden onChange={file.change} /><span className="quick-publish__upload-icon">{file.id ? '✓' : '↑'}</span><div><strong>{file.title}</strong><small>{file.name || file.note}</small></div><button type="button" onClick={() => file.ref.current?.click()} disabled={loading}>{file.id ? 'Заменить' : 'Выбрать файл'}</button>{file.id && <button type="button" className="is-remove" onClick={file.clear}>×</button>}</div>)}
+              </div>}
+
+              {activeStep === 3 && <div className="quick-publish__collections">
+                <section><header><div><span>01</span><h3>Авторы</h3><p>Укажите авторов в порядке публикации.</p></div><button type="button" onClick={() => setAuthorModalOpen(true)}>+ Добавить автора</button></header>{selectedAuthors.length ? <div className="quick-publish__tags">{selectedAuthors.map((a, i) => <span key={a.id} className="quick-publish__tag"><i>{i + 1}</i>{a.name}<button type="button" onClick={() => removeAuthor(a.id)}>×</button></span>)}</div> : <p className="quick-publish__empty">Авторы пока не добавлены</p>}</section>
+                <section><header><div><span>02</span><h3>Ключевые слова</h3><p>Добавьте термины для индексации статьи.</p></div><button type="button" onClick={() => setKeywordModalOpen(true)}>+ Добавить слово</button></header>{selectedKeywords.length ? <div className="quick-publish__tags">{selectedKeywords.map((k) => <span key={k.id} className="quick-publish__tag">{k.name}<button type="button" onClick={() => removeKeyword(k.id)}>×</button></span>)}</div> : <p className="quick-publish__empty">Ключевые слова пока не добавлены</p>}</section>
+              </div>}
+
+              {activeStep === 4 && <article className="quick-publish__manuscript">
+                <div className="quick-publish__manuscript-meta"><span>{form.articleType === 'original' ? 'Оригинальная статья' : 'Обзорная статья'}</span><span>{form.articleLanguage.toUpperCase()}</span>{form.doi && <span>DOI {form.doi}</span>}</div>
+                <h1>{previewTitle}</h1>
+                <p className="quick-publish__byline">{selectedAuthors.length ? selectedAuthors.map((a) => a.name).join(' · ') : 'Авторы не указаны'}</p>
+                <div className="quick-publish__abstract"><small>Аннотация</small><p>{previewAbstract}</p></div>
+                {selectedKeywords.length > 0 && <p className="quick-publish__keywords"><strong>Ключевые слова:</strong> {selectedKeywords.map((k) => k.name).join(', ')}</p>}
+                <footer><span>Материалы</span><strong>{filesDoneCount} из 3 файлов загружено</strong></footer>
+              </article>}
             </div>
-            {selectedKeywords.length ? (
-              <div className="quick-publish__tags">
-                {selectedKeywords.map((k) => (
-                  <span key={k.id} className="quick-publish__tag">
-                    {k.name}
-                    <button
-                      type="button"
-                      className="quick-publish__tag-remove"
-                      onClick={() => removeKeyword(k.id)}
-                      aria-label={`Удалить ключевое слово: ${k.name}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="meta-label">Добавлено: 0</p>
-            )}
-          </div>
+
+            <footer className="quick-publish__editor-footer">
+              <button type="button" className="button button--ghost" onClick={() => goToStep(activeStep - 1)} disabled={activeStep === 0}>← Назад</button>
+              <span>Все изменения сохраняются в форме</span>
+              {activeStep < steps.length - 1 ? <button type="button" className="button button--primary" onClick={() => goToStep(activeStep + 1)}>Продолжить →</button> : <button type="submit" className="button button--primary" disabled={!canPublish}>{loading ? 'Публикация…' : 'Опубликовать статью'}</button>}
+            </footer>
           </form>
-
-          <aside className="quick-publish__aside">
-            <div className="panel panel--elevated quick-publish__aside-card">
-              <div className="panel-title" style={{ margin: 0 }}>
-                Памятка
-              </div>
-              <ul className="list quick-publish__list">
-                <li>Название обязательно на 3 языках.</li>
-                <li>Файлы можно загрузить сразу или позже.</li>
-                <li>После публикации произойдёт переход на страницу статьи.</li>
-              </ul>
-            </div>
-
-            <div className="panel panel--elevated quick-publish__aside-card">
-              <div className="panel-title" style={{ margin: 0 }}>
-                Публикация
-              </div>
-              <p className="meta-label">
-                Заполнено: {progressDone}/{progressTotal} • {progressPct}%
-              </p>
-              <button
-                type="submit"
-                form="quick-publish-form"
-                className="button button--primary quick-publish__submit"
-                disabled={!canPublish}
-              >
-                {loading ? 'Публикация...' : 'Опубликовать статью'}
-              </button>
-              {!canPublish && (
-                <p className="form-hint" style={{ margin: 0 }}>
-                  Для публикации заполните название на русском, казахском и английском.
-                </p>
-              )}
-            </div>
-          </aside>
         </div>
 
         {authorModalOpen && (
