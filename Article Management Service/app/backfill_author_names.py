@@ -57,7 +57,7 @@ class Change:
     author_id: int
     field: str
     old_value: str | None
-    new_value: str
+    new_value: str | None
 
 
 NAME_PARTS = ("first_name", "patronymic", "last_name")
@@ -88,12 +88,20 @@ def proposed_changes(author: Author) -> list[Change]:
 
         ru_field = f"{base}_ru"
         ru_value = getattr(author, ru_field)
-        if not ru_value:
-            # Prefer the existing Kazakh Cyrillic spelling. This also repairs
-            # records processed by the first version of this script, where
-            # *_kz was filled but *_ru remained empty and UI fallback showed
-            # the Latin value on Russian pages.
-            russian_source = kz_value or source
+        # Russian fields must never be auto-filled with Latin text. Prefer a
+        # Cyrillic Kazakh spelling, then a Cyrillic legacy value.
+        russian_source = next(
+            (candidate for candidate in (kz_value, source) if has_cyrillic(candidate)),
+            None,
+        )
+        if not ru_value and russian_source:
+            changes.append(Change(author.id, ru_field, ru_value, russian_source))
+        elif (
+            ru_value
+            and not has_cyrillic(ru_value)
+            and ru_value in {value for value in (kz_value, source) if value}
+        ):
+            # Repair Latin placeholders written by an earlier script run.
             changes.append(Change(author.id, ru_field, ru_value, russian_source))
     return changes
 
@@ -113,7 +121,7 @@ def write_report(rows: list[Change], stream) -> None:
     writer = csv.writer(stream, lineterminator="\n")
     writer.writerow(("author_id", "field", "old_value", "new_value"))
     for row in rows:
-        writer.writerow((row.author_id, row.field, row.old_value or "", row.new_value))
+        writer.writerow((row.author_id, row.field, row.old_value or "", row.new_value or ""))
 
 
 def main() -> int:
