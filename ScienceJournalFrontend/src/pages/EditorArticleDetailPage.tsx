@@ -1049,7 +1049,9 @@ export default function EditorArticleDetailPage() {
                 <span className="author-card__avatar">{authorLocalized(author, 'first_name', pageLang).charAt(0)}{authorLocalized(author, 'last_name', pageLang).charAt(0)}</span>
                 <span className="author-card__content"><strong>{authorLocalized(author, 'last_name', pageLang)} {authorLocalized(author, 'first_name', pageLang)} {authorLocalized(author, 'patronymic', pageLang)}</strong><small>{author.email}</small><small>{authorLocalized(author, 'affiliation1', pageLang) || 'Аффилиация не указана'}</small></span>
                 {author.is_corresponding && <span className="author-card__badge">Контактный автор</span>}
-                <button className="author-card__view" type="button" onClick={() => setSelectedAuthor(author)}>Просмотр</button>
+                <button className="author-card__view" type="button" onClick={() => setSelectedAuthor(author)} aria-label="Просмотреть автора" title="Просмотреть автора">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.75" /></svg>
+                </button>
               </div>)}
             </div>}
             {selectedAuthor && <div className="author-inline-details" ref={authorDetailsRef} tabIndex={-1}>
