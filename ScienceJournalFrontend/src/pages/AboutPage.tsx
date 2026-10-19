@@ -1,5 +1,4 @@
 import { useLanguage } from '../shared/LanguageContext'
-import PublicPagePdf from '../shared/components/PublicPagePdf'
 
 const copy = {
   ru: {
@@ -78,7 +77,6 @@ export function AboutPage() {
             <ul className="list">{t.scope.map((item) => <li key={item}>{item}</li>)}</ul>
           </div>
         </>}
-        <PublicPagePdf kind="about" title={t.title} />
       </div>
     </div>
   )
