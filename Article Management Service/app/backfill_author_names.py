@@ -85,6 +85,16 @@ def proposed_changes(author: Author) -> list[Change]:
             # Personal names are not machine-translated. Cyrillic source text
             # is retained for Kazakh; Latin source text remains unchanged.
             changes.append(Change(author.id, kz_field, kz_value, source))
+
+        ru_field = f"{base}_ru"
+        ru_value = getattr(author, ru_field)
+        if not ru_value:
+            # Prefer the existing Kazakh Cyrillic spelling. This also repairs
+            # records processed by the first version of this script, where
+            # *_kz was filled but *_ru remained empty and UI fallback showed
+            # the Latin value on Russian pages.
+            russian_source = kz_value or source
+            changes.append(Change(author.id, ru_field, ru_value, russian_source))
     return changes
 
 
