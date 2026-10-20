@@ -21,9 +21,9 @@ const creativeCommonsLicenseUrl = 'https://creativecommons.org/licenses/by/4.0/'
 const creativeCommonsBadgeUrl = 'https://licensebuttons.net/l/by/4.0/88x31.png'
 const publisherAddress = '010000, Republic of Kazakhstan, Astana, Y. Dukenuly St., 29'
 const journalKickers: Record<Lang, string> = {
-  ru: 'Интернет издания',
-  kz: 'Интернет басылымдары',
-  en: 'Internet editions',
+  ru: 'ИНТЕРНЕТ-ИЗДАНИЕ',
+  kz: 'ИНТЕРНЕТ-БАСЫЛЫМ',
+  en: 'INTERNET EDITION',
 }
 const journalTitles: Record<Lang, string> = {
   ru: 'Известия университета «Туран-Астана»',
@@ -31,9 +31,9 @@ const journalTitles: Record<Lang, string> = {
   en: 'Turan-Astana University News',
 }
 const journalSubtitles: Record<Lang, string> = {
-  ru: 'Научный рецензируемый журнал · ISSN 2958-8103',
-  kz: 'Ғылыми рецензияланатын журнал · ISSN 2958-8103',
-  en: 'Peer-reviewed scientific journal · ISSN 2958-8103',
+  ru: 'Научный рецензируемый журнал · ISSN 2663-631X (Print), 3136-5337 (Online)',
+  kz: 'Ғылыми рецензияланатын журнал · ISSN 2663-631X (Print), 3136-5337 (Online)',
+  en: 'Peer-reviewed scientific journal · ISSN 2663-631X (Print), 3136-5337 (Online)',
 }
 const authNavLabels: Record<Lang, { cabinet: string; login: string; register: string }> = {
   ru: { cabinet: 'Личный кабинет', login: 'Войти', register: 'Зарегистрироваться' },

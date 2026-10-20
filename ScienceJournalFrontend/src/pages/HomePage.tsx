@@ -23,19 +23,16 @@ export function HomePage() {
     ru: {
       latest: 'Последний выпуск',
       openIssue: 'Открыть выпуск',
-      downloadIssue: 'Открыть выпуск',
       noCover: 'Обложка не загружена',
     },
     en: {
       latest: 'Latest issue',
       openIssue: 'Open issue',
-      downloadIssue: 'View issue',
       noCover: 'No cover uploaded',
     },
     kz: {
       latest: 'Соңғы шығарылым',
       openIssue: 'Шығарылымды ашу',
-      downloadIssue: 'Шығарылымды ашу',
       noCover: 'Мұқаба жүктелмеген',
     },
   }[lang]
@@ -67,7 +64,6 @@ export function HomePage() {
 
   const latestTitle = latest ? pickLocalized(lang, latest.title_ru, latest.title_en, latest.title_kz) : ''
   const coverHref = latest?.cover_file_url ? toApiFilesUrl(latest.cover_file_url) : undefined
-  const issueHref = latest?.complete_issue_file_url ? toApiFilesUrl(latest.complete_issue_file_url) : undefined
 
   return (
     <div className="public-container home-page">
@@ -124,11 +120,6 @@ export function HomePage() {
               <Link className="button button--ghost button--compact" to={localizedHref(`/archive/volumes/${latest.id}`)}>
                 {ui.openIssue}
               </Link>
-              {issueHref ? (
-                <a className="button button--primary button--compact" href={issueHref} target="_blank" rel="noreferrer">
-                  {ui.downloadIssue}
-                </a>
-              ) : null}
             </div>
           </div>
 
