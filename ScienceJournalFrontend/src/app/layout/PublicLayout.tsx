@@ -170,7 +170,6 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
       label: nav.authors.title,
       children: [
         { href: '/authors/requirements', label: nav.authors.requirements },
-        { href: '/authors/contract', label: nav.authors.contract },
       ],
     },
   ]

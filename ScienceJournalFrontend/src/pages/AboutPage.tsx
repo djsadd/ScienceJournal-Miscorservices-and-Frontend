@@ -38,21 +38,39 @@ const copy = {
   },
   en: {
     eyebrow: 'About the journal',
-    title: 'Turan-Astana University news',
+    title: 'About the journal',
     paragraphs: [
-      '“Turan-Astana University news” is a peer-reviewed journal publishing original research in economics, management, law, social and humanities.',
-      'The journal has been published since 2019 and holds a media registration certificate and an international ISSN 2663‑631X. The founder is Turan‑Astana University.',
-      'Editorial policy promotes academic dialogue among researchers, faculty and practitioners, and advances high‑quality scientific and applied studies.',
+      'The journal “Turan-Astana University News” is a peer-reviewed scientific journal registered in Kazakhstan and internationally:',
+      'print edition — mass media registration certificate No. 17458-Zh dated 14 January 2019, ISSN 2663-631X;',
+      'online edition — certificate of registration of a periodical print and internet edition No. KZ77VPY00156365 dated 11 August 2026, ISSN 3136-5337.',
+      'The founder is Turan-Astana University.',
+      'Published since 2019, the journal provides an open platform for discussing current economic, political, philosophical, and educational issues in contemporary social sciences and humanities.',
     ],
+    postScopeParagraphs: ['No publication fee is charged.', 'The journal facilitates the exchange of experience within the academic and expert community, supports the professional development of researchers and teaching staff at universities and colleges, and disseminates advanced knowledge in the social sciences and humanities among readers in Kazakhstan and abroad.', 'The editorial board and international editorial council include renowned and respected scholars from Kazakhstan and other countries.', 'The editorial policy of “Turan-Astana University News” is based on transparency, academic rigour, and accessibility of authors’ publications.', 'The journal is published in print. Its archives are available on the website, and full-text publications are freely accessible without restrictions. Issues are published quarterly.'],
+    purposeTitle: 'Aim and objectives of the journal',
+    purpose: 'The aim of “Turan-Astana University News” is to promote the development of research in the social sciences and humanities. This aim is pursued through the following objectives:',
+    tasks: ['to introduce the academic community to the latest research in relevant fields of contemporary social sciences and humanities;', 'to create an environment for exchanging ideas and experience among Kazakhstani and international scholars and experts and for strengthening links between research and practice;', 'to help improve the theoretical and methodological quality of research in Kazakhstan.'],
+    scopeTitle: 'Thematic scope of the journal',
+    scopeIntro: '“Turan-Astana University News” publishes research in the following subject areas:',
+    scope: ['economics, management, and business;', 'education, philology, and psychology;', 'political science;', 'law;', 'other social sciences, including cultural studies, hospitality, tourism, interdisciplinary social sciences, and multidisciplinary humanities;', 'computer science and informatics.'],
   },
   kz: {
     eyebrow: 'Журнал туралы',
-    title: 'Туран-Астана университетінің хабарлары',
+    title: 'Журнал туралы',
     paragraphs: [
-      '«Туран-Астана университетінің хабарлары» — экономика, менеджмент, құқық, әлеуметтік және гуманитарлық ғылымдар саласындағы түпнұсқа зерттеулерді жариялайтын рецензияланатын журнал.',
-      'Журнал 2019 жылдан бері шығады, тіркеу куәлігін және халықаралық ISSN 2663‑631X нөмірін иеленген. Құрушылары — «Туран-Астана» университеті.',
-      'Редакциялық саясат зерттеушілер, оқытушылар және тәжірибешілер арасындағы академиялық диалогты дамытуға және жоғары сапалы ғылыми әрі қолданбалы зерттеулерді ілгерілетуге бағытталған.',
+      '«Тұран-Астана» университетінің хабарлары» журналы — Қазақстанда және халықаралық деңгейде тіркелген рецензияланатын ғылыми журнал:',
+      'баспа нұсқасы — 2019 жылғы 14 қаңтардағы № 17458-Ж бұқаралық ақпарат құралын тіркеу туралы куәлік, ISSN 2663-631X;',
+      'онлайн нұсқасы — 2026 жылғы 11 тамыздағы № KZ77VPY00156365 мерзімді баспа басылымын және интернет-басылымды есепке қою туралы куәлік, ISSN 3136-5337.',
+      'Құрылтайшысы — «Тұран-Астана» университеті.',
+      'Журнал 2019 жылдан бері шығады және қазіргі әлеуметтік-гуманитарлық зерттеулердің экономикалық, саясаттану, философиялық және педагогикалық бағыттарындағы өзекті мәселелерді талқылауға арналған ашық алаң болып табылады.',
     ],
+    postScopeParagraphs: ['Журналда мақала жариялау үшін ақы алынбайды.', 'Басылым ғылыми және сараптамалық қоғамдастықта тәжірибе алмасуға, ғалымдар мен жоғары оқу орындары және колледждердің профессор-оқытушылар құрамының кәсіби деңгейін арттыруға, қазақстандық және шетелдік оқырмандар арасында озық әлеуметтік-гуманитарлық білімді таратуға ықпал етеді.', 'Журналдың редакциялық алқасы мен халықаралық редакциялық кеңесінің құрамына Қазақстанның және шетелдердің белгілі әрі беделді ғалымдары кіреді.', '«Тұран-Астана» университетінің хабарлары» журналының редакциялық саясаты ақпараттық ашықтық, ғылымилық және авторлық жарияланымдардың қолжетімділігі қағидаттарына негізделеді.', 'Журнал баспа нұсқасында шығарылады. Журнал мұрағаты сайтта орналастырылады, ал жарияланымдардың толық мәтіндері барлық оқырманға шектеусіз қолжетімді. Шығарылымдар тоқсан сайын жарық көреді.'],
+    purposeTitle: 'Журналдың мақсаты мен міндеттері',
+    purpose: '«Тұран-Астана» университетінің хабарлары» журналының мақсаты — әлеуметтік-гуманитарлық зерттеулердің дамуына ықпал ету. Осы мақсатқа жету үшін мынадай міндеттер қойылады:',
+    tasks: ['ғылыми қоғамдастықты қазіргі әлеуметтік-гуманитарлық білімнің өзекті салаларындағы жаңа зерттеулермен таныстыру;', 'қазақстандық және шетелдік ғалымдар мен сарапшылар арасында пікір және тәжірибе алмасуға жағдай жасау, ғылым мен практиканың байланысын нығайту;', 'қазақстандық зерттеулердің ғылыми-теориялық және әдіснамалық деңгейін арттыруға ықпал ету.'],
+    scopeTitle: 'Журналдың тақырыптық бағыттары',
+    scopeIntro: '«Тұран-Астана» университетінің хабарлары» журналы келесі тақырыптық бағыттар бойынша ғылыми жарияланымдар шығарады:',
+    scope: ['экономика, басқару, бизнес;', 'педагогикалық ғылымдар, филология және психология;', 'саясаттану;', 'құқықтану;', 'өзге әлеуметтік ғылымдар — мәдениеттану, қонақжайлылық бизнесі, туризм, пәнаралық қоғамдық ғылымдар және мультидисциплинарлық гуманитарлық ғылымдар;', 'компьютерлік ғылымдар және информатика.'],
   },
 } as const
 
@@ -67,7 +85,7 @@ export function AboutPage() {
         {t.paragraphs.map((p, i) => (
           <p className="about-page-content__text" key={i}>{p}</p>
         ))}
-        {lang === 'ru' && 'tasks' in t && <>
+        <>
           <div className="panel" style={{ marginTop: '1.5rem' }}>
             <h2 className="panel-title">{t.purposeTitle}</h2>
             <p className="about-page-content__text">{t.purpose}</p>
@@ -81,7 +99,7 @@ export function AboutPage() {
           {t.postScopeParagraphs.map((p, i) => (
             <p className="about-page-content__text" key={`post-scope-${i}`}>{p}</p>
           ))}
-        </>}
+        </>
       </div>
     </div>
   )

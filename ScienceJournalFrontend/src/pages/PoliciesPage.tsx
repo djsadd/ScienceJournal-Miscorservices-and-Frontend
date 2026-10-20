@@ -1,21 +1,9 @@
 import { useLanguage } from '../shared/LanguageContext'
 
+type LocalizedSection = [string, string[]]
+
 export function PoliciesPage() {
   const { lang } = useLanguage()
-  const t = {
-    ru: {
-      eyebrow: 'политика журнала',
-      title: 'Редакционная политика',
-    },
-    en: {
-      eyebrow: 'journal policy',
-      title: 'Editorial policy',
-    },
-    kz: {
-      eyebrow: 'журнал саясаты',
-      title: 'Редакциялық саясат',
-    },
-  }[lang]
 
   const ruSections = [
     ['Политика свободного доступа', [
@@ -41,6 +29,30 @@ export function PoliciesPage() {
       'Публикуемые материалы не обязательно отражают точку зрения редакционной коллегии. Редакция оставляет за собой право отбирать качественные статьи и отклонять неподходящие материалы без разъяснения причин, а также не несёт ответственности за достоверность содержания статей и предоставляемой авторами информации.',
     ]],
   ] as const
+
+  const translated: { title: string; sections: LocalizedSection[] } = lang === 'en' ? {
+    title: 'Editorial policy',
+    sections: [
+      ['Open-access policy', ['The journal archive, information about the journal, and documents governing its preparation and publication are freely available on the website in Kazakh, Russian, and English. Readers are not charged for access.', 'Published articles are registered with Crossref and assigned a DOI (Digital Object Identifier) to improve international discoverability and ensure proper citation.']],
+      ['Copyright and licensing', ['Authors retain copyright and grant the journal the right of first publication under the Creative Commons Attribution 4.0 International License.', 'The licence permits others to read, download, copy, distribute, and reproduce published materials provided that authorship is credited and the licence is cited.']],
+      ['Authorship criteria and contributions', ['Authorship requires all of the following: a substantial contribution to the study concept or design, data collection, analysis, or interpretation; drafting or critically revising the manuscript for significant intellectual content; and final approval of the version submitted for publication.']],
+      ['Article submission and review policy', ['The journal uses double-blind peer review. Authors submit a “Title page” containing author, funding, and contribution details, and an anonymised “Manuscript”. Reviewers must be independent, competent in the subject, timely, objective, and free of discriminatory or offensive language.', 'Manuscripts are accepted throughout the year, but review does not guarantee publication. Authors are notified of rejection or required revisions. Accepted articles undergo proofreading and layout before publication as PDF files in the issue archive.']],
+      ['Editorial board', ['The editorial board and council include respected Kazakhstani and international scholars and experts with Web of Science or Scopus publications in the journal’s subject areas. Their membership is listed online and in the print journal.']],
+      ['Frequency and languages', ['The journal is published quarterly. Articles are accepted in Kazakh, Russian, or English. Author details, abstracts, keywords, and reference lists are published in all three languages for every article.']],
+      ['Privacy', ['Each issue publishes author information required under Kazakhstani and international standards: full name, affiliation and unit, position or status, academic degree, and title where applicable.', 'The corresponding author’s email and ORCID are provided. Other submission data, including telephone numbers and addresses, are available only to authorised editorial and university staff and are not disclosed to third parties.', 'Double-blind review protects the identities of authors and reviewers. Published views do not necessarily represent the editorial board; the editors select suitable articles and are not responsible for the accuracy of content supplied by authors.']],
+    ],
+  } : {
+    title: 'Редакциялық саясат',
+    sections: [
+      ['Ашық қолжетімділік саясаты', ['Журнал мұрағаты, журнал туралы ақпарат және оны дайындау мен шығарудың негізгі үдерістерін реттейтін құжаттар сайтта қазақ, орыс және ағылшын тілдерінде ашық қолжетімді. Оқырмандардан қолжетімділік үшін ақы алынбайды.', 'Жарияланған мақалалар Crossref базасында тіркеліп, халықаралық ғылыми қоғамдастықтың қолжетімділігі мен дұрыс дәйексөз келтіруді қамтамасыз ету үшін әрқайсысына DOI беріледі.']],
+      ['Авторлық құқық және лицензиялау', ['Авторлар өз жарияланымдарына авторлық құқықты сақтап, журналға Creative Commons Attribution 4.0 International License шарттарымен алғашқы жариялау құқығын береді.', 'Лицензия авторлықты және лицензияға сілтемені міндетті түрде көрсету шартымен материалдарды оқуға, жүктеуге, көшіруге, таратуға және қайта шығаруға мүмкіндік береді.']],
+      ['Авторлық критерийлері және авторлардың үлесі', ['Авторлық үшін мына талаптардың барлығы орындалуы тиіс: зерттеу тұжырымдамасына немесе дизайнына, деректер жинауға, талдауға не түсіндіруге елеулі үлес қосу; қолжазбаны дайындау немесе маңызды зияткерлік мазмұн енгізе отырып сыни қайта қарау; жариялауға ұсынылатын соңғы нұсқаны мақұлдау.']],
+      ['Мақалаларды қабылдау және рецензиялау саясаты', ['Журналда қос соқыр рецензиялау қолданылады. Авторлар авторлар, қаржыландыру және үлес туралы мәліметтері бар «Title page» файлын және авторды анықтайтын ақпаратсыз «Manuscript» файлын береді. Рецензенттер тәуелсіз, тақырып бойынша құзыретті, уақтылы және объективті болуы, кемсітетін не қорлайтын сөз қолданбауы тиіс.', 'Қолжазбалар жыл бойы қабылданады, бірақ рецензиялау жариялануға кепілдік бермейді. Авторға қабылдамау немесе түзету қажеттілігі хабарланады. Қабылданған мақала корректорлық өңдеу мен беттеуден өтіп, шығарылым мұрағатында PDF форматында жарияланады.']],
+      ['Редакциялық алқа', ['Редакциялық алқа мен кеңес құрамына журнал тақырыптары бойынша Web of Science немесе Scopus базаларында жарияланымдары бар беделді қазақстандық және шетелдік ғалымдар мен сарапшылар кіреді. Құрамы сайтта және журналдың баспа нұсқасында көрсетіледі.']],
+      ['Шығу мерзімділігі және тілдері', ['Журнал тоқсан сайын жылына төрт рет шығады. Мақалалар қазақ, орыс немесе ағылшын тілдерінде қабылданады. Авторлар туралы мәліметтер, аңдатпалар, түйін сөздер және әдебиеттер тізімі әр мақала үшін үш тілде жарияланады.']],
+      ['Құпиялылық шарттары', ['Әр шығарылымда қазақстандық және халықаралық талаптарға сәйкес авторлардың аты-жөні, жұмыс орны мен бөлімшесі, лауазымы немесе мәртебесі, ғылыми дәрежесі мен атағы жарияланады.', 'Хат-хабарға жауапты автордың email және ORCID деректері көрсетіледі. Телефон нөмірі, мекенжай және өтінімдегі өзге ақпарат тек уәкілетті редакция және университет қызметкерлеріне қолжетімді және үшінші тұлғаларға берілмейді.', 'Қос соқыр рецензиялау авторлар мен рецензенттердің тұлғасын қорғайды. Жарияланған пікірлер редакциялық алқаның көзқарасын міндетті түрде білдірмейді; редакция лайықты мақалаларды іріктейді және авторлар ұсынған мазмұнның дұрыстығына жауап бермейді.']],
+    ],
+  }
 
   return (
     <div className="public-container">
@@ -73,7 +85,7 @@ export function PoliciesPage() {
             <p>Если принято решение о публикации, редакция направляет автору соответствующее уведомление. Статья проходит допечатную подготовку — корректуру и вёрстку — в рамках формирования номера журнала, после чего размещается в формате PDF на сайте в разделе «Архив выпусков».</p>
           </section>
           {ruSections.slice(2).map(([heading, paragraphs]) => <section className="policy-text-section" key={heading}><h2>{heading}</h2>{paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</section>)}
-        </> : <><p className="eyebrow">{t.eyebrow}</p><h1 className="hero__title">{t.title}</h1></>}
+        </> : <><h1 className="hero__title">{translated.title}</h1>{translated.sections.map(([heading, paragraphs]) => <section className="policy-text-section" key={heading}><h2>{heading}</h2>{paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</section>)}</>}
       </div>
     </div>
   )

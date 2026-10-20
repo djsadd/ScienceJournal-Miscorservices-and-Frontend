@@ -1,28 +1,9 @@
 import { useLanguage } from '../shared/LanguageContext'
 
+type LocalizedSection = [string, string[]]
+
 export function PolicyEthicsPage() {
   const { lang } = useLanguage()
-  const t = {
-    ru: {
-      eyebrow: 'регламенты',
-      title: 'Публикационная этика',
-      text:
-        'Политика предотвращения плагиата, конфликта интересов и корректного цитирования. Авторы подтверждают оригинальность текста, предоставляют данные при запросе редакции и раскрывают финансовые источники.',
-    },
-    en: {
-      eyebrow: 'policies',
-      title: 'Publication ethics',
-      text:
-        'Policy to prevent plagiarism, conflicts of interest and ensure proper citation. Authors confirm originality, provide data upon editorial request, and disclose funding sources.',
-    },
-    kz: {
-      eyebrow: 'ережелер',
-      title: 'Жариялау этикасы',
-      text:
-        'Плагиатты болдырмау, мүдделер қақтығысын ашық көрсету және дұрыс дәйексөз келтіру саясаты. Авторлар мәтіннің түпнұсқалығын растайды, редакция сұрауы бойынша деректерді ұсынады және қаржыландыру көздерін жариялайды.',
-    },
-  }[lang]
-
   const ruSections = [
     ['Авторство и вклад', [
       'Журнал «Известия университета „Туран-Астана“» следует руководящим принципам авторства, принятым в международной практике. Авторство должно быть отнесено только к тем, кто внёс существенный вклад в разработку концепции, сбор данных, дизайн исследования, анализ, интерпретацию или написание рукописи. Те, кто внёс существенный вклад в написание статьи, должны быть включены в качестве соавторов.',
@@ -42,6 +23,38 @@ export function PolicyEthicsPage() {
     ['Исправления и отзыв статей после публикации', ['Несмотря на многократные проверки при подготовке к публикации, в опубликованных материалах могут встречаться ошибки. При их обнаружении, независимо от причин возникновения, исправления вносятся путём публикации уведомления с разъяснением изменений исходного текста. Серьёзные ошибки, ставящие под сомнение результаты и выводы исследования, могут привести к отзыву статьи. Журнал оставляет за собой право отозвать статью при выявлении серьёзных нарушений этических норм, включая плагиат. В таких ситуациях журнал руководствуется собственными этическими стандартами и рекомендациями COPE.']],
   ] as const
 
+  const translated: { title: string; intro: string[]; sections: LocalizedSection[] } = lang === 'en' ? {
+    title: 'Publication ethics',
+    intro: ['“Turan-Astana University News” is a double-blind peer-reviewed scholarly journal that follows international publishing ethics standards. The publisher, editors, reviewers, and authors must observe these principles to ensure high-quality research.', 'The journal strictly follows the principles of the Committee on Publication Ethics (COPE).'],
+    sections: [
+      ['Authorship and contributions', ['Authorship is limited to persons who made a substantial contribution to the concept, data collection, study design, analysis, interpretation, or writing. All substantial contributors must be listed as co-authors.', 'All authors must participate in preparing and revising the manuscript, approve its final version, and accept responsibility for the work. Financial, technical, or other support from non-authors must be acknowledged.']],
+      ['Conflicts of interest', ['Authors must disclose any financial, commercial, legal, or professional relationships that could affect the research or interpretation of its results. The presence or absence of a conflict is stated in the published article.']],
+      ['Funding', ['Authors must disclose all funding and describe the role of sponsors, if any, from study design through manuscript submission.']],
+      ['Confidentiality', ['Research information must remain confidential and must not be used without explicit permission. Researchers must protect participants and remove any information that could identify them.']],
+      ['Plagiarism and misconduct', ['Plagiarism, self-plagiarism, duplicate or multiple publication, fabrication, copyright infringement, fraud, and other unethical conduct are prohibited.', 'Submitted manuscripts must be original and comply with ethical standards and applicable law. All submissions are checked with automated plagiarism-detection systems.']],
+      ['Multiple submissions', ['A manuscript may be submitted to only one journal at a time. Submission elsewhere is not permitted until a written rejection has been received.']],
+      ['Complaints and appeals', ['Editors may reject work that does not meet the journal’s scope, policies, or international publishing standards. Decisions consider relevance, novelty, significance, presentation, and thematic diversity. Complaints and appeals may be sent to journal@tau-edu.kz with details and supporting documents and are handled under COPE procedures.']],
+      ['Ethical compliance', ['Editors, reviewers, authors, and publishers must follow strict ethical principles concerning publication consent, research involving humans, animals and vulnerable groups, data confidentiality, and ethical marketing.']],
+      ['Intellectual property', ['Authors should avoid copyrighted content. Where its use is necessary, direct permission must be obtained from the rights holder in accordance with applicable law and the Creative Commons Attribution License.']],
+      ['Corrections and retractions', ['Errors are corrected through a published notice explaining changes to the original text. Serious errors or ethical breaches, including plagiarism, may lead to retraction in accordance with the journal’s standards and COPE guidance.']],
+    ],
+  } : {
+    title: 'Жариялау этикасы',
+    intro: ['«Тұран-Астана» университетінің хабарлары» — қос соқыр рецензиялау қағидаты бойынша жұмыс істейтін және халықаралық баспа этикасы стандарттарын ұстанатын ғылыми журнал. Зерттеулердің жоғары сапасын қамтамасыз ету үшін баспагер, редакция, рецензенттер мен авторлар осы қағидаларды сақтауға міндетті.', 'Журнал Жариялау этикасы жөніндегі комитеттің (COPE) қағидаттарын қатаң ұстанады.'],
+    sections: [
+      ['Авторлық және үлес', ['Авторлық тұжырымдамаға, деректер жинауға, зерттеу дизайнына, талдауға, түсіндіруге немесе қолжазбаны жазуға елеулі үлес қосқан тұлғаларға ғана беріледі. Елеулі үлес қосқандар бірлескен автор ретінде көрсетілуі тиіс.', 'Барлық авторлар қолжазбаны дайындауға және жетілдіруге қатысып, соңғы нұсқасын мақұлдауға және жұмыс үшін жауапкершілік алуға міндетті. Автор болып табылмайтын тұлғалардың қаржылық, техникалық немесе өзге көмегі алғыс бөлімінде көрсетіледі.']],
+      ['Мүдделер қақтығысы', ['Авторлар зерттеуге немесе нәтижелерді түсіндіруге әсер етуі мүмкін қаржылық, коммерциялық, құқықтық немесе кәсіби қатынастарды ашып көрсетуге міндетті. Мүдделер қақтығысының болуы не болмауы жарияланған мақалада көрсетіледі.']],
+      ['Қаржыландыру', ['Авторлар барлық қаржыландыру көздерін ашып, демеушілердің зерттеуді әзірлеуден қолжазбаны жіберуге дейінгі рөлін сипаттауы тиіс.']],
+      ['Құпиялылық', ['Зерттеу барысында алынған ақпарат құпия сақталып, нақты рұқсатсыз пайдаланылмауы керек. Зерттеушілер қатысушыларды қорғап, оларды анықтауға мүмкіндік беретін мәліметтерді алып тастауға міндетті.']],
+      ['Плагиат және жосықсыз әрекет', ['Плагиатқа, автоплагиатқа, қайталама немесе бірнеше рет жариялауға, деректерді бұрмалауға, авторлық құқықты бұзуға, алаяқтыққа және өзге этикаға жат әрекеттерге тыйым салынады.', 'Қолжазбалар түпнұсқа болып, этикалық стандарттар мен заңнамаға сәйкес келуі тиіс. Барлық материал плагиатты анықтайтын автоматтандырылған жүйелермен тексеріледі.']],
+      ['Қолжазбаны бірнеше басылымға жіберу', ['Бір қолжазба бір уақытта тек бір журналға ұсынылады. Жазбаша бас тарту алынғанға дейін оны өзге журналға жіберуге болмайды.']],
+      ['Шағымдар мен апелляциялар', ['Редакторлар журналдың тақырыбына, саясатына немесе халықаралық жариялау стандарттарына сәйкес келмейтін жұмысты қабылдамауға құқылы. Шешімде өзектілік, жаңалық, маңыз, баяндау сапасы және тақырыптық әртүрлілік ескеріледі. Шағымдар мен апелляциялар толық сипаттамасы және дәлелдерімен journal@tau-edu.kz мекенжайына жіберіліп, COPE рәсімдеріне сәйкес қаралады.']],
+      ['Этикалық нормаларды сақтау', ['Редакторлар, рецензенттер, авторлар мен баспагерлер жариялауға келісім, адамдар, жануарлар және осал топтар қатысатын зерттеулер, деректер құпиялылығы мен этикалық маркетингке қатысты қатаң қағидаларды сақтауы тиіс.']],
+      ['Зияткерлік меншік', ['Авторлар авторлық құқықпен қорғалған материалдарды пайдаланудан аулақ болуы керек. Қажет жағдайда құқық иеленушіден заңнамаға және Creative Commons Attribution лицензиясына сәйкес тікелей рұқсат алынуы тиіс.']],
+      ['Жарияланған мақалаларды түзету және кері қайтарып алу', ['Қателер анықталған кезде бастапқы мәтіндегі өзгерістер түсіндірілген хабарлама жарияланады. Нәтижелерге күмән келтіретін елеулі қателер немесе плагиатты қоса алғанда этикалық бұзушылықтар журнал стандарттары мен COPE ұсынымдарына сай мақаланы кері қайтарып алуға әкелуі мүмкін.']],
+    ],
+  }
+
   return (
     <div className="public-container">
       <div className="section public-section policy-text-page">
@@ -53,9 +66,9 @@ export function PolicyEthicsPage() {
           </div>
           {ruSections.map(([heading, paragraphs]) => <section className="policy-text-section" key={heading}><h2>{heading}</h2>{paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}{heading === 'Жалобы и апелляции' && <p><a href="mailto:journal@tau-edu.kz">journal@tau-edu.kz</a> · <a href="https://publicationethics.org/" target="_blank" rel="noreferrer">COPE</a></p>}{heading === 'Интеллектуальная собственность' && <p><a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">Creative Commons Attribution License 4.0</a></p>}</section>)}
         </> : <>
-          <p className="eyebrow">{t.eyebrow}</p>
-          <h1 className="hero__title">{t.title}</h1>
-          <p className="subtitle">{t.text}</p>
+          <h1 className="hero__title">{translated.title}</h1>
+          <div className="policy-text-section">{translated.intro.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div>
+          {translated.sections.map(([heading, paragraphs]) => <section className="policy-text-section" key={heading}><h2>{heading}</h2>{paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</section>)}
         </>}
       </div>
     </div>
