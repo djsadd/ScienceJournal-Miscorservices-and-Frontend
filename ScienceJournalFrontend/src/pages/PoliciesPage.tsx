@@ -1,5 +1,4 @@
 import { useLanguage } from '../shared/LanguageContext'
-import PublicPagePdf from '../shared/components/PublicPagePdf'
 
 export function PoliciesPage() {
   const { lang } = useLanguage()
@@ -73,9 +72,8 @@ export function PoliciesPage() {
             <p>Журнал принимает рукописи на протяжении всего года, однако применение двустороннего слепого рецензирования не гарантирует публикацию каждой поступившей статьи. При отрицательных заключениях или наличии замечаний автор получает уведомление, а статья снимается с рассмотрения окончательно либо до её доработки с устранением замечаний.</p>
             <p>Если принято решение о публикации, редакция направляет автору соответствующее уведомление. Статья проходит допечатную подготовку — корректуру и вёрстку — в рамках формирования номера журнала, после чего размещается в формате PDF на сайте в разделе «Архив выпусков».</p>
           </section>
-          {ruSections.slice(2).map(([heading, paragraphs]) => <section className="policy-text-section" key={heading}><h2>{heading}</h2>{paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}{heading === 'Условия конфиденциальности' && <p><a href="https://orcid.org/" target="_blank" rel="noreferrer">Регистрация ORCID</a></p>}</section>)}
+          {ruSections.slice(2).map(([heading, paragraphs]) => <section className="policy-text-section" key={heading}><h2>{heading}</h2>{paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</section>)}
         </> : <><p className="eyebrow">{t.eyebrow}</p><h1 className="hero__title">{t.title}</h1></>}
-        <PublicPagePdf kind="editorial-policy" title={t.title} />
       </div>
     </div>
   )
