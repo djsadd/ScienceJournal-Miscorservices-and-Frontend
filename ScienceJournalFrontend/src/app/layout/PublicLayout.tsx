@@ -1,6 +1,6 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import { api } from '../../api/client'
 import logo from '../../assets/logo.svg'
 import { useLanguage } from '../../shared/LanguageContext'
@@ -61,6 +61,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [cabinetTransitionActive, setCabinetTransitionActive] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(api.getTokens()?.accessToken))
   const [brandSettings, setBrandSettings] = useState<JournalBrandSettings | null>(null)
   const [lowVision, setLowVision] = useState<boolean>(() => {
@@ -74,6 +75,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
 
   const { lang, setLang } = useLanguage()
   const location = useLocation()
+  const navigate = useNavigate()
   const nav = publicNavCopy[lang]
   const authLabels = authNavLabels[lang]
   const currentPublicPath = stripLanguagePrefix(location.pathname)
@@ -176,6 +178,26 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
 
   const handleOpen = (href: string | null) => setOpenDropdown(href)
 
+  const markCabinetEntrance = (event: MouseEvent<HTMLDivElement>) => {
+    const link = (event.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null
+    if (!link) return
+    try {
+      const target = new URL(link.href, window.location.origin)
+      const isPlainLeftClick = event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
+      const canAnimate = Boolean(api.getTokens()?.accessToken) && target.origin === window.location.origin && target.pathname.startsWith('/cabinet') && link.target !== '_blank' && isPlainLeftClick
+      if (canAnimate && !cabinetTransitionActive) {
+        event.preventDefault()
+        window.sessionStorage.setItem('cabinetEntranceFromPublic', '1')
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          navigate(`${target.pathname}${target.search}${target.hash}`)
+          return
+        }
+        setCabinetTransitionActive(true)
+        window.setTimeout(() => navigate(`${target.pathname}${target.search}${target.hash}`), 480)
+      }
+    } catch {}
+  }
+
   const renderNav = (items: NavItem[]) =>
     items.map((item) =>
       item.children ? (
@@ -234,6 +256,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
 
   return (
     <div
+      onClickCapture={markCabinetEntrance}
       className={`public-shell ${isLoginLikePage ? 'public-shell--login' : ''} ${
         isRegisterPage ? 'public-shell--register' : ''
       } ${
@@ -242,6 +265,7 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
         lowVision ? 'low-vision' : ''
       }`}
     >
+      {cabinetTransitionActive ? <div className="public-cabinet-curtain" aria-hidden="true" /> : null}
       <header className="public-header">
         <div className="public-header__topline">
           <div className="public-header__kicker">{journalKickers[lang]}</div>
@@ -411,7 +435,9 @@ function PublicLayoutShell({ children }: PublicLayoutProps) {
           isRegisterPage ? 'public-main--register' : ''
         }`}
       >
-        {children}
+        <div className="public-route-transition" key={`${location.pathname}${location.search}`}>
+          {children}
+        </div>
       </main>
 
       {isSearchOpen && (

@@ -20,7 +20,7 @@ export function AuthorsRequirementsPage() {
   }, [lang])
 
   const pdfUrl = api.getRequirementsPdfUrl(lang)
-  return <div className="public-container"><div className="section public-section requirements-page">
+  return <div className="public-container public-container--editorial-wide"><div className="section public-section requirements-page">
     <p className="eyebrow">{t.eyebrow}</p><h1 className="hero__title">{t.title}</h1><p className="subtitle">{t.text}</p>
     {!loading && available ? <><a className="button button--ghost" href={pdfUrl} target="_blank" rel="noreferrer">{t.open}</a><iframe className="requirements-pdf" title={t.title} src={pdfUrl} /></> : !loading && <div className="notice">{t.empty}</div>}
   </div></div>

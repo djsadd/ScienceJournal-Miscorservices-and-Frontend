@@ -9,8 +9,8 @@ export function AuthorsInfoPage() {
     kz: { eyebrow: 'авторларға', title: 'Мақаланы қалай жіберуге болады', requirements: 'Негізгі талаптар', requirementItems: ['Қолжазбаны журнал талаптарына сәйкес рәсімдеңіз.', 'Түпнұсқалықты сақтап, дереккөздерге дұрыс сілтеме жасаңыз.', 'Қажет болған жағдайда деректер мен этикалық мәлімдемелерді көрсетіңіз.'], process: 'Үдеріс', processItems: ['Қолжазбаны жеке кабинет арқылы жіберіңіз.', 'Рецензенттердің тағайындалуын күтіңіз (2–4 апта).', 'Рецензиялау кезеңдерінің қорытындысы бойынша түзетулер енгізіңіз.'], support: 'Қолдау', supportText: 'Рәсімдеу, түпнұсқалықты тексеру немесе жариялау этикасы бойынша кеңес қажет болса, редакцияға хабарласыңыз.', submit: 'Мақала жіберуге өту' },
   }[lang]
   return (
-    <div className="public-container">
-      <div className="section public-section">
+    <div className="public-container public-container--editorial-wide">
+      <div className="section public-section authors-info-page">
         <p className="eyebrow">{t.eyebrow}</p>
         <h1 className="hero__title">{t.title}</h1>
         <div className="panel">

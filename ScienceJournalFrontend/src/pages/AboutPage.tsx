@@ -79,12 +79,14 @@ export function AboutPage() {
   const t = copy[lang] ?? copy.ru
 
   return (
-    <div className="public-container">
+    <div className="public-container public-container--editorial-wide">
       <div className="section public-section about-page-content">
         <h1 className="hero__title">{t.title}</h1>
-        {t.paragraphs.map((p, i) => (
-          <p className="about-page-content__text" key={i}>{p}</p>
-        ))}
+        <div className="about-page-content__intro">
+          {t.paragraphs.map((p, i) => (
+            <p className="about-page-content__text" key={i}>{p}</p>
+          ))}
+        </div>
         <>
           <div className="panel" style={{ marginTop: '1.5rem' }}>
             <h2 className="panel-title">{t.purposeTitle}</h2>
@@ -96,9 +98,11 @@ export function AboutPage() {
             <p className="about-page-content__text">{t.scopeIntro}</p>
             <ul className="list">{t.scope.map((item) => <li key={item}>{item}</li>)}</ul>
           </div>
-          {t.postScopeParagraphs.map((p, i) => (
-            <p className="about-page-content__text" key={`post-scope-${i}`}>{p}</p>
-          ))}
+          <div className="about-page-content__outro">
+            {t.postScopeParagraphs.map((p, i) => (
+              <p className="about-page-content__text" key={`post-scope-${i}`}>{p}</p>
+            ))}
+          </div>
         </>
       </div>
     </div>

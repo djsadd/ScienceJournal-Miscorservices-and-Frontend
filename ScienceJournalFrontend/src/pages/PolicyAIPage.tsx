@@ -51,7 +51,7 @@ export function PolicyAIPage() {
   }[lang]
 
   return (
-    <div className="public-container">
+    <div className="public-container public-container--editorial-wide">
       <div className="section public-section policy-text-page">
           <h1 className="hero__title">{t.heading}</h1>
           <section className="policy-text-section">

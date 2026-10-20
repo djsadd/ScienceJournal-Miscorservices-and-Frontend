@@ -56,7 +56,7 @@ export function PolicyEthicsPage() {
   }
 
   return (
-    <div className="public-container">
+    <div className="public-container public-container--editorial-wide">
       <div className="section public-section policy-text-page">
         {lang === 'ru' ? <>
           <h1 className="hero__title">Публикационная этика</h1>

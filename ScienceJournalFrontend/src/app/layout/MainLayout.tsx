@@ -724,6 +724,16 @@ const toNotificationPreview = (notification: NotificationPreviewDto): Notificati
 })
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const [enteredFromPublic] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      const shouldAnimate = window.sessionStorage.getItem('cabinetEntranceFromPublic') === '1'
+      window.sessionStorage.removeItem('cabinetEntranceFromPublic')
+      return shouldAnimate
+    } catch {
+      return false
+    }
+  })
   const [brandSettings, setBrandSettings] = useState<CabinetBrandSettings | null>(null)
   const [activeRole, setActiveRole] = useState<RoleKey>(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem('activeRole') : null
@@ -1017,7 +1027,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   )
 
   return (
-    <div className={`app-shell ${lowVision ? 'low-vision' : ''} ${isDesktopViewport && !isSidebarVisible ? 'app-shell--sidebar-hidden' : ''}`}>
+    <div className={`app-shell ${enteredFromPublic ? 'app-shell--public-entry' : ''} ${lowVision ? 'low-vision' : ''} ${isDesktopViewport && !isSidebarVisible ? 'app-shell--sidebar-hidden' : ''}`}>
       <aside id="cabinet-sidebar" className={`sidebar ${isSidebarOpen ? 'sidebar--open' : ''} ${isDesktopViewport && !isSidebarVisible ? 'sidebar--hidden' : ''}`}>
         <div className="sidebar__brand">
           <Link to={`/${lang}`} className="brand--compact" onClick={closeSidebar}>

@@ -55,7 +55,7 @@ export function PoliciesPage() {
   }
 
   return (
-    <div className="public-container">
+    <div className="public-container public-container--editorial-wide">
       <div className="section public-section policy-text-page">
         {lang === 'ru' ? <>
           <h1 className="hero__title">Редакционная политика</h1>
