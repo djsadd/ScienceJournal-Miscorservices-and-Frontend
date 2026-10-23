@@ -28,7 +28,7 @@ export function ArchivePage() {
     },
     en: {
       title: 'Issue archive',
-      summary: 'Scientific journal archive',
+      summary: 'The journal “Bulletin of Turan-Astana University” ensures the long-term preservation, accessibility, and integrity of all published articles. To guarantee permanent access to its scholarly content, the journal uses reliable digital archiving and storage mechanisms.',
       search: 'Search by title or author…',
       all: 'All',
       expand: 'Expand all',
@@ -43,7 +43,7 @@ export function ArchivePage() {
     },
     kz: {
       title: 'Шығарылымдар мұрағаты',
-      summary: 'Ғылыми журнал мұрағаты',
+      summary: '«Тұран-Астана университетінің хабаршысы» журналы жарияланған барлық мақалалардың ұзақ мерзімді сақталуын, қолжетімділігін және тұтастығын қамтамасыз етеді. Ғылыми контентке тұрақты қолжетімділікті қамтамасыз ету үшін журнал сенімді цифрлық мұрағаттау және сақтау тетіктерін қолданады.',
       search: 'Атауы немесе авторы бойынша іздеу…',
       all: 'Барлығы',
       expand: 'Барлығын ашу',
@@ -162,12 +162,12 @@ export function ArchivePage() {
                         const monthOpen = Boolean(openMonths[monthKey])
                         return (
                           <section className={`archive-month ${monthOpen ? 'is-open' : ''}`} key={monthKey}>
-                            <button className="archive-month__header" onClick={() => toggleMonth(group.year, month)} aria-expanded={monthOpen} type="button">
-                              <span className="archive-month__name">{month ? monthNames[month] : 'Без месяца'}</span>
+                            {month ? <button className="archive-month__header" onClick={() => toggleMonth(group.year, month)} aria-expanded={monthOpen} type="button">
+                              <span className="archive-month__name">{monthNames[month]}</span>
                               <span className="archive-month__count">{t.issueCount(monthVolumes.length)} · {t.articleCount(monthVolumes.reduce((sum, volume) => sum + (volume.articles?.length || 0), 0))}</span>
                               <span className="archive-month__chevron" aria-hidden="true">⌃</span>
-                            </button>
-                            {monthOpen && <div className="archive-month__body">
+                            </button> : null}
+                            {(month === 0 || monthOpen) && <div className="archive-month__body">
                               {monthVolumes.map((v) => (
                                 <article className="archive-issue" key={String(v.id ?? `${v.year}-${v.number}-${v.month ?? 'm'}`)}>
                                   <Link className="archive-issue__header" to={v.id != null ? localizedHref(`/archive/volumes/${v.id}`) : '#'}><span className="archive-issue__label">Т. {v.number} № {v.number}</span><span className="archive-issue__date">{v.month ? monthNames[v.month] : ''} {v.year}</span><span className="archive-issue__count">{t.articleCount(v.articles?.length || 0)}</span></Link>
