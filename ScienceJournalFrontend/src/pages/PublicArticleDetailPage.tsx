@@ -57,6 +57,7 @@ export default function PublicArticleDetailPage() {
       journal: 'Журнал',
       volume: 'Том',
       doi: 'DOI',
+      received: 'Поступила',
       authors: 'Авторы',
       abstract: 'Аннотация',
       keywords: 'Ключевые слова',
@@ -76,6 +77,7 @@ export default function PublicArticleDetailPage() {
       journal: 'Journal',
       volume: 'Volume',
       doi: 'DOI',
+      received: 'Received',
       authors: 'Authors',
       abstract: 'Abstract',
       keywords: 'Keywords',
@@ -95,6 +97,7 @@ export default function PublicArticleDetailPage() {
       journal: 'Журнал',
       volume: 'Том',
       doi: 'DOI',
+      received: 'Қабылданған күні',
       authors: 'Авторлар',
       abstract: 'Аннотация',
       keywords: 'Кілт сөздер',
@@ -238,6 +241,14 @@ export default function PublicArticleDetailPage() {
 
   const doiRaw = compact((article as any)?.doi)
   const doiHref = toDoiUrl((article as any)?.doi)
+  const receivedDate = (() => {
+    const value = (article as any)?.created_at || (article as any)?.submittedAt
+    if (!value) return null
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    const locale = lang === 'kz' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
+    return date.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })
+  })()
 
   const journalTitle = homeCopy?.[lang]?.hero?.title || ''
   const volumeLabel =
@@ -307,6 +318,12 @@ export default function PublicArticleDetailPage() {
                       <span className="meta-label">—</span>
                     )}
                   </div>
+                  {receivedDate ? (
+                    <div className="public-article__meta-row">
+                      <span className="meta-label">{t.received}:</span>
+                      <span>{receivedDate}</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div className="public-article__actions">
