@@ -23,6 +23,7 @@ export function ArchivePage() {
       issueCount: (n: number) => `${n} выпуск${n === 1 ? '' : 'а'}`,
       articleCount: (n: number) => `${n} ст.`,
       pages: 'С.',
+      received: 'Поступила',
       pdf: 'PDF',
       loadError: 'Не удалось загрузить архив томов',
     },
@@ -38,6 +39,7 @@ export function ArchivePage() {
       issueCount: (n: number) => `${n} issue${n === 1 ? '' : 's'}`,
       articleCount: (n: number) => `${n} art.`,
       pages: 'P.',
+      received: 'Received',
       pdf: 'PDF',
       loadError: 'Failed to load archive',
     },
@@ -53,6 +55,7 @@ export function ArchivePage() {
       issueCount: (n: number) => `${n} шығарылым`,
       articleCount: (n: number) => `${n} мақ.`,
       pages: 'Б.',
+      received: 'Қабылданған күні',
       pdf: 'PDF',
       loadError: 'Том мұрағатын жүктеу сәтсіз аяқталды',
     },
@@ -107,6 +110,14 @@ export function ArchivePage() {
 
   const articleTitle = (article: NonNullable<ApiVolume['articles']>[number]) => article[`title_${lang}`] || article.title || 'Без названия'
   const articleAuthors = (article: NonNullable<ApiVolume['articles']>[number]) => (article.authors || []).map((author: any) => typeof author === 'string' ? author : [author[`first_name_${lang}`] || author.first_name_en || author.first_name, author[`patronymic_${lang}`] || author.patronymic_en || author.patronymic, author[`last_name_${lang}`] || author.last_name_en || author.last_name].filter(Boolean).join(' ')).filter(Boolean).join(', ')
+  const articleReceivedDate = (article: NonNullable<ApiVolume['articles']>[number]) => {
+    const value = article.created_at || article.submittedAt
+    if (!value) return null
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    const locale = lang === 'kz' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
+    return date.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })
+  }
 
   const toggleYear = (year: number) => {
     setOpenYears((prev: Record<number, boolean>) => ({ ...prev, [year]: !prev[year] }))
@@ -174,7 +185,7 @@ export function ArchivePage() {
                                   {v.articles?.length ? <ol className="archive-articles">
                                     {v.articles.map((article, index) => <li className="archive-article" key={article.id}>
                                       <span className="archive-article__number">{index + 1}</span>
-                                      <div className="archive-article__content"><Link to={localizedHref(`/archive/volumes/${v.id}/articles/${article.id}`)} className="archive-article__title">{articleTitle(article)}</Link><p className="archive-article__authors">{articleAuthors(article) || '—'}</p><p className="archive-article__meta">{t.pages} {article.abstract ? '1–' : '—'} &nbsp;·&nbsp; DOI: {article.doi || '—'}</p></div>
+                                      <div className="archive-article__content"><Link to={localizedHref(`/archive/volumes/${v.id}/articles/${article.id}`)} className="archive-article__title">{articleTitle(article)}</Link><p className="archive-article__authors">{articleAuthors(article) || '—'}</p><p className="archive-article__meta">{t.pages} {article.abstract ? '1–' : '—'} &nbsp;·&nbsp; DOI: {article.doi || '—'}</p>{articleReceivedDate(article) && <p className="archive-article__meta">{t.received}: {articleReceivedDate(article)}</p>}</div>
                                       {article.layout_file_url && <a className="archive-pdf" href={toApiFilesUrl(article.layout_file_url)} target="_blank" rel="noreferrer">▱ {t.pdf}</a>}
                                     </li>)}
                                   </ol> : null}
