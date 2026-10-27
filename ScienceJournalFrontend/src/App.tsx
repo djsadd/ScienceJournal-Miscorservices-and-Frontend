@@ -23,6 +23,7 @@ import { AuthorsSubmissionPage } from './pages/AuthorsSubmissionPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ArticleDetailsPage } from './pages/ArticleDetailsPage'
 import { MyArticleDetailsPage } from './pages/MyArticleDetailsPage'
+import AuthorArticleDetailPage from './pages/AuthorArticleDetailPage'
 import { ReviewFormPage } from './pages/ReviewFormPage'
 import ReviewDetailsPage from './pages/ReviewDetailsPage'
 import { LoginPage } from './pages/LoginPage'
@@ -169,7 +170,7 @@ function App() {
         element={
           <RequireAuth>
             <MainLayout>
-              <MyArticleDetailsPage />
+              <AuthorArticleDetailPage />
             </MainLayout>
           </RequireAuth>
         }

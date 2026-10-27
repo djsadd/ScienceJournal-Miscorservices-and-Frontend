@@ -595,8 +595,9 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
   }
 
   return (
-    <div className={`public-container manuscript-edit-page ${editMode ? 'submission-page' : ''}`}>
-      <section className="section public-section manuscript-edit-hero">
+    <div className={editMode ? 'app-container app-container--wide manuscript-detail manuscript-edit author-article-edit' : 'public-container manuscript-edit-page'}>
+      {editMode ? <section className="manuscript-detail__toolbar"><button className="manuscript-detail__back" type="button" onClick={() => navigate(`/cabinet/my-articles/${article.id}`)}><span aria-hidden="true">←</span> Вернуться к просмотру статьи</button><span className="manuscript-edit__mode">Режим редактирования</span></section> : null}
+      <section className={editMode ? 'panel manuscript-hero manuscript-edit-hero' : 'section public-section manuscript-edit-hero'}>
         <div>
           <p className="eyebrow">{editMode ? 'Редактирование статьи' : t.myArticle}</p>
           <h1 className="hero__title">
@@ -630,7 +631,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         </div>
       ) : null}
 
-      <div className="section public-section manuscript-edit-section">
+      <div className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.heading}</p>
         {canEdit ? (
           <>
@@ -680,7 +681,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         )}
       </div>
 
-      <div className="section public-section manuscript-edit-section">
+      <div className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.main}</p>
         <div className="grid grid-2">
           <div className="form-field">
@@ -766,7 +767,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         {/* Кнопку отзыва перенесли в верхний заголовок для лучшей видимости */}
       </div>
 
-      <div className="section public-section manuscript-edit-section">
+      <div className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.abstract}</p>
         {canEdit ? (
           <>
@@ -821,7 +822,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         )}
       </div>
 
-      <div className="section public-section manuscript-edit-section">
+      <div className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow" data-error-key="keywords">{t.keywords}{canEdit ? <RequiredMark /> : null}</p>
         {canEdit ? (
           <>
@@ -876,7 +877,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         )}
       </div>
 
-      <div className="section public-section manuscript-edit-section">
+      <div className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.checks}</p>
         <div className="grid grid-3">
           <div className="form-field">
@@ -959,7 +960,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         </div>
       </div>
 
-      <div className="section public-section manuscript-edit-section">
+      <div className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow" data-error-key="authorList">{t.authors}{canEdit ? <RequiredMark /> : null}</p>
         {!canEdit ? (
           <>
@@ -1037,7 +1038,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         )}
       </div>
 
-      <div className="section public-section manuscript-edit-section">
+      <div className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.files}</p>
         <div className="grid grid-3">
           <div className="form-field">
@@ -1186,7 +1187,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
       </div>
 
       {canEdit && (
-        <div className="section public-section manuscript-edit-section manuscript-edit-submit">
+        <div className={editMode ? 'panel manuscript-edit-section manuscript-edit-submit manuscript-edit__save' : 'section public-section manuscript-edit-section manuscript-edit-submit'}>
           <div className="section-heading">
             <div>
               <p className="eyebrow">Действия автора</p>
