@@ -8383,6 +8383,17 @@
 }
 .manuscript-row__open:hover { border-color: #8b1831; color: #8b1831; }
 
+.layout-task-row { grid-template-columns: 28px minmax(260px, 1fr) minmax(150px, auto) minmax(220px, 360px); }
+.layout-task-row__source { color: #8b1831; font-size: 12px; font-weight: 700; text-decoration: none; }
+.layout-task-row__source:hover { text-decoration: underline; }
+.layout-task-row__actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.layout-task-row__actions .button { min-height: 36px; }
+.layout-task-row__file { min-width: 0; flex: 1 1 180px; cursor: pointer; }
+.layout-task-row__file input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.layout-task-row__file span { min-height: 36px; display: flex; align-items: center; overflow: hidden; padding: 0 11px; border: 1px dashed #d7bac3; border-radius: 5px; background: #fffafb; color: #8b6572; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.layout-task-row__file:hover span { border-color: #8b1831; color: #8b1831; }
+.layout-task-row__done { color: #357153; font-size: 12px; font-weight: 700; text-align: right; }
+
 @media (max-width: 760px) {
   .editorial-queue { padding: 16px; }
   .editorial-queue__header { align-items: flex-start; flex-direction: column; }
@@ -8396,6 +8407,15 @@
   .manuscript-row__check { display: none; }
   .manuscript-row__status { align-items: flex-start; grid-column: 1; }
   .manuscript-row__open { grid-column: 2; grid-row: 1 / span 2; }
+  .layout-task-row { grid-template-columns: minmax(0, 1fr); }
+  .layout-task-row .manuscript-row__status { grid-column: 1; }
+  .layout-task-row__actions { grid-column: 1; justify-content: flex-start; }
+  .layout-task-row__done { text-align: left; }
+}
+
+@media (min-width: 761px) and (max-width: 1120px) {
+  .layout-task-row { grid-template-columns: 28px minmax(0, 1fr) minmax(150px, auto); }
+  .layout-task-row__actions { grid-column: 2 / 4; justify-content: flex-end; }
 }
 
 .app-shell .sidebar__link--active .sidebar__tag {
