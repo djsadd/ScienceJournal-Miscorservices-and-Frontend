@@ -14,6 +14,7 @@ interface ApiKeyword {
 }
 type Keyword = { id?: number; ru: string; kz: string; en: string }
 type ArticleType = 'original' | 'review'
+type AuthorEditTab = 'main' | 'content' | 'keywords' | 'authors' | 'files'
 type CountryOption = { id: number; name: string; alpha_2: string; alpha_3: string }
 
 type AuthorForm = {
@@ -246,6 +247,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
   const [fileAntiplagiarism, setFileAntiplagiarism] = useState<File | null>(null)
   const [fileAuthorInfo, setFileAuthorInfo] = useState<File | null>(null)
   const [fileCoverLetter, setFileCoverLetter] = useState<File | null>(null)
+  const [activeEditTab, setActiveEditTab] = useState<AuthorEditTab>('main')
   const [lang, setLang] = useState<'ru' | 'en' | 'kz'>(() => {
     const params = new URLSearchParams(window.location.search)
     const fromQuery = params.get('lang') as 'ru' | 'en' | 'kz' | null
@@ -366,8 +368,24 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
 
   const scrollToFirstError = (errors: Record<string, string>) => {
     const firstErrorKey = Object.keys(errors)[0]
-    const el = document.querySelector<HTMLElement>(`[data-error-key="${firstErrorKey}"]`)
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const contentKeys = ['title_ru', 'title_kz', 'title_en', 'abstract_ru', 'abstract_kz', 'abstract_en']
+    const mainKeys = ['articleType', 'articleLanguage', 'confirmCopyright', 'confirmOriginality', 'confirmConsent']
+    const nextTab: AuthorEditTab = contentKeys.includes(firstErrorKey)
+      ? 'content'
+      : firstErrorKey === 'keywords'
+        ? 'keywords'
+        : firstErrorKey === 'authorList'
+          ? 'authors'
+          : ['manuscript', 'authorInfo'].includes(firstErrorKey)
+            ? 'files'
+            : mainKeys.includes(firstErrorKey)
+              ? 'main'
+              : 'main'
+    setActiveEditTab(nextTab)
+    window.setTimeout(() => {
+      const el = document.querySelector<HTMLElement>(`[data-error-key="${firstErrorKey}"]`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 0)
   }
 
   const validateUpdate = () => {
@@ -630,11 +648,11 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
       </section>
 
       {editMode ? <nav className="manuscript-tabs manuscript-edit__tabs" aria-label="Разделы редактирования">
-        <a href="#author-edit-main">Основные данные</a>
-        <a href="#author-edit-content">Заголовки и аннотации</a>
-        <a href="#author-edit-keywords">Ключевые слова</a>
-        <a href="#author-edit-authors">Авторы · {authorList.length}</a>
-        <a href="#author-edit-files">Файлы</a>
+        <button className={activeEditTab === 'main' ? 'is-active' : ''} type="button" onClick={() => setActiveEditTab('main')}>Основные данные</button>
+        <button className={activeEditTab === 'content' ? 'is-active' : ''} type="button" onClick={() => setActiveEditTab('content')}>Заголовки и аннотации</button>
+        <button className={activeEditTab === 'keywords' ? 'is-active' : ''} type="button" onClick={() => setActiveEditTab('keywords')}>Ключевые слова · {selectedKeywords.length}</button>
+        <button className={activeEditTab === 'authors' ? 'is-active' : ''} type="button" onClick={() => setActiveEditTab('authors')}>Авторы · {authorList.length}</button>
+        <button className={activeEditTab === 'files' ? 'is-active' : ''} type="button" onClick={() => setActiveEditTab('files')}>Файлы</button>
       </nav> : null}
 
       {submitError && canEdit ? (
@@ -643,7 +661,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         </div>
       ) : null}
 
-      <div id="author-edit-content" className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div id="author-edit-content" hidden={editMode && activeEditTab !== 'content'} className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.heading}</p>
         {canEdit ? (
           <>
@@ -693,7 +711,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         )}
       </div>
 
-      <div id="author-edit-main" className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div id="author-edit-main" hidden={editMode && activeEditTab !== 'main'} className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.main}</p>
         <div className="grid grid-2">
           <div className="form-field">
@@ -779,7 +797,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         {/* Кнопку отзыва перенесли в верхний заголовок для лучшей видимости */}
       </div>
 
-      <div className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div hidden={editMode && activeEditTab !== 'content'} className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.abstract}</p>
         {canEdit ? (
           <>
@@ -834,7 +852,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         )}
       </div>
 
-      <div id="author-edit-keywords" className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div id="author-edit-keywords" hidden={editMode && activeEditTab !== 'keywords'} className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow" data-error-key="keywords">{t.keywords}{canEdit ? <RequiredMark /> : null}</p>
         {canEdit ? (
           <>
@@ -889,7 +907,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         )}
       </div>
 
-      <div className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div hidden={editMode && activeEditTab !== 'main'} className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.checks}</p>
         <div className="grid grid-3">
           <div className="form-field">
@@ -972,7 +990,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         </div>
       </div>
 
-      <div id="author-edit-authors" className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div id="author-edit-authors" hidden={editMode && activeEditTab !== 'authors'} className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow" data-error-key="authorList">{t.authors}{canEdit ? <RequiredMark /> : null}</p>
         {!canEdit ? (
           <>
@@ -1050,7 +1068,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         )}
       </div>
 
-      <div id="author-edit-files" className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div id="author-edit-files" hidden={editMode && activeEditTab !== 'files'} className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.files}</p>
         <div className="grid grid-3">
           <div className="form-field">
