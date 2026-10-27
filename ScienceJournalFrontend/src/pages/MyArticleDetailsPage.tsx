@@ -661,7 +661,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         </div>
       ) : null}
 
-      <div id="author-edit-content" hidden={editMode && activeEditTab !== 'content'} className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div id="author-edit-content" hidden={editMode && activeEditTab !== 'content'} className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section author-edit-language-card' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.heading}</p>
         {canEdit ? (
           <>
@@ -713,7 +713,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
 
       <div id="author-edit-main" hidden={editMode && activeEditTab !== 'main'} className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.main}</p>
-        <div className="grid grid-2">
+        <div className="grid grid-2 author-edit-main-grid">
           <div className="form-field">
             <div className="form-label">{t.status}</div>
             <div
@@ -797,7 +797,7 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         {/* Кнопку отзыва перенесли в верхний заголовок для лучшей видимости */}
       </div>
 
-      <div hidden={editMode && activeEditTab !== 'content'} className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
+      <div hidden={editMode && activeEditTab !== 'content'} className={editMode ? 'panel manuscript-edit__text-panel manuscript-edit-section author-edit-language-card' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.abstract}</p>
         {canEdit ? (
           <>
@@ -857,34 +857,25 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
         {canEdit ? (
           <>
             {selectedKeywords.length > 0 ? (
-              <div className="table editable-keyword-table">
-                <div className="table__head">
-                  <span>На русском</span>
-                  <span>На казахском</span>
-                  <span>На английском</span>
-                  <span>Действия</span>
-                </div>
-                <div className="table__body">
-                  {selectedKeywords.map((kw, index) => (
-                    <div className="table__row" key={`${kw.id ?? kw.ru}-${index}`}>
-                      <div className="table__cell">{kw.ru || '—'}</div>
-                      <div className="table__cell">{kw.kz || '—'}</div>
-                      <div className="table__cell">{kw.en || '—'}</div>
-                      <div className="table__cell">
-                        <div className="row-icon-actions">
-                          <IconButton label="Редактировать ключевое слово" icon="edit" onClick={() => openKeywordEdit(kw, index)} />
-                          <IconButton label="Удалить ключевое слово" icon="trash" onClick={() => removeKeyword(kw)} />
-                        </div>
-                      </div>
+              <div className="editor-keyword-list">
+                {selectedKeywords.map((kw, index) => (
+                  <div key={`${kw.id ?? 'new'}-${index}`} className="editor-keyword-row">
+                    <button type="button" className="editor-keyword-row__word" onClick={() => setViewKeyword({ id: kw.id ?? 0, title_ru: kw.ru, title_kz: kw.kz, title_en: kw.en })} aria-label={`Показать переводы: ${kw.ru}`}>
+                      <span>{kw.ru}</span>
+                      <small>Показать переводы</small>
+                    </button>
+                    <div className="row-icon-actions">
+                      <IconButton label="Редактировать ключевое слово" icon="edit" onClick={() => openKeywordEdit(kw, index)} />
+                      <IconButton label="Удалить ключевое слово" icon="trash" onClick={() => removeKeyword(kw)} />
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="table__empty">Ключевые слова не выбраны.</div>
             )}
-            <button type="button" className="button button--ghost manuscript-edit-add-button" onClick={openKeywordCreate}>
-              Добавить ключевые слова
+            <button type="button" className="manuscript-author-add" onClick={openKeywordCreate}>
+              <span aria-hidden="true">+</span><b>Добавить ключевое слово</b>
             </button>
             {fieldErrors.keywords ? <span className="form-error-text">{fieldErrors.keywords}</span> : null}
           </>
@@ -1024,45 +1015,28 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
           </>
         ) : (
           <>
-            <div className="section-heading">
-              <div>
-                <h3 className="panel-title">Редактирование состава авторов</h3>
-              </div>
-              <button className="button button--primary button--compact" type="button" onClick={openAuthorCreate}>
-                Добавить автора
-              </button>
-            </div>
             {authorList.length === 0 ? (
               <div className="table__empty">Авторы пока не добавлены.</div>
             ) : (
-              <div className="table manuscript-edit-authors-table">
-                <div className="table__head">
-                  <span>Имя</span>
-                  <span>Email</span>
-                  <span>Действия</span>
-                </div>
-                <div className="table__body">
-                  {authorList.map((a, idx) => (
-                    <div className="table__row" key={`${a.email}-${idx}`}>
-                      <div className="table__cell">
-                        <div className="table__title">
-                          {a.prefix ? `${a.prefix} ` : ''}
-                          {a.firstName} {a.middleName} {a.lastName}
-                        </div>
-                        <div className="table__meta">{a.phone}</div>
-                      </div>
-                      <div className="table__cell">{a.email}</div>
-                      <div className="table__cell">
-                        <div className="row-icon-actions">
-                          <IconButton label="Редактировать автора" icon="edit" onClick={() => openAuthorEdit(a)} />
-                          <IconButton label="Удалить автора" icon="trash" onClick={() => setAuthorList((prev) => prev.filter((author) => author.email !== a.email))} />
-                        </div>
-                      </div>
+              <div className="author-cards manuscript-edit-author-cards">
+                {authorList.map((a, idx) => (
+                  <div className="author-card author-card--editable" key={`${a.email}-${idx}`}>
+                    <span className="author-card__avatar">{a.firstName.charAt(0)}{a.lastName.charAt(0)}</span>
+                    <span className="author-card__content">
+                      <strong>{a.lastName} {a.firstName} {a.middleName}</strong>
+                      <small>{a.email}</small>
+                      <small>{[a.affiliation1, a.affiliation2, a.affiliation3].filter(Boolean).join(' · ') || 'Аффилиация не указана'}</small>
+                    </span>
+                    {a.isCorresponding && <span className="author-card__badge">Ответственный автор</span>}
+                    <span className="author-card__actions">
+                      <button type="button" onClick={() => openAuthorEdit(a)} title="Редактировать автора" aria-label="Редактировать автора"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg></button>
+                      <button className="is-danger" type="button" onClick={() => setAuthorList((prev) => prev.filter((_, index) => index !== idx))} title="Удалить автора" aria-label="Удалить автора"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
+                    </span>
                     </div>
-                  ))}
-                </div>
+                ))}
               </div>
             )}
+            <button className="manuscript-author-add" type="button" onClick={openAuthorCreate}><span aria-hidden="true">+</span><b>Добавить автора</b></button>
             {fieldErrors.authorList ? <span className="form-error-text">{fieldErrors.authorList}</span> : null}
           </>
         )}
@@ -1070,149 +1044,35 @@ export function MyArticleDetailsPage({ editMode = false }: { editMode?: boolean 
 
       <div id="author-edit-files" hidden={editMode && activeEditTab !== 'files'} className={editMode ? 'panel manuscript-edit-section' : 'section public-section manuscript-edit-section'}>
         <p className="eyebrow">{t.files}</p>
-        <div className="grid grid-3">
-          <div className="form-field">
-            <div className="form-label" data-error-key="manuscript">Рукопись{canEdit ? <RequiredMark /> : null}</div>
-            {myFiles.find((f) => f.kind === 'manuscript') ? (
-              (() => {
-                const f = myFiles.find((file) => file.kind === 'manuscript') as ApiMyFile
-                const url = toApiFilesUrl(f.download_url)
-                return (
-                  <div className="form-hint">
-                    <a className="button button--ghost button--compact author-file-download" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'Скачать рукопись'}
-                    </a>
-                  </div>
-                )
-              })()
-            ) : article.manuscript_file_url ? (
-              <a
-                className="button button--ghost button--compact author-file-download"
-                href={toApiFilesUrl(article.manuscript_file_url)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Скачать
-              </a>
-            ) : (
-              <div className="form-hint">Не загружено</div>
-            )}
-            {canEdit ? (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input
-                  type="file"
-                  className={`file-input ${fieldErrors.manuscript ? 'file-input--error' : ''}`}
-                  onChange={(e) => setFileManuscript(e.target.files?.[0] ?? null)}
-                />
-                {fileManuscript ? <div className="form-hint">Новый файл: {fileManuscript.name}</div> : null}
-                {fieldErrors.manuscript ? <span className="form-error-text">{fieldErrors.manuscript}</span> : null}
-              </div>
-            ) : null}
-          </div>
-          <div className="form-field">
-            <div className="form-label">Антиплагиат</div>
-            {myFiles.find((f) => f.kind === 'antiplagiarism') ? (
-              (() => {
-                const f = myFiles.find((file) => file.kind === 'antiplagiarism') as ApiMyFile
-                const url = toApiFilesUrl(f.download_url)
-                return (
-                  <div className="form-hint">
-                    <a className="button button--ghost button--compact author-file-download" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'Скачать файл'}
-                    </a>
-                  </div>
-                )
-              })()
-            ) : article.antiplagiarism_file_url ? (
-              <a
-                className="button button--ghost button--compact author-file-download"
-                href={toApiFilesUrl(article.antiplagiarism_file_url)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Скачать
-              </a>
-            ) : (
-              <div className="form-hint">Не загружено</div>
-            )}
-            {canEdit ? (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input type="file" className="file-input" onChange={(e) => setFileAntiplagiarism(e.target.files?.[0] ?? null)} />
-                {fileAntiplagiarism ? <div className="form-hint">Новый файл: {fileAntiplagiarism.name}</div> : null}
-              </div>
-            ) : null}
-          </div>
-          <div className="form-field">
-            <div className="form-label" data-error-key="authorInfo">Данные автора{canEdit ? <RequiredMark /> : null}</div>
-            {myFiles.find((f) => f.kind === 'author_info') ? (
-              (() => {
-                const f = myFiles.find((file) => file.kind === 'author_info') as ApiMyFile
-                const url = toApiFilesUrl(f.download_url)
-                return (
-                  <div className="form-hint">
-                    <a className="button button--ghost button--compact author-file-download" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'Скачать файл'}
-                    </a>
-                  </div>
-                )
-              })()
-            ) : article.author_info_file_url ? (
-              <a
-                className="button button--ghost button--compact author-file-download"
-                href={toApiFilesUrl(article.author_info_file_url)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Скачать
-              </a>
-            ) : (
-              <div className="form-hint">Не загружено</div>
-            )}
-            {canEdit ? (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input
-                  type="file"
-                  className={`file-input ${fieldErrors.authorInfo ? 'file-input--error' : ''}`}
-                  onChange={(e) => setFileAuthorInfo(e.target.files?.[0] ?? null)}
-                />
-                {fileAuthorInfo ? <div className="form-hint">Новый файл: {fileAuthorInfo.name}</div> : null}
-                {fieldErrors.authorInfo ? <span className="form-error-text">{fieldErrors.authorInfo}</span> : null}
-              </div>
-            ) : null}
-          </div>
-          <div className="form-field">
-            <div className="form-label">Сопроводительное письмо</div>
-            {myFiles.find((f) => f.kind === 'cover_letter') ? (
-              (() => {
-                const f = myFiles.find((file) => file.kind === 'cover_letter') as ApiMyFile
-                const url = toApiFilesUrl(f.download_url)
-                return (
-                  <div className="form-hint">
-                    <a className="button button--ghost button--compact author-file-download" href={url} target="_blank" rel="noreferrer">
-                      {f.filename || 'Скачать файл'}
-                    </a>
-                  </div>
-                )
-              })()
-            ) : article.cover_letter_file_url ? (
-              <a
-                className="button button--ghost button--compact author-file-download"
-                href={toApiFilesUrl(article.cover_letter_file_url)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Скачать
-              </a>
-            ) : (
-              <div className="form-hint">Не загружено</div>
-            )}
-            {canEdit ? (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input type="file" className="file-input" onChange={(e) => setFileCoverLetter(e.target.files?.[0] ?? null)} />
-                {fileCoverLetter ? <div className="form-hint">Новый файл: {fileCoverLetter.name}</div> : null}
-              </div>
-            ) : null}
-          </div>
+        <div className="manuscript-file-grid">
+          {[
+            { key: 'manuscript', label: 'Рукопись', required: true, error: 'manuscript', currentUrl: article.manuscript_file_url, selected: fileManuscript, setFile: setFileManuscript },
+            { key: 'antiplagiarism', label: 'Антиплагиат', required: false, error: '', currentUrl: article.antiplagiarism_file_url, selected: fileAntiplagiarism, setFile: setFileAntiplagiarism },
+            { key: 'author_info', label: 'Сведения об авторах', required: true, error: 'authorInfo', currentUrl: article.author_info_file_url, selected: fileAuthorInfo, setFile: setFileAuthorInfo },
+            { key: 'cover_letter', label: 'Сопроводительное письмо', required: false, error: '', currentUrl: article.cover_letter_file_url, selected: fileCoverLetter, setFile: setFileCoverLetter },
+          ].map((slot) => {
+            const stored = myFiles.find((file) => file.kind === slot.key)
+            const downloadUrl = stored?.download_url || slot.currentUrl
+            const displayName = slot.selected?.name || stored?.filename || (downloadUrl ? 'Загруженный файл' : '')
+            const extension = displayName.split('.').pop()?.toUpperCase() || 'FILE'
+            const inputId = `author-article-file-${slot.key}`
+            return <div className={`manuscript-file-slot ${slot.error && fieldErrors[slot.error] ? 'is-error' : ''}`} key={slot.key} data-error-key={slot.error || undefined}>
+              <div className="manuscript-file-slot__heading"><span>{slot.label}{slot.required && canEdit ? <RequiredMark /> : null}</span><small>{downloadUrl ? 'Загружен' : 'Нет файла'}</small></div>
+              {displayName ? <div className="manuscript-file-card">
+                <span className={`manuscript-file-card__type manuscript-file-card__type--${extension.toLowerCase()}`}>{extension}</span>
+                <span className="manuscript-file-card__info"><strong title={displayName}>{displayName}</strong><small>{slot.selected ? 'Новый файл · отправится вместе со статьёй' : 'Текущий файл'}</small></span>
+                <span className="manuscript-file-card__tools">
+                  {downloadUrl ? <a className="file-icon-action" href={toApiFilesUrl(downloadUrl)} target="_blank" rel="noreferrer" title="Скачать файл" aria-label="Скачать файл">↓</a> : null}
+                  {canEdit ? <label className="file-icon-action" htmlFor={inputId} title="Заменить файл" aria-label="Заменить файл">✎</label> : null}
+                  {canEdit && slot.selected ? <button className="file-icon-action file-icon-action--danger" type="button" title="Отменить выбор" aria-label="Отменить выбор" onClick={() => slot.setFile(null)}>×</button> : null}
+                </span>
+              </div> : canEdit ? <label className="manuscript-file-dropzone" htmlFor={inputId} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); slot.setFile(e.dataTransfer.files?.[0] ?? null) }}>
+                <span>+</span><strong>Добавить файл</strong><small>Перетащите сюда или нажмите для выбора</small>
+              </label> : <div className="table__empty">Не загружено</div>}
+              {canEdit ? <input id={inputId} className="manuscript-file-slot__input" type="file" accept=".pdf,.doc,.docx,.odt,.zip" onChange={(e) => slot.setFile(e.target.files?.[0] ?? null)} /> : null}
+              {slot.error && fieldErrors[slot.error] ? <span className="form-error-text">{fieldErrors[slot.error]}</span> : null}
+            </div>
+          })}
         </div>
       </div>
 
