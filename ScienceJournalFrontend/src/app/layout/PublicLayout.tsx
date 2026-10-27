@@ -32,7 +32,7 @@ const journalTitles: Record<Lang, string> = {
 }
 const journalSubtitles: Record<Lang, string> = {
   ru: 'Научный рецензируемый журнал · ISSN 2663-631X (Print), 3136-5337 (Online)',
-  kz: 'Рецензияланған ғылыми журнал · ISSN 2663-631X (Print), 3136-5337 (Online)',
+  kz: 'Рецензияланатын ғылыми журнал · ISSN 2663-631X (Print), 3136-5337 (Online)',
   en: 'Peer-reviewed scientific journal · ISSN 2663-631X (Print), 3136-5337 (Online)',
 }
 const authNavLabels: Record<Lang, { cabinet: string; login: string; register: string }> = {
