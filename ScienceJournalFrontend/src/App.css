@@ -9659,6 +9659,10 @@ html {
   gap: 24px;
 }
 
+.author-article-edit .manuscript-edit-hero {
+  display: block;
+}
+
 .author-article-edit__hero-row > .manuscript-hero__heading {
   flex: 1 1 0;
   min-width: 0;
@@ -9738,7 +9742,14 @@ html {
   gap: 10px;
 }
 
-.author-article-edit .manuscript-edit-submit .section-actions { margin-left: auto; }
+.author-article-edit .manuscript-edit-submit {
+  display: block;
+}
+
+.author-article-edit .manuscript-edit-submit .section-actions {
+  justify-content: flex-start;
+  margin: 16px 0 0;
+}
 
 .author-article-detail__versions {
   border: 1px solid #eadfe1;
