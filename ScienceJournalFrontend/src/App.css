@@ -9628,18 +9628,60 @@ html {
 .author-article-detail__author:hover,
 .author-article-detail__author.is-selected { border-color: var(--wine); }
 
-.author-article-edit > .manuscript-hero,
-.author-article-edit > .manuscript-edit-section {
-  margin-bottom: 0;
-  border-radius: 0;
-  border-bottom: 0;
+.author-article-edit__hero-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-.author-article-edit > .manuscript-edit-section:last-of-type { border-bottom: 1px solid var(--line); }
+.author-article-edit__hero-actions { flex: 0 0 auto; }
+
+.author-article-edit .manuscript-detail__back {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.author-article-edit .manuscript-detail__sheet > .alert {
+  margin: 20px 30px 0;
+}
+
+.author-article-edit .manuscript-edit-section {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.author-article-edit .manuscript-edit-submit .section-actions { margin-left: auto; }
+
+.author-article-detail__versions {
+  border: 1px solid #eadfe1;
+  background: #fff;
+}
+
+.author-article-detail__version {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #eadfe1;
+}
+
+.author-article-detail__version:last-child { border-bottom: 0; }
+.author-article-detail__version > span { color: #a0878d; font: 600 12px/1 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.author-article-detail__version > div { display: grid; gap: 5px; }
+.author-article-detail__version strong { color: #392b2e; font-size: 14px; }
+.author-article-detail__version small { color: #927d82; font-size: 12px; }
 
 @media (max-width: 760px) {
   .author-article-detail__hero-row { flex-direction: column; }
+  .author-article-edit__hero-row { flex-direction: column; }
   .author-article-detail__actions { width: 100%; }
+  .author-article-edit__hero-actions { width: 100%; }
   .author-article-detail__actions .button { flex: 1; }
   .author-article-detail__declarations { grid-template-columns: 1fr; }
 }
