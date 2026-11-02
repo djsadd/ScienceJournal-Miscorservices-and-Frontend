@@ -8841,6 +8841,11 @@
 }
 
 @media (max-width: 960px) {
+  /* The sidebar is an off-canvas drawer here, so the content needs the full width */
+  .app-shell:not(.app-shell--sidebar-hidden) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .app-shell .mobile-shell-header {
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
