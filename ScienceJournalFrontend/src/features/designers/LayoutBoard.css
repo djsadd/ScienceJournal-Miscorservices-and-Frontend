@@ -1,0 +1,530 @@
+.layout-board {
+  --wine: #8b1831;
+  --wine-dark: #6f1327;
+  --ink: #0e1118;
+  --muted: #8d7b82;
+  --line: #eadfe2;
+  --line-soft: #f3ebee;
+  --line-strong: #ead5df;
+  display: grid;
+  gap: 20px;
+  container: layout-board / inline-size;
+}
+
+.layout-board-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.layout-board__title {
+  margin: 0;
+  color: #26131a;
+  font: 700 38px/1.1 Georgia, 'Times New Roman', serif;
+}
+
+.layout-board__subtitle {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Status tabs */
+.layout-board-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.layout-board-tabs__tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: -1px;
+  padding: 10px 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layout-board-tabs__tab:hover {
+  color: var(--wine);
+}
+
+.layout-board-tabs__tab--active {
+  border-bottom-color: var(--wine);
+  color: var(--wine);
+}
+
+.layout-board-tabs__count {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Buttons */
+.app-shell .layout-board .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 2px;
+  font-size: 13px;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-shell.low-vision .layout-board .button {
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+.layout-board .button:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.layout-board .button--primary {
+  border-color: var(--wine);
+  background: var(--wine);
+}
+
+.layout-board .button--primary:hover:not(:disabled) {
+  border-color: var(--wine-dark);
+  background: var(--wine-dark);
+}
+
+.layout-board .button--ghost {
+  border-color: var(--line-strong);
+  background: #fffefe;
+  color: var(--wine);
+}
+
+.layout-board .button--ghost:hover:not(:disabled) {
+  border-color: var(--wine);
+  background: #fbf5f7;
+}
+
+.layout-board .button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.app-shell .layout-board .layout-board-button--icon {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 6px;
+}
+
+.app-shell.low-vision .layout-board .layout-board-button--icon {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Filters */
+.layout-board-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(120px, 170px) minmax(180px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.layout-board-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.layout-board-field__label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.layout-board-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  background: #fffefe;
+  color: #b59aa3;
+  font-size: 14px;
+}
+
+.layout-board-search input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+}
+
+.layout-board-search:focus-within {
+  border-color: var(--wine);
+  outline: 1px solid var(--wine);
+}
+
+/* Replaces the sortable column header, which is hidden when rows become cards */
+.layout-board-sort {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--wine);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Table */
+.layout-board-table-wrap {
+  border: 1px solid var(--line);
+  background: #fffefe;
+  scroll-margin-top: 16px;
+}
+
+.layout-board-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.layout-board-table th {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fbf7f8;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.layout-board-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--wine);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.layout-board-table__sort .layout-board-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.layout-board-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+
+.layout-board-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.layout-board-table tbody tr:hover td {
+  background: #fdf9fa;
+}
+
+.layout-board-table__row--active td:first-child {
+  box-shadow: inset 3px 0 0 var(--wine);
+}
+
+.layout-board-table__number,
+.layout-board-table__date time {
+  color: var(--muted);
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.layout-board-table__task {
+  min-width: 200px;
+}
+
+.layout-board-table__title {
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.layout-board-table__instructions {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.layout-board-table .queue-status {
+  border-radius: 2px;
+}
+
+.layout-board-table__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--wine);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.layout-board-table__source:hover {
+  text-decoration: underline;
+}
+
+.layout-board-table__muted {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.layout-board-table th.layout-board-table__actions-head {
+  text-align: right;
+}
+
+.layout-board-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.layout-board-actions__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #357153;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.layout-board-file {
+  flex: 1 1 170px;
+  min-width: 0;
+  max-width: 240px;
+  cursor: pointer;
+}
+
+.layout-board-file input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.layout-board-file span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px dashed #d7bac3;
+  border-radius: 2px;
+  background: #fffafb;
+  color: #8b6572;
+  font-size: 12px;
+}
+
+.layout-board-file em {
+  overflow: hidden;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout-board-file:hover span,
+.layout-board-file input:focus-visible + span {
+  border-color: var(--wine);
+  color: var(--wine);
+}
+
+/* Footer */
+.layout-board-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.layout-board-footer__count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.layout-board-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.layout-board-pagination__gap {
+  min-width: 24px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.layout-board-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 56px 20px;
+  border: 1px solid var(--line);
+  background: #fffefe;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.layout-board-empty .layout-board-icon {
+  width: 28px;
+  height: 28px;
+  color: #b59aa3;
+}
+
+/* The sidebar takes part of the viewport, so the layout follows the content width */
+@container layout-board (max-width: 900px) {
+  .layout-board-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .layout-board-filters > .button {
+    justify-self: start;
+  }
+}
+
+/* The table does not fit here, so each row becomes a card */
+@container layout-board (max-width: 1040px) {
+  .layout-board-sort {
+    display: inline-flex;
+  }
+
+  .layout-board-table,
+  .layout-board-table tbody,
+  .layout-board-table tr,
+  .layout-board-table td {
+    display: block;
+  }
+
+  .layout-board-table thead {
+    display: none;
+  }
+
+  .layout-board-table tr {
+    padding: 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .layout-board-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .layout-board-table__row--active {
+    box-shadow: inset 3px 0 0 var(--wine);
+  }
+
+  .layout-board-table__row--active td:first-child {
+    box-shadow: none;
+  }
+
+  .layout-board-table td {
+    padding: 0;
+    border: 0;
+  }
+
+  .layout-board-table td + td {
+    margin-top: 8px;
+  }
+
+  .layout-board-table__task {
+    min-width: 0;
+  }
+
+  .layout-board-table td[data-label] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 12px;
+  }
+
+  .layout-board-table td[data-label]::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 13px;
+  }
+
+  .layout-board-table td.layout-board-table__actions {
+    margin-top: 12px;
+  }
+
+  .layout-board-actions {
+    justify-content: flex-start;
+  }
+
+  .layout-board-file {
+    max-width: none;
+  }
+}
+
+@container layout-board (max-width: 480px) {
+  .layout-board__title {
+    font-size: 30px;
+  }
+
+  .layout-board-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .layout-board-actions .button,
+  .layout-board-file {
+    flex: 1 1 100%;
+  }
+}
