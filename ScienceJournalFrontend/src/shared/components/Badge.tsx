@@ -1,5 +1,6 @@
 interface BadgeProps {
   status: string
+  label?: string
 }
 
 const statusMap: Record<
@@ -27,7 +28,7 @@ const statusMap: Record<
   resubmission: { label: 'Повторная рецензия', tone: 'warn' },
 }
 
-export function Badge({ status }: BadgeProps) {
+export function Badge({ status, label }: BadgeProps) {
   const meta = statusMap[status] ?? { label: status, tone: 'muted' }
-  return <span className={`badge badge--${meta.tone}`}>{meta.label}</span>
+  return <span className={`badge badge--${meta.tone}`}>{label ?? meta.label}</span>
 }
