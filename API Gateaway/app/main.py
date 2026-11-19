@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+import os
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.config import API_PREFIX
 from app.routers import (
     auth,
@@ -17,12 +20,23 @@ from app.routers import (
     ai_reviews,
 )
 
+ENABLE_API_DOCS = os.getenv("ENABLE_API_DOCS", "false").strip().lower() in {"1", "true", "yes"}
+
 app = FastAPI(
     title="API Gateway",
-    docs_url=f"{API_PREFIX}/docs",
-    openapi_url=f"{API_PREFIX}/openapi.json",
+    docs_url=f"{API_PREFIX}/docs" if ENABLE_API_DOCS else None,
+    openapi_url=f"{API_PREFIX}/openapi.json" if ENABLE_API_DOCS else None,
     redoc_url=None,
 )
+
+
+@app.middleware("http")
+async def block_internal_routes(request: Request, call_next):
+    # Service-to-service endpoints (/<service>/internal/...) must never be
+    # reachable from outside the Docker network.
+    if "internal" in request.url.path.lower().split("/"):
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    return await call_next(request)
 
 app.add_middleware(
     CORSMiddleware,

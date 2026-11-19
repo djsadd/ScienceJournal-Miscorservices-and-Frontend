@@ -29,7 +29,7 @@ def _fetch_article_titles(article_ids: list[int]) -> dict[int, str]:
         with httpx.Client(timeout=5.0) as client:
             for article_id in unique_ids:
                 resp = client.get(
-                    f"{api_gateway}{api_prefix}/articles/internal/{article_id}/reviewer-detail",
+                    f"{config.ARTICLE_SERVICE_URL}/articles/internal/{article_id}/reviewer-detail",
                     headers={"X-Service-Secret": shared_secret},
                 )
                 if resp.status_code != 200:
@@ -64,7 +64,7 @@ def _notify_reviewer_assignment(article_id: int, reviewer_id: int, review_id: in
         }
         with httpx.Client(timeout=5.0) as client:
             response = client.post(
-                f"{api_gateway}{api_prefix}/notifications/internal",
+                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
                 json=payload,
                 headers={"X-Service-Secret": shared_secret},
             )
@@ -93,7 +93,7 @@ def _notify_reviewer_cancellation(article_id: int, reviewer_id: int) -> None:
         }
         with httpx.Client(timeout=5.0) as client:
             response = client.post(
-                f"{api_gateway}{api_prefix}/notifications/internal",
+                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
                 json=payload,
                 headers={"X-Service-Secret": shared_secret},
             )
@@ -110,7 +110,7 @@ def _notify_editor_review_completed(review_id: int, article_id: int, reviewer_id
         shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
         with httpx.Client(timeout=5.0) as client:
             response = client.post(
-                f"{api_gateway}{api_prefix}/notifications/internal/review-completed",
+                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal/review-completed",
                 json={"review_id": review_id, "article_id": article_id, "reviewer_id": reviewer_id},
                 headers={"X-Service-Secret": shared_secret},
             )
@@ -129,7 +129,7 @@ def _notify_editor_about_decline(article_id: int, reviewer_id: int, reason: str)
         article_label = f"«{article_title}»" if article_title else f"#{article_id}"
         with httpx.Client(timeout=5.0) as client:
             editor_response = client.get(
-                f"{api_gateway}{api_prefix}/articles/internal/{article_id}/assigned-editor",
+                f"{config.ARTICLE_SERVICE_URL}/articles/internal/{article_id}/assigned-editor",
                 headers={"X-Service-Secret": shared_secret},
             )
             editor_response.raise_for_status()
@@ -138,7 +138,7 @@ def _notify_editor_about_decline(article_id: int, reviewer_id: int, reason: str)
                 print(f"Warning: article {article_id} has no assigned editor for decline notification")
                 return
             notification_response = client.post(
-                f"{api_gateway}{api_prefix}/notifications/internal",
+                f"{config.NOTIFICATIONS_SERVICE_URL}/notifications/internal",
                 json={
                     "user_id": editor_id,
                     "type": "editorial",
@@ -631,7 +631,7 @@ def get_review_detail(review_id: int, db: Session = Depends(get_db), current_use
         shared_secret = getattr(config, 'SHARED_SERVICE_SECRET', 'service-shared-secret')
         with httpx.Client(timeout=5.0) as client:
             resp = client.get(
-                f"{api_gateway}{api_prefix}/articles/internal/{db_review.article_id}/reviewer-detail",
+                f"{config.ARTICLE_SERVICE_URL}/articles/internal/{db_review.article_id}/reviewer-detail",
                 headers={"X-Service-Secret": shared_secret},
             )
         if resp.status_code == 200:

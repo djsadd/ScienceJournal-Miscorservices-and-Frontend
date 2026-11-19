@@ -5,7 +5,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass}
       POSTGRES_DB: postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -16,7 +16,7 @@ services:
       - db_data:/var/lib/postgresql/data
       - ./docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
 
   analytics-db-init:
     image: postgres:16
@@ -24,7 +24,7 @@ services:
     environment:
       - PGHOST=db
       - PGUSER=postgres
-      - PGPASSWORD=pass
+      - PGPASSWORD=${POSTGRES_PASSWORD:-pass}
       - POSTGRES_USER=postgres
       - POSTGRES_DB=postgres
       - ANALYTICS_DB_PASSWORD=${ANALYTICS_DB_PASSWORD:-pass}
@@ -39,9 +39,9 @@ services:
     build: ./Auth - Identity Service
     environment:
       - DATABASE_URL=postgresql://auth:pass@db/auth
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
       - NOTIFICATIONS_SERVICE_URL=http://notifications:8000
-      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:8001}
       - FRONTEND_URL=${FRONTEND_URL:-https://journal.tau-edu.kz}
       - ORCID_CLIENT_ID=${ORCID_CLIENT_ID:-}
@@ -49,7 +49,7 @@ services:
       - ORCID_REDIRECT_URI=${ORCID_REDIRECT_URI:-https://journal.tau-edu.kz/api/auth/orcid/callback}
       - ORCID_ENV=${ORCID_ENV:-production}
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -59,10 +59,10 @@ services:
     environment:
       - DATABASE_URL=postgresql://users:pass@db/users
       - AUTH_SERVICE_URL=http://auth:8000
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
-      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
     ports:
-      - "8002:8000"
+      - "127.0.0.1:8002:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -73,11 +73,12 @@ services:
     build: ./Article Management Service
     environment:
       - DATABASE_URL=postgresql://articles:pass@db/articles
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
       - API_GATEWAY_URL=http://localhost:8000
       - LOG_LEVEL=${ARTICLES_LOG_LEVEL:-info}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
     ports:
-      - "8003:8000"
+      - "127.0.0.1:8003:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -86,14 +87,14 @@ services:
     build: ./Review Service
     environment:
       - DATABASE_URL=postgresql://reviews:pass@db/reviews
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
       - ARTICLE_SERVICE_URL=http://articles:8000
       - API_GATEWAY_URL=http://api-gateway:8000
       - API_GATEWAY_PREFIX=/api
       - FRONTEND_URL=http://localhost:8081
-      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
     ports:
-      - "8004:8000"
+      - "127.0.0.1:8004:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -104,9 +105,10 @@ services:
     build: ./Editorial Workflow Service
     environment:
       - DATABASE_URL=postgresql://editorial:pass@db/editorial
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
     ports:
-      - "8005:8000"
+      - "127.0.0.1:8005:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -118,11 +120,11 @@ services:
     environment:
       - FILE_SERVICE_URL=http://fileprocessing:7000
       - DATABASE_URL=postgresql://layout:pass@db/layout
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
-      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
       - NOTIFICATIONS_SERVICE_URL=http://notifications:8000
     ports:
-      - "8006:8000"
+      - "127.0.0.1:8006:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -136,13 +138,13 @@ services:
   publication:
     build: ./Publication Service
     environment:
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
-      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
       - PUBLICATION_DATA_DIR=/app/data
     volumes:
       - publication_data:/app/data
     ports:
-      - "8007:8000"
+      - "127.0.0.1:8007:8000"
     depends_on:
       - auth
 
@@ -150,9 +152,9 @@ services:
     build: ./Notification Service
     environment:
       - DATABASE_URL=postgresql://notifications:pass@db/notifications
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
       - AUTH_SERVICE_URL=http://auth:8000
-      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
       # Email configuration
       - EMAIL_HOST=${EMAIL_HOST:-smtp.mail.ru}
       - EMAIL_PORT=${EMAIL_PORT:-465}
@@ -162,18 +164,18 @@ services:
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-${EMAIL_HOST_USER}}
       - EMAIL_ENABLED=${EMAIL_ENABLED:-true}
     ports:
-      - "8008:8000"
+      - "127.0.0.1:8008:8000"
     depends_on:
       - auth
 
   analytics:
     build: ./Analytics - Metrics Service
     environment:
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
       - DATABASE_URL=${ANALYTICS_DATABASE_URL:-postgresql://analytics:pass@db/analytics}
       - ANALYTICS_SALT=${ANALYTICS_SALT:-science-journal-analytics}
     ports:
-      - "8009:8000"
+      - "127.0.0.1:8009:8000"
     depends_on:
       analytics-db-init:
         condition: service_completed_successfully
@@ -184,17 +186,17 @@ services:
     build: ./AI Review Service
     environment:
       - DATABASE_URL=postgresql://reviews:pass@db/reviews
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
       - ARTICLE_SERVICE_URL=http://articles:8000
       - FILE_SERVICE_URL=http://fileprocessing:7000
-      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:-service-shared-secret}
+      - SHARED_SERVICE_SECRET=${SHARED_SERVICE_SECRET:?SHARED_SERVICE_SECRET must be set in .env}
       - AI_API_URL=${AI_API_URL:-https://api.openai.com/v1}
       - OPEN_AI_KEY=${OPEN_AI_KEY:-}
       - AI_API_KEY=${AI_API_KEY:-}
       - AI_MODEL=${AI_MODEL:-gpt-5.5}
       - AI_TIMEOUT_SECONDS=${AI_TIMEOUT_SECONDS:-120}
     ports:
-      - "8010:8000"
+      - "127.0.0.1:8010:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -210,7 +212,7 @@ services:
     volumes:
       - storage_data:/app/storage
     ports:
-      - "7000:7000"
+      - "127.0.0.1:7000:7000"
     depends_on:
       db:
         condition: service_healthy
@@ -218,9 +220,10 @@ services:
   api-gateway:
     build: ./API Gateaway
     environment:
-      - SECRET_KEY=${SECRET_KEY:-supersecretkey}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
+      - ENABLE_API_DOCS=${ENABLE_API_DOCS:-false}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     networks:
       default:
         aliases:
@@ -251,7 +254,7 @@ services:
       discovery.type: single-node
       xpack.security.enabled: "false"
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
 
 
 volumes:
