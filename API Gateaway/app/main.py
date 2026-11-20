@@ -41,7 +41,9 @@ async def block_internal_routes(request: Request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    # Auth uses Bearer tokens, not cookies, so credentialed CORS is not needed.
+    # Wildcard origin + credentials would let any site make authenticated calls.
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

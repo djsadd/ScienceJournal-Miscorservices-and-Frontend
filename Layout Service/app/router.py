@@ -31,6 +31,10 @@ def get_current_user(authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
+# Layout records point readers at the final article PDF, so only staff may change them.
+RECORD_WRITE_ROLES = ("editor", "admin", "layout")
+
+
 def require_role(user: dict, *roles: str):
     if not set(roles).intersection(user.get("roles", [])):
         raise HTTPException(status_code=403, detail=f"One of these roles is required: {', '.join(roles)}")
@@ -150,7 +154,12 @@ def complete_task(
 
 
 @router.post("/records", response_model=schemas.LayoutRecordOut)
-async def create_record(payload: schemas.LayoutRecordCreate, db: Session = Depends(get_db)):
+async def create_record(
+    payload: schemas.LayoutRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    require_role(current_user, *RECORD_WRITE_ROLES)
     record = models.LayoutRecord(
         article_id=payload.article_id,
         volume_id=payload.volume_id,
@@ -194,7 +203,13 @@ async def list_volume_records(volume_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/records/{record_id}", response_model=schemas.LayoutRecordOut)
-async def update_record(record_id: str, payload: schemas.LayoutRecordUpdate, db: Session = Depends(get_db)):
+async def update_record(
+    record_id: str,
+    payload: schemas.LayoutRecordUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    require_role(current_user, *RECORD_WRITE_ROLES)
     record = db.query(models.LayoutRecord).filter(models.LayoutRecord.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
@@ -212,7 +227,12 @@ async def update_record(record_id: str, payload: schemas.LayoutRecordUpdate, db:
 
 
 @router.delete("/records/{record_id}")
-async def delete_record(record_id: str, db: Session = Depends(get_db)):
+async def delete_record(
+    record_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    require_role(current_user, *RECORD_WRITE_ROLES)
     record = db.query(models.LayoutRecord).filter(models.LayoutRecord.id == record_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")

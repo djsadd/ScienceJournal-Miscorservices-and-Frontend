@@ -1737,6 +1737,7 @@ async def assign_reviewers(
                 response = await client.post(
                     f"{review_service_url}/reviews/assign",
                     json=payload,
+                    headers={"X-Service-Secret": config.SHARED_SERVICE_SECRET},
                     timeout=10.0
                 )
                 if response.status_code != 200 and response.status_code != 201:

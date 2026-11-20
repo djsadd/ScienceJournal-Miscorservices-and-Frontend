@@ -208,7 +208,11 @@ def get_current_user(
 # ----------------------------
 @router.post("/", response_model=schemas.ReviewOut)
 def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    
+    # Reviews are normally created via /assign; ad-hoc creation would let any
+    # user attach a fake review to any article.
+    if not ({"editor", "admin"} & set(current_user.get("roles") or [])):
+        raise HTTPException(status_code=403, detail="Editor role required")
+
     new_review = models.Review(
         article_id=review.article_id,
         reviewer_id=current_user["user_id"],
@@ -237,12 +241,15 @@ def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db), c
 def assign_reviewer(
     request: schemas.AssignReviewerRequest,
     background_tasks: BackgroundTasks,
+    x_service_secret: Optional[str] = Header(default=None, alias="X-Service-Secret"),
     db: Session = Depends(get_db),
 ):
     """
     Создание записи Review при назначении рецензента редактором.
     Этот эндпоинт вызывается из Article Management Service.
     """
+    if not x_service_secret or x_service_secret != config.SHARED_SERVICE_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
     # Проверяем, не существует ли уже Review для этой статьи и рецензента
     existing_review = db.query(models.Review).filter(
         models.Review.article_id == request.article_id,

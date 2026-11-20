@@ -18,6 +18,16 @@ HOP_BY_HOP_HEADERS = {
 }
 
 
+# Identity/trust headers that only the gateway (or a trusted service) may set.
+# Downstream services (e.g. Review, User Profile) trust X-User-Id/X-User-Roles,
+# so any client-supplied value must be dropped, in any letter case.
+SPOOFABLE_HEADERS = {
+    "x-user-id",
+    "x-user-roles",
+    "x-service-secret",
+}
+
+
 def _filter_headers(headers) -> dict:
     return {
         key: value
@@ -61,8 +71,13 @@ async def proxy_request(service_url: str, request: Request) -> Response:
         if "commission" in token_roles and request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
             raise HTTPException(status_code=403, detail="Commission role is read-only")
 
-    # Start with client headers minus hop-by-hop ones
-    headers = dict(_filter_headers(request.headers))
+    # Start with client headers minus hop-by-hop ones and minus any identity
+    # headers the client tried to forge.
+    headers = {
+        key: value
+        for key, value in _filter_headers(request.headers).items()
+        if key.lower() not in SPOOFABLE_HEADERS
+    }
 
     # Always pass the upstream host so redirects don't point back to the gateway.
     try:
